@@ -13,7 +13,6 @@ import pytest
 from fastapi.testclient import TestClient
 from joserfc import jwt as jose_jwt
 from joserfc.jwk import OctKey
-
 from tlhelper import app as service
 from tlhelper import auth
 from tlhelper.flashcards import store

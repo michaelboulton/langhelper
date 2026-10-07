@@ -13,8 +13,8 @@ as a masculine noun. An adjective after être (la maison est grand) is not
 checked.
 """
 
-from .. import base
 from ...messages import Problem
+from .. import base
 from ..base import NO_SPELLING_UPOS
 
 # "Nous nous levons": a subject and its reflexive pronoun.

@@ -3,7 +3,6 @@ dependencies (de_core_news_md and de_dep_news_trf), so nothing is faked. The
 checks must give the same result with both."""
 
 import pytest
-
 from tlhelper.languages import LANGUAGES
 from tlhelper.languages.base import STUDY
 from tlhelper.languages.german import checks

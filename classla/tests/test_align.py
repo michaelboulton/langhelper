@@ -4,7 +4,6 @@ English words. The examples are Croatian."""
 from types import SimpleNamespace
 
 import pytest
-
 from tlhelper import align
 from tlhelper.languages import LANGUAGES
 from tlhelper.languages.croatian import accents

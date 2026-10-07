@@ -6,7 +6,6 @@ import wave
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
-
 from omnivoice_server import app as service
 from omnivoice_server import native, settings, synth
 

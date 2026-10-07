@@ -3,7 +3,6 @@ Croatian needs the classla models to tag a text, so test_app.py covers its
 analyze() with a fake pipeline."""
 
 import pytest
-
 from tlhelper.languages import DEFAULT, ENGLISH, LANGUAGES
 
 WORD_KEYS = {"id", "text", "lemma", "upos", "xpos", "feats", "start_char", "end_char"}

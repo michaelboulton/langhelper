@@ -6,7 +6,6 @@ from types import SimpleNamespace
 import httpx
 import openai
 import pytest
-
 from tlhelper import explain
 from tlhelper.explain import openai as backend
 from tlhelper.explain import prompt

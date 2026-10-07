@@ -2,7 +2,6 @@
 dependency (fr_core_news_md), so nothing is faked."""
 
 import pytest
-
 from tlhelper.languages import LANGUAGES
 from tlhelper.languages.base import STUDY
 

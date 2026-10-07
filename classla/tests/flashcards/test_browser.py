@@ -7,7 +7,6 @@ import threading
 
 import pytest
 from playwright.sync_api import expect
-
 from tlhelper import app as service
 from tlhelper import explain
 from tlhelper.flashcards import decks, routes, store

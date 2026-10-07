@@ -17,7 +17,6 @@ translations of the word, which align.py uses.
 import logging
 import sqlite3
 import threading
-
 from pathlib import Path
 
 from ..glosses import GLOSSES_SCHEMA, entry_key, plain

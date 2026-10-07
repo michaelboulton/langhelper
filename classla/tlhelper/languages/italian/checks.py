@@ -14,8 +14,8 @@ as a masculine noun, and "il gatti" loses the number of the noun. An adjective
 after essere (la casa è grande) is not checked.
 """
 
-from .. import base
 from ...messages import Problem
+from .. import base
 from ..base import NO_SPELLING_UPOS
 
 VALID_REPEATS: frozenset[str] = frozenset()

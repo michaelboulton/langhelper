@@ -3,7 +3,6 @@
 import json
 
 import pytest
-
 from scripts import lessons
 from tlhelper import explain
 from tlhelper.flashcards import apkg, decks, store

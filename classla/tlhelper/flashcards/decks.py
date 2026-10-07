@@ -34,8 +34,9 @@ DATA_ROOT (the volume). For the same stem, the volume wins.
 
 import logging
 import re
-import tomllib
 from pathlib import Path
+
+import tomllib
 
 from ..languages import LANGUAGES
 from ..languages.base import DATA_FILES
@@ -50,13 +51,101 @@ IMPORT_VERSION = 4
 # "i", "to", "on" or "do" (Croatian), and no "in", "am", "was", "so" or
 # "will" (German). "no" is a rare Croatian word, and a common English answer.
 ENGLISH_WORDS = frozenset(
-    "the is are you your of and with this that what how where who why which"
-    " when there from for not have has does did they she we it its my our"
-    " thank thanks please yes hello hi good goodbye bye very much some any"
-    " two three four five six seven eight nine ten sorry excuse welcome"
-    " morning evening night day today tomorrow yesterday no can should would"
-    " could like want need here just everything later nice only love take"
-    " something someone mister madam boy girl friend child husband wife woman young old".split()
+    [
+        "the",
+        "is",
+        "are",
+        "you",
+        "your",
+        "of",
+        "and",
+        "with",
+        "this",
+        "that",
+        "what",
+        "how",
+        "where",
+        "who",
+        "why",
+        "which",
+        "when",
+        "there",
+        "from",
+        "for",
+        "not",
+        "have",
+        "has",
+        "does",
+        "did",
+        "they",
+        "she",
+        "we",
+        "it",
+        "its",
+        "my",
+        "our",
+        "thank",
+        "thanks",
+        "please",
+        "yes",
+        "hello",
+        "hi",
+        "good",
+        "goodbye",
+        "bye",
+        "very",
+        "much",
+        "some",
+        "any",
+        "two",
+        "three",
+        "four",
+        "five",
+        "six",
+        "seven",
+        "eight",
+        "nine",
+        "ten",
+        "sorry",
+        "excuse",
+        "welcome",
+        "morning",
+        "evening",
+        "night",
+        "day",
+        "today",
+        "tomorrow",
+        "yesterday",
+        "no",
+        "can",
+        "should",
+        "would",
+        "could",
+        "like",
+        "want",
+        "need",
+        "here",
+        "just",
+        "everything",
+        "later",
+        "nice",
+        "only",
+        "love",
+        "take",
+        "something",
+        "someone",
+        "mister",
+        "madam",
+        "boy",
+        "girl",
+        "friend",
+        "child",
+        "husband",
+        "wife",
+        "woman",
+        "young",
+        "old",
+    ]
 )
 # Not a part of a word with a hyphen: "is-" is a Croatian prefix.
 WORD = re.compile(r"(?<![\w-])[^\W\d_]+(?![\w-])")

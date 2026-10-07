@@ -20,7 +20,6 @@ from pathlib import Path
 import pytest
 import uvicorn
 from playwright.sync_api import Error, sync_playwright
-
 from tlhelper import app as service
 from tlhelper.flashcards import decks, store
 

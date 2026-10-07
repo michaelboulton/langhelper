@@ -45,11 +45,11 @@ from pydantic import Field, field_validator
 from starlette.middleware.sessions import SessionMiddleware
 
 from . import align, auth, languages, locales, schemas, translators
+from .explain import routes as explain_routes
 from .flashcards import decks
 from .flashcards import routes as flashcard_routes
 from .languages import ENGLISH, LANGUAGES, Language, ModelsMissing, model_type
 from .messages import CodedHTTPException
-from .explain import routes as explain_routes
 from .settings import DATA_ROOT, MAX_TEXT_CHARS
 from .speech import routes as speech_routes
 from .translators import TranslationError

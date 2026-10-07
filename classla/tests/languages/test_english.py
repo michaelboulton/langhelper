@@ -2,7 +2,6 @@
 model, because the checks read its tags and its parse."""
 
 import pytest
-
 from tlhelper.languages import ENGLISH
 
 CORRECT = [

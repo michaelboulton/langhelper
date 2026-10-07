@@ -36,7 +36,6 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-
 from tlhelper import explain
 from tlhelper.flashcards import make_deck, make_toml
 from tlhelper.languages import LANGUAGES

@@ -5,7 +5,6 @@ from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
-
 from tlhelper import app as service
 from tlhelper import explain
 from tlhelper.explain import routes as explain_routes

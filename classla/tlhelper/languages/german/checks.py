@@ -16,8 +16,8 @@ The checks miss an error that is a valid form in that place: "Ich wohne in die
 Stadt" reads as in + accusative, and "Ich sehe der Mann" reads as a subject.
 """
 
-from .. import base
 from ...messages import Problem
+from .. import base
 from ..base import NO_SPELLING_UPOS
 
 # "Die Frau, die die Katze hat": a relative pronoun before an article.

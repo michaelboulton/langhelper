@@ -1,5 +1,4 @@
 import pytest
-
 from tlhelper.flashcards.grade import AGAIN, GOOD, HARD, diff, grade
 from tlhelper.languages import ENGLISH, LANGUAGES
 from tlhelper.languages.base import Grading

@@ -1,7 +1,6 @@
 """Tests for base.StudySlot: the one model of a study language in memory."""
 
 import pytest
-
 from tlhelper.languages import ENGLISH
 from tlhelper.languages.base import StudySlot
 

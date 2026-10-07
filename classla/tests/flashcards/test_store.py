@@ -1,5 +1,4 @@
 import pytest
-
 from tlhelper.flashcards import decks, store
 from tlhelper.flashcards.grade import AGAIN, EASY, GOOD
 

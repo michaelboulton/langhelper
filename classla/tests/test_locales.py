@@ -9,7 +9,6 @@ import pytest
 from fastapi.testclient import TestClient
 from fluent.syntax import FluentParser, ast
 from fluent.syntax.visitor import Visitor
-
 from tlhelper import app as service
 from tlhelper import locales
 

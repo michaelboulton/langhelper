@@ -21,8 +21,8 @@ module.
 
 import argparse
 import base64
-import sys
 import os
+import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))

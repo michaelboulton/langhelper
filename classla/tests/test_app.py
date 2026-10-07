@@ -15,7 +15,6 @@ from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
-
 from tlhelper import app as service
 from tlhelper import translators
 from tlhelper.languages import ENGLISH, LANGUAGES

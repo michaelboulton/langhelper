@@ -2,7 +2,6 @@
 is a dependency (hr_core_news_md), so nothing is faked."""
 
 import pytest
-
 from tlhelper.languages import LANGUAGES
 from tlhelper.languages.croatian import accents, light
 
