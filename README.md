@@ -12,6 +12,10 @@ these things:
 - Explain a sentence or an answer with an AI model.
 - Read a sentence aloud.
 
+![A Croatian sentence with a color for each part of speech, its English
+translation under it, and a line from each Croatian word to its English
+word](docs/breakdown.png)
+
 ## Folders
 
 | Folder or file | Contents |
@@ -21,6 +25,7 @@ these things:
 | `pyproject.toml`, `uv.lock` | The uv workspace of the two folders, with one set of locked versions |
 | `docker-compose.yml` | A local run of `web`, `tts` and a llama.cpp server for the AI buttons |
 | `.data/` | The downloaded models and the databases of a local run. Not in git |
+| `docs/` | The pictures of this README |
 
 ## How the parts connect
 
