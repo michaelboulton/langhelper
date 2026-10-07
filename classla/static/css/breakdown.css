@@ -1,0 +1,183 @@
+:root {
+  color-scheme: light dark;
+  --bg: #fafaf7; --fg: #1d1d1b; --muted: #6b6b66; --card: #ffffff; --line: #d9d9d2;
+  --callout-bg: #fff8d6; --callout-line: #e6d27a;
+  --chip-fg: #1d1d1b;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161615; --fg: #ecece6; --muted: #9a9a92; --card: #222220; --line: #3a3a36;
+    --callout-bg: #3a3315; --callout-line: #7a6a2a;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0 auto; padding: 24px 16px 64px; max-width: 860px;
+  background: var(--bg); color: var(--fg);
+  font: 16px/1.5 system-ui, sans-serif;
+}
+h1 { font-size: 1.4rem; margin: 0 0 4px; }
+p.sub { margin: 0 0 20px; color: var(--muted); }
+/* A yellow note. */
+p.callout {
+  margin: 0 0 20px; padding: 8px 12px; font-size: 0.9rem;
+  background: var(--callout-bg); border: 1px solid var(--callout-line); border-radius: 8px;
+}
+p.accents { margin-top: 14px; font-size: 0.85rem; }
+.detail a { color: inherit; }
+textarea {
+  width: 100%; min-height: 90px; padding: 10px; resize: vertical;
+  font: inherit; color: inherit; background: var(--card);
+  border: 1px solid var(--line); border-radius: 8px;
+}
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 10px 0 24px; }
+.row label { flex: 1 1 260px; color: var(--muted); font-size: 0.9rem; }
+.row.direction { margin: 0 0 10px; }
+.row.direction label { flex: 0 1 auto; color: var(--fg); }
+.row label.off { opacity: 0.5; }
+button {
+  font: inherit; padding: 8px 18px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--fg); color: var(--bg);
+}
+button:disabled { opacity: 0.5; cursor: wait; }
+#cancel { background: var(--card); color: var(--fg); }
+.row label.timeout { flex: 0 0 auto; }
+#timeout {
+  width: 4.5em; font: inherit; color: inherit; background: var(--card);
+  border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px;
+}
+#status, #cards-status { color: var(--muted); min-height: 1.5em; }
+#status.error, #cards-status.error { color: #c0392b; }
+#models {
+  display: flex; align-items: center; gap: 8px; margin: 0 0 16px; padding: 8px 12px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+  color: var(--muted); font-size: 0.9rem;
+}
+#models[hidden] { display: none; }
+#models::before {
+  content: ""; flex: 0 0 auto; width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid var(--line); border-top-color: var(--fg);
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.sentence { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 18px; }
+.chip {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 5px 9px; border-radius: 8px; cursor: pointer;
+  border: 2px solid transparent; color: var(--chip-fg);
+  font: inherit; line-height: 1.25;
+}
+.chip.selected { border-color: var(--fg); }
+.chip .w { font-weight: 600; font-size: 1.1rem; }
+.chip.problem .w, .detail h2.problem {
+  text-decoration: underline wavy #d00000;
+  text-decoration-skip-ink: none;
+  text-underline-offset: 0.2em;
+}
+.detail .problems { color: #d00000; margin: 0.25rem 0 0.5rem; padding-left: 1.2rem; }
+/* The accent marks stack on letters like ā, so use fonts that draw them well. */
+.chip .a { font-family: "Noto Serif", "DejaVu Serif", "Charis SIL", Georgia, serif; font-size: 1rem; line-height: 1.5; }
+.chip .a.approx { font-style: italic; opacity: 0.6; }
+/* How to say the word. The font is that of the language (lang on .sentence). */
+.chip .r { font-size: 0.8rem; }
+.chip .l { font-size: 0.8rem; font-style: italic; }
+.chip .p { font-size: 0.65rem; letter-spacing: 0.05em; }
+.chip .p .f { opacity: 0.75; }
+/* Arabic and Hebrew have no italic, and the tag under the word is English. */
+[dir="rtl"] .chip .l { font-style: normal; }
+[dir="rtl"] .chip .p { direction: ltr; }
+.detail, #legend {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 8px; padding: 14px 16px; margin-top: 16px;
+}
+.detail:empty { display: none; }
+.detail h2 { margin: 0 0 8px; font-size: 1.15rem; }
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: 4px 8px 4px 0; border-top: 1px solid var(--line); vertical-align: top; }
+th { width: 38%; font-weight: 500; color: var(--muted); }
+td small { color: var(--muted); }
+.result .note { margin: 14px 0 6px; color: var(--muted); }
+/* The curves from each Croatian word to its English word (drawLinks). */
+.result { position: relative; }
+.result .translated { margin-top: 56px; margin-bottom: 40px; }
+/* The curves are behind the chips, so a curve never covers a word. */
+.result .chip { position: relative; z-index: 1; }
+svg.links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 0; }
+svg.links path { fill: none; stroke: var(--fg); stroke-width: 1.5; opacity: 0.35; }
+svg.links path.guess { stroke-dasharray: 5 4; }
+svg.links path.selected { stroke-width: 3; opacity: 0.9; }
+#legend { display: flex; flex-wrap: wrap; gap: 6px; font-size: 0.8rem; }
+#legend span { padding: 2px 8px; border-radius: 6px; color: var(--chip-fg); }
+/* The progress tab has no words, so it needs no legend. */
+body[data-tab="progress"] #legend, body[data-tab="progress"] #accents { display: none; }
+
+/* The tabs and the flashcards (flashcards.js). */
+#tabs { display: flex; gap: 4px; margin: 0 0 20px; border-bottom: 1px solid var(--line); }
+#tabs button {
+  border: 0; border-bottom: 3px solid transparent; border-radius: 0;
+  background: none; color: var(--muted);
+}
+#tabs button.current { color: var(--fg); border-bottom-color: var(--fg); }
+/* The language of the page (i18n.js), at the end of the row of the tabs. */
+#tabs .locale { margin-inline-start: auto; align-self: center; font-size: 0.85rem; color: var(--muted); }
+#tabs .locale[hidden] { display: none; }
+#locale {
+  font: inherit; color: var(--fg); background: var(--card);
+  border: 1px solid var(--line); border-radius: 6px; padding: 2px 4px;
+}
+button.plain { background: var(--card); color: var(--fg); }
+button.plain.current { background: var(--fg); color: var(--bg); }
+#deck-list { display: grid; gap: 8px; margin: 0 0 24px; }
+#deck-list[hidden] { display: none; }
+button.deck { display: flex; flex-wrap: wrap; gap: 4px 16px; text-align: left; }
+button.deck span { color: var(--muted); }
+/* The subdecks of a package, as a tree. */
+.deck-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; margin-top: 8px; }
+.deck-heading h3, .deck-heading h4 { margin: 0; font-size: 1rem; }
+.deck-heading h4 { font-size: 0.95rem; font-weight: 600; }
+.deck-heading span { color: var(--muted); font-size: 0.9rem; }
+.deck-group { display: grid; gap: 8px; margin-left: 4px; padding-left: 12px; border-left: 2px solid var(--card); }
+.row.card-head { margin: 0 0 8px; }
+.row.card-head #deck-counts { flex: 1; color: var(--muted); font-size: 0.9rem; }
+#answer {
+  width: 100%; padding: 10px; font: inherit; font-size: 1.1rem; color: inherit;
+  background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+}
+/* A script with no spaces has no place for a line break: break anywhere. */
+#diff, #other-answers, .result .note { overflow-wrap: anywhere; }
+#diff { font-size: 1.2rem; margin: 0 0 4px; }
+#diff .delete { color: #c0392b; text-decoration: line-through; }
+#diff .insert { background: #a8e6a1; color: var(--chip-fg); border-radius: 3px; }
+.media { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.media:not(:empty) { margin: 0 0 12px; }
+.media img { max-width: 100%; max-height: 260px; border-radius: 8px; }
+.media audio { max-width: 100%; }
+#ratings { margin-bottom: 10px; }
+/* The questions to the AI (explain.js). */
+.explain { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+.explain[hidden] { display: none; }
+.explain .row { margin: 0 0 8px; gap: 8px; }
+.explain button { padding: 4px 12px; font-size: 0.9rem; }
+.explain input {
+  width: 100%; padding: 6px 10px; font: inherit; font-size: 0.9rem; color: inherit;
+  background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+}
+/* The answer is plain text with line breaks. */
+.explain-text { white-space: pre-wrap; overflow-wrap: anywhere; margin: 10px 0 4px; }
+.explain-text:empty { display: none; }
+.explain-text.error { color: #c0392b; }
+/* The "Listen" buttons and the sound (listen.js). */
+.listen { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+.listen[hidden] { display: none; }
+.listen .row { margin: 0 0 8px; gap: 8px; }
+.listen button { padding: 4px 12px; font-size: 0.9rem; }
+.listen audio { display: block; width: 100%; max-width: 30em; margin: 0 0 8px; }
+.listen audio[hidden] { display: none; }
+.listen .error { color: #c0392b; }
+#next-due { color: var(--muted); font-size: 0.9rem; }
+/* The progress tab (progress.js). */
+#progress-user { font: inherit; padding: 4px 8px; }
+#stats .days { display: flex; align-items: flex-end; gap: 1px; height: 80px; border-bottom: 1px solid var(--line); }
+#stats .days .day { flex: 1; display: flex; align-items: flex-end; min-height: 0; background: var(--line); }
+#stats .days .day div { width: 100%; background: var(--fg); }
+#stats #stats-rate .day { background: var(--fg); }

@@ -1,0 +1,9 @@
+*
+!Dockerfile
+# Both lines for the folder: docker needs the first one, and podman (buildah)
+# needs the second one to include the files in the folder.
+!omnivoice_server
+!omnivoice_server/**
+!pyproject.toml
+!uv.lock
+**/__pycache__

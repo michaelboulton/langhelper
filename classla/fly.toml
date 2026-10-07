@@ -1,0 +1,71 @@
+# fly.toml for the sentence breakdown service: Croatian with classla (https://github.com/clarinsi/classla)
+#
+# Deploy from this directory:  fly deploy --ha=false
+# Secrets:                     fly secrets set DEEPL_API_KEY=...
+#                              Only "Translate to English" needs it.
+#                              fly secrets set TLHELPER_AI_API_KEY=...
+#                              Only the "explain with AI" buttons need it, and
+#                              they also need TLHELPER_AI_MODEL below.
+#                              fly secrets set SESSION_SECRET="$(openssl rand -base64 32)"
+#                              Signs the login cookies. On the fly.dev hostname
+#                              the page and the API need a Pocket ID login.
+
+app = 'boultonxyz-classla'
+primary_region = 'lhr'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[env]
+  DATA_ROOT = '/data'
+  STATIC_DIR = '/app/static'
+  PORT = '8000'
+  MAX_TEXT_CHARS = '1000'
+  # The "explain with AI" buttons. See "Set up the AI service" in the README.
+  # TLHELPER_AI_MODEL = 'gpt-5-mini'
+  # TLHELPER_AI_API_BASE = 'https://openrouter.ai/api/v1'
+  # The OIDC login (auth.py). The client is a public client with PKCE, so the
+  # client ID is not a secret and there is no client secret. See the README.
+  OIDC_ISSUER = 'https://boultonxyz-pocket-id.fly.dev'
+  OIDC_CLIENT_ID = 'f9f5cd20-ba30-4a31-98a8-4211f562c8ff'
+
+# Holds the downloaded classla models, which are the heavy models of Croatian
+# (so a request for them does not download them again), and lemmas.db, the count of how often each lemma was seen. Create once with:
+#   fly volumes create classla_data -r lhr -s 2
+# The two sets of models take 1.1 GB.
+[mounts]
+  source = 'classla_data'
+  destination = '/data'
+  initial_size = '2gb'
+
+# Cost: the machine is fully stopped when idle (only rootfs + volume storage is
+# billed) and started on the first incoming request. Deploy with
+# `fly deploy --ha=false` so Fly creates a single machine instead of the default two.
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+
+  # The app opens the port first and loads the light models in a background
+  # thread. A heavy model loads on the first request that asks for it.
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '30s'
+    method = 'GET'
+    path = '/healthz'
+
+# Measured on a laptop, for the whole process. With the light models: 410 MB.
+# With the heavy Croatian models (one classla pipeline, mostly its lemma
+# dictionary): 2.6 GB, and 3.2 GB at the peak of the load. With the heavy
+# German model: 0.9 GB, and 2.5 GB at the peak of the load. The app keeps one
+# model of a study language at a time. The peak over all switches was under
+# 3.5 GB. A shared-cpu-1x machine stops at 2 GB, so this needs 2 CPUs. A
+# service with no heavy models fits in 1 GB.
+[[vm]]
+  memory = '4gb'
+  swap_size_mb = 1024
+  cpu_kind = 'shared'
+  cpus = 2
