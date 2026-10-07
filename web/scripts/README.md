@@ -152,8 +152,8 @@ markdown is not cached: `--redo` fetches the page again.
 ## transcribe.py: what a model hears in a voice clip
 
 A quick check that a clip is speech: the mp3 of the voice service
-(`../omnivoice/`), or a reference clip before it goes into
-`omnivoice_server/voices/`. The script sends each `.wav` or `.mp3` to a model
+(`tts/` at the repository root), or a reference clip before it goes into
+`tts/omnivoice_server/voices/`. The script sends each `.wav` or `.mp3` to a model
 that hears audio and prints its transcript. It needs no extra dependency
 group.
 

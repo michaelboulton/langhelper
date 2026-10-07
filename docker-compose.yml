@@ -5,20 +5,22 @@
 # that container still uses the image from before the build.
 # Then open http://localhost:8000/
 services:
-  classla:
-    build: .
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
     ports:
       - "8000:8000"
     environment:
       # The app reads and writes classla_resources/ and lemmas.db under this path.
       DATA_ROOT: /data
-      # The page, its script and its style sheet (static/ in this folder).
+      # The page, its script and its style sheet (web/static/).
       STATIC_DIR: /app/static
       # Never download. If the models are not in ./.data, classify returns 503.
       DOWNLOAD_MODELS: "0"
       # The page ticks "Large models" until the user makes a choice.
       TLHELPER_ALWAYS_LARGE: "1"
-      # The "explain with AI" buttons (tlhelper/explain/__init__.py) ask the
+      # The "explain with AI" buttons (web/tlhelper/explain/__init__.py) ask the
       # llamacpp service below. The network has no DNS, so the address is the
       # fixed address of llamacpp on that network (see networks at the end).
       # llama.cpp wants no key, but with no key the page has no buttons, so the
@@ -30,10 +32,10 @@ services:
       # below, and remove the three lines above:
       # TLHELPER_AI_MODEL: gpt-5-mini
       # TLHELPER_AI_API_BASE: https://openrouter.ai/api/v1
-      # The "Listen" buttons (tlhelper/speech/__init__.py) ask the voice
+      # The "Listen" buttons (web/tlhelper/speech/__init__.py) ask the voice
       # service below, at its fixed address on the network.
       TLHELPER_VOICE_URL: http://10.89.231.11:8002
-    # For "Translate to English". entrypoint.sh reads the key from
+    # For "Translate to English". web/entrypoint.sh reads the key from
     # /run/secrets/deepl_api_key. If you have no key, remove this block and the
     # secrets block at the end. The page then shows the reason in place of the
     # translation.
@@ -68,7 +70,7 @@ services:
     image: ghcr.io/ggml-org/llama.cpp:server-vulkan
     container_name: llamacpp
     restart: unless-stopped
-    # The classla service calls this address (TLHELPER_AI_API_BASE above).
+    # The web service calls this address (TLHELPER_AI_API_BASE above).
     networks:
       default:
         ipv4_address: 10.89.231.10
@@ -146,15 +148,17 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  # Text to speech for the "Listen" buttons: ../omnivoice/README.md. On the
+  # Text to speech for the "Listen" buttons: tts/README.md. On the
   # GPU through Vulkan, like llamacpp above. The first start downloads the
   # two GGUFs (945 MB) into the Hugging Face cache of the host (the bind
   # mount below). Each start then loads them in a few seconds.
   voice:
-    build: ../omnivoice
+    build:
+      context: .
+      dockerfile: tts/Dockerfile
     container_name: omnivoice
     restart: unless-stopped
-    # The classla service calls this address (TLHELPER_VOICE_URL above).
+    # The web service calls this address (TLHELPER_VOICE_URL above).
     networks:
       default:
         ipv4_address: 10.89.231.11
@@ -193,11 +197,11 @@ services:
 # so that services find each other by name. With rootless podman and a local
 # resolver on the host (nameserver 127.0.0.1), that server resolves nothing.
 # So turn it off. Each container then gets the resolvers of the host, and
-# classla calls llamacpp at a fixed address in a fixed subnet. Docker ignores
+# web calls llamacpp at a fixed address in a fixed subnet. Docker ignores
 # this key. The port that llamacpp publishes on the host is no use for this:
-# from classla, host.containers.internal:9931 gets no answer, and the request
+# from web, host.containers.internal:9931 gets no answer, and the request
 # waits until the AI timeout.
-# An old network keeps its old setting: podman network rm classla_default
+# An old network keeps its old setting: podman network rm langhelper_default
 networks:
   default:
     x-podman.disable_dns: true

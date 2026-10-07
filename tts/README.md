@@ -5,8 +5,8 @@ the C++/ggml port of [OmniVoice](https://github.com/k2-fsa/OmniVoice), a
 zero-shot text-to-speech model for 646 languages. It has the shape of the
 speech API of OpenAI, so a client that knows `GET /v1/models` and
 `POST /v1/audio/speech` can use it. The "Listen" buttons of the
-[classla](../classla/) page use it, and `classla/docker-compose.yml` runs it
-next to the page.
+[web](../web/) page use it, and `docker-compose.yml` at the repository root
+runs it next to the page.
 
 The model is two GGUF files from one Hugging Face repo
 (`Serveurperso/OmniVoice-GGUF`): the language model (`omnivoice-base-*`, a
@@ -28,8 +28,8 @@ steps on the Radeon of a Strix Halo laptop. On the CPU it takes about 6 s at
 | `omnivoice_server/voices/` | The reference clips, `<language>.wav` in git lfs with the transcript in `<language>.txt` (see "Voice") |
 | `omnivoice_server/settings.py` | The environment variables, read when they are used |
 | `tests/` | The routes with a fake model, and the encoder with a real signal. Run with `uv run pytest`; no library and no model needed |
-| `Dockerfile` | Two stages: a build of omnivoice.cpp at a pinned commit with the Vulkan and CPU backends, then `python:3.12-slim` plus the Mesa Vulkan drivers and `uv sync --frozen`, uid 1000, the Hugging Face cache at `/hf` |
-| `pyproject.toml` | Dependencies: fastapi, uvicorn, numpy, lameenc, huggingface-hub |
+| `Dockerfile` | Its build context is the repository root. Two stages: a build of omnivoice.cpp at a pinned commit with the Vulkan and CPU backends, then `python:3.12-slim` plus the Mesa Vulkan drivers and `uv sync --frozen`, uid 1000, the Hugging Face cache at `/hf` |
+| `pyproject.toml` | Dependencies: fastapi, uvicorn, numpy, lameenc, huggingface-hub. The locked versions are in `../uv.lock`, which the uv workspace shares with `web/` |
 
 ## Routes
 
@@ -63,8 +63,8 @@ while another request is being read. A request with an empty `instruct`
 never comes from the cache.
 
 The answer has no `Cache-Control`: it is the answer of a `POST`, which no
-browser or proxy keeps. The page of classla serves the mp3 to the browser
-with a `GET` that the browser keeps (`../classla/README.md`, "Listen").
+browser or proxy keeps. The web page serves the mp3 to the browser
+with a `GET` that the browser keeps (`../web/README.md`, "Listen").
 
 An error is JSON with `detail` and `code`: `unknown-model` (404),
 `unknown-language` (422), `empty-text` (422), `bad-instruct` (422, and
@@ -185,15 +185,15 @@ only accepts the codes from its list.
 
 ## Running
 
-With the classla page: `podman-compose up --build` in `../classla/`. The
+With the web page: `podman-compose up --build` at the repository root. The
 `voice` service there binds `~/.cache/huggingface` of the host to `/hf`, so
 the GGUFs download once and stay. The first build compiles omnivoice.cpp,
 which takes a few minutes.
 
-The image alone:
+The image alone, built from the repository root:
 
 ```bash
-podman build -t omnivoice .
+podman build -f tts/Dockerfile -t omnivoice .
 podman run --rm -p 8002:8002 -v ~/.cache/huggingface:/hf --userns=keep-id --device /dev/dri omnivoice
 ```
 

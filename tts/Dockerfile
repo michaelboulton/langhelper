@@ -1,3 +1,6 @@
+# Build from the repository root, which holds the uv workspace:
+#   podman build -f tts/Dockerfile -t omnivoice .
+#
 # Stage 1: omnivoice.cpp as a shared library, from the pinned commit
 # (README.md, "Notes"). The same base as the final stage, so the library
 # links against the libc and libstdc++ that it runs on.
@@ -44,14 +47,17 @@ RUN apt-get update \
 WORKDIR /app
 
 # Dependencies first, so a change to omnivoice_server/ does not reinstall
-# them.
+# them. uv reads the pyproject.toml of each workspace member, so web/ needs
+# its file too.
 COPY pyproject.toml uv.lock /app/
-RUN UV_COMPILE_BYTECODE=1 uv sync --frozen --no-dev --no-install-project --no-cache
+COPY web/pyproject.toml /app/web/
+COPY tts/pyproject.toml /app/tts/
+RUN UV_COMPILE_BYTECODE=1 uv sync --frozen --no-dev --package omnivoice-server --no-install-workspace --no-cache
 
-COPY omnivoice_server/ /app/omnivoice_server/
+COPY tts/omnivoice_server/ /app/omnivoice_server/
 
 # Non-root. /hf is the Hugging Face cache: the GGUFs land there on the first
-# request, or a volume brings them (docker-compose.yml of classla).
+# request, or a volume brings them (docker-compose.yml at the repository root).
 RUN useradd --create-home --uid 1000 omnivoice \
     && mkdir -p /hf && chown omnivoice:omnivoice /hf
 USER omnivoice

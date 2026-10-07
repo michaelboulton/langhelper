@@ -46,8 +46,8 @@ a wasm build takes about a minute per iteration.
 ## Layout
 
 ```
-classla/
-  app/                     new Flutter project (flutter create --platforms web --project-name classla_app)
+web/
+  app/                     new Flutter project (flutter create --platforms web --project-name langhelper_app)
     pubspec.yaml           http, fluent, shared_preferences, audioplayers, flutter_tts, go_router
     lib/
       main.dart            ensureSemantics(), theme, router (/, /cards, /progress), locale bootstrap
@@ -84,8 +84,8 @@ names stay, and Chrome on Android installs the page as before.
 
 ### 1. Scaffold and serve an empty app
 
-- `flutter create app --platforms web --project-name classla_app` inside
-  `classla/`. Move `manifest.json` and the icons from `static/` to `app/web/`.
+- `flutter create app --platforms web --project-name langhelper_app` inside
+  `web/`. Move `manifest.json` and the icons from `static/` to `app/web/`.
   Write `app/web/index.html` with the theme colour, the viewport and the
   manifest link.
 - Add Noto Sans to `assets/fonts/` and make it the theme font.
@@ -185,7 +185,7 @@ These are the commands for checking a drawing, such as the curves, without a
 person looking at a browser. They go into README under "Running locally" when
 the app exists.
 
-1. Build: `cd classla/app` and
+1. Build: `cd web/app` and
    `flutter build web --wasm --no-web-resources-cdn --base-href /static/`.
    About a minute. `flutter build web` without `--wasm` is faster for a check.
 2. Pictures of every browser test:
@@ -201,7 +201,7 @@ the app exists.
 
 ## Verification of the whole change
 
-- `flutter analyze` and `flutter test` clean in `classla/app`.
+- `flutter analyze` and `flutter test` clean in `web/app`.
 - `uv run pytest` green, with Chromium and with the network blocked.
 - `podman-compose up --build`, then the three tabs by hand: translation
   curves, a picture card with audio, dark mode, `?locale=hr`, a right-to-left

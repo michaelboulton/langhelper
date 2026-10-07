@@ -1,6 +1,8 @@
 # fly.toml for the sentence breakdown service: Croatian with classla (https://github.com/clarinsi/classla)
 #
-# Deploy from this directory:  fly deploy --ha=false
+# Deploy from the repository root, the build context of web/Dockerfile:
+#   fly deploy . --config web/fly.toml --dockerfile web/Dockerfile --ha=false
+#
 # Secrets:                     fly secrets set DEEPL_API_KEY=...
 #                              Only "Translate to English" needs it.
 #                              fly secrets set TLHELPER_AI_API_KEY=...

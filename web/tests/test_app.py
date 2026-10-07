@@ -3,7 +3,8 @@ with: uv run pytest
 
 The unit tests replace the classla pipeline with a fake, so they need no
 models. test_real_models loads the real ones and is skipped when they are not
-in ./.data (start the app once with DATA_ROOT=./.data to download them).
+in .data/ at the repository root (start the app once with DATA_ROOT=../.data to
+download them).
 """
 
 import re
@@ -24,7 +25,7 @@ from tlhelper.translators import deepl
 
 CROATIAN, GERMAN = LANGUAGES["hr"], LANGUAGES["de"]
 
-REAL_MODELS = Path(__file__).parent.parent / ".data" / "classla_resources"
+REAL_MODELS = Path(__file__).parents[2] / ".data" / "classla_resources"
 
 
 def word(id, text, lemma, upos, xpos, feats, start):
@@ -725,7 +726,7 @@ def test_download_off_gives_503_and_no_download(tmp_path, monkeypatch):
 
 @pytest.mark.skipif(
     not (REAL_MODELS / "hr" / "lemma" / "nonstandard.pt").exists(),
-    reason="the real models are not in ./.data",
+    reason="the real models are not in .data/ at the repository root",
 )
 def test_real_models(tmp_path, monkeypatch):
     monkeypatch.setattr(service, "DB_PATH", tmp_path / "lemmas.db")

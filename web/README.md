@@ -24,7 +24,7 @@ login. The API refuses texts over `MAX_TEXT_CHARS`.
 | `tlhelper/app.py` | The FastAPI app: routes, the translation cache, the SQLite lemma counts |
 | `tlhelper/translators/` | The machine translators: the `Translator` interface and DeepL. Its docstring says how to add one |
 | `tlhelper/explain/` | The "explain with AI" buttons: the `Backend` interface, the OpenAI SDK backend, the Claude Code CLI backend, the questions as prompt templates, and the routes. Its docstring says how to add a backend or a question |
-| `tlhelper/speech/` | The "Listen" buttons: the `Synthesizer` interface, the OpenAI-shaped speech API backend (the `omnivoice/` service of this repo), and the routes. Its docstring says how to add a synthesizer |
+| `tlhelper/speech/` | The "Listen" buttons: the `Synthesizer` interface, the OpenAI-shaped speech API backend (the `tts/` service of this repo), and the routes. Its docstring says how to add a synthesizer |
 | `tlhelper/auth.py` | The OIDC login with Authlib. Only active on a fly.dev hostname        |
 | `tlhelper/settings.py` | `DATA_ROOT` and `MAX_TEXT_CHARS`, which more than one module reads |
 | `tlhelper/schemas.py` | The shapes of the API responses, for the OpenAPI schema |
@@ -54,11 +54,11 @@ login. The API refuses texts over `MAX_TEXT_CHARS`.
 | `static/js/progress.js` | The script of the progress tab: the numbers and the bar charts of a user. It uses the functions of `breakdown.js` and `flashcards.js` |
 | `static/css/breakdown.css` | The style sheet of the page. Served under `/static`           |
 | `static/manifest.json`, `static/icon*.svg`, `static/icon*.png` | The web app manifest and the icons, for the install on a phone. See "Install on Android" |
-| `pyproject.toml` | Dependencies. Pins `torch` to the CPU-only wheel index                  |
-| `uv.lock`        | Locked versions. Update with `uv lock --upgrade`                        |
-| `Dockerfile`     | `python:3.12-slim` plus `uv sync --frozen`, runs as uid 1000            |
+| `pyproject.toml` | Dependencies. Pins `torch` to the CPU-only wheel index of the root `pyproject.toml` |
+| `../uv.lock`     | Locked versions of the whole uv workspace. Update with `uv lock --upgrade` |
+| `Dockerfile`     | `python:3.12-slim` plus `uv sync --frozen`, runs as uid 1000. Its build context is the repository root |
 | `entrypoint.sh`  | Makes sure that `/data` is writable, then execs uvicorn                 |
-| `docker-compose.yml` | Local run with podman-compose and the models in `./.data`, with a llama.cpp service for the AI buttons and the `omnivoice` service for the "Listen" buttons |
+| `../docker-compose.yml` | Local run with podman-compose and the models in `.data/` at the repository root, with a llama.cpp service for the AI buttons and the `tts/` service for the "Listen" buttons |
 | `tests/`         | The tests, one file for each module, with the languages in `tests/languages/` and the flashcards in `tests/flashcards/`. Run them with `uv run pytest` |
 | `fly.toml`       | Fly app configuration: one shared-cpu-2x 4 GB machine that stops at idle, and a 2 GB volume |
 
@@ -630,8 +630,8 @@ address to the SDK, and does not use the `OPENAI_API_KEY` of another tool.
 | Ollama | `http://localhost:11434/v1`, and the key can be any text |
 | llama.cpp | `http://localhost:8080/v1`, and the key can be any text |
 
-`docker-compose.yml` has a `llamacpp` service on port 9931, and the `classla`
-service there uses it. The local run therefore needs no key and sends no text to a third
+`docker-compose.yml` at the repository root has a `llamacpp` service on port
+9931, and the `web` service there uses it. The local run therefore needs no key and sends no text to a third
 party.
 
 The second backend is Claude Code: `TLHELPER_AI_BACKEND=claude` runs one
@@ -667,7 +667,7 @@ one button for each side: the text in the study language, and its English
 translation when there is one. A click sends that text to the service, and
 the page plays the mp3 in an audio element. The row names the voice model.
 
-The voice service is [`omnivoice/`](../omnivoice/) in this repo: a small
+The voice service is [`tts/`](../tts/) in this repo: a small
 server around omnivoice.cpp, the ggml port of OmniVoice, a text-to-speech
 model for 600 languages that runs on the CPU. `docker-compose.yml` runs it as the `voice` service next to the
 page. The Fly app has no voice service, so the page there has no such row,
@@ -1021,18 +1021,19 @@ If the host is slow on the day of the first deploy, use one of these:
 
 ## 1. Create the app and the volume
 
-From this directory (`classla/`):
+From the repository root, because the image builds from the uv workspace
+there:
 
 ```bash
 fly apps create boultonxyz-classla             # first time only; change the name in fly.toml if taken
-fly volumes create classla_data -r lhr -s 2    # first time only; the models take 1.1 GB
+fly volumes create classla_data -r lhr -s 2 --config web/fly.toml   # first time only; the models take 1.1 GB
 ```
 
 ## 2. Deploy
 
 ```bash
-fly deploy --ha=false   # --ha=false: one machine, not Fly's default of two
-fly logs                # shows "Application startup complete."
+fly deploy . --config web/fly.toml --dockerfile web/Dockerfile --ha=false   # --ha=false: one machine, not Fly's default of two
+fly logs --config web/fly.toml                     # shows "Application startup complete."
 curl https://boultonxyz-classla.fly.dev/healthz   # -> ok
 ```
 
@@ -1047,13 +1048,12 @@ volume.
 ## 3. Turn on the login
 
 On a hostname that ends in `.fly.dev`, every route except `/healthz` needs a
-login through [Pocket ID](../pocket-id/), the OIDC provider in this repo. A
-local run has no login. `auth.py` uses Authlib and the authorization code flow
+login through [Pocket ID](https://pocket-id.org/), the OIDC provider at
+`https://boultonxyz-pocket-id.fly.dev` (`OIDC_ISSUER` in `fly.toml`). A local
+run has no login. `auth.py` uses Authlib and the authorization code flow
 with PKCE. The client is a public client, so there is no client secret.
 
-1. Add a client in Pocket ID. Follow "3. Add a client" in the
-   [pocket-id README](../pocket-id/README.md#3-add-a-client) with these
-   values:
+1. Add an OIDC client in the admin pages of Pocket ID, with these values:
    - Name: `classla`
    - Callback URL: `https://boultonxyz-classla.fly.dev/auth/callback`
    - Public Client: on
@@ -1141,10 +1141,11 @@ Set as a secret:
 
 ## Running locally
 
-With [uv](https://docs.astral.sh/uv/):
+With [uv](https://docs.astral.sh/uv/), from this folder (`web/`). The models
+are in `.data/` at the repository root:
 
 ```bash
-DATA_ROOT=./.data uv run uvicorn tlhelper.app:app --port 8000 --no-access-log
+DATA_ROOT=../.data uv run uvicorn tlhelper.app:app --port 8000 --no-access-log
 ```
 
 The app writes one line for each request, in the Apache common log format with
@@ -1167,7 +1168,8 @@ uv run pytest
 ```
 
 Most tests use a fake pipeline and need no models. `test_real_models` loads the
-real models from `./.data`. If the models are not there, pytest skips that test.
+real models from `.data/` at the repository root. If the models are not there,
+pytest skips that test.
 
 `tests/flashcards/test_browser.py` and `tests/test_browser_breakdown.py` open
 the page in a headless Chromium, with Playwright. The breakdown tests use the
@@ -1189,7 +1191,8 @@ uv run pytest tests/test_browser_breakdown.py --screenshots=shots
 At the end of each test, each page saves a full-page PNG with the name of the
 test to that folder. Without the option, the tests save nothing.
 
-With podman-compose, which mounts the models that are already in `./.data`:
+With podman-compose, from the repository root. The compose file mounts the
+models that are already in `.data/` there:
 
 ```bash
 podman-compose up --build --force-recreate
@@ -1200,7 +1203,7 @@ the container. Without it, podman-compose starts the existing container again,
 and that container still uses the old image.
 
 The compose file sets `DOWNLOAD_MODELS=0`, so the container never downloads. If
-the models are not in `./.data`, `/api/v1/classify` returns 503 with the reason.
+the models are not in `.data/`, `/api/v1/classify` returns 503 with the reason.
 
 The compose file sets the log driver `passthrough-tty`, which only podman has.
 It writes the log lines of the container directly to the terminal. With Docker
@@ -1215,7 +1218,7 @@ it one time:
 
 ```bash
 podman-compose down
-podman network rm classla_default
+podman network rm langhelper_default
 ```
 
 The compose file gives the DeepL key to the container as a secret with the name
@@ -1247,9 +1250,9 @@ secrets:
 With plain `podman run` or `docker run`, the flag is `--secret deepl_api_key`
 for podman, and `-e DEEPL_API_KEY=...` for Docker.
 
-With Docker:
+With Docker, from the repository root:
 
 ```bash
-docker build -t classla-service .
-docker run --rm -p 8000:8000 -v classla_data:/data classla-service
+docker build -f web/Dockerfile -t langhelper-web .
+docker run --rm -p 8000:8000 -v classla_data:/data langhelper-web
 ```
