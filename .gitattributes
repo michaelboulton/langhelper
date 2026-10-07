@@ -1,0 +1,9 @@
+# Anki deck packages are large zip files, so they live in git lfs.
+*.apkg filter=lfs diff=lfs merge=lfs -text
+
+# The sqlite files (accents.db, glosses.db) are generated and large, so they
+# live in git lfs.
+*.db filter=lfs diff=lfs merge=lfs -text
+
+# The lock file is generated: hide its diff on GitHub, and never merge by hand.
+uv.lock linguist-generated=true -merge

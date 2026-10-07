@@ -1,0 +1,57 @@
+[project]
+name = "langhelper-web"
+version = "0.1.0"
+description = "Sentence breakdown (part of speech, lemma, morphology) and grammar checks for study languages, with spaCy and transformer models"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "authlib",
+    "classla",
+    "de-core-news-md",
+    "de-dep-news-trf",
+    "en-core-web-sm",
+    "fastapi",
+    "fr-core-news-md",
+    "fsrs>=6.3.2",
+    "hr-core-news-md",
+    "httpx2>=2.13.0",
+    "it-core-news-md",
+    "itsdangerous",
+    "joserfc",
+    "openai>=3.16.2",
+    "pyspellchecker>=0.9.0",
+    "requests",
+    "spacy",
+    "torch",
+    "uvicorn",
+    "zstandard>=0.25.0",
+]
+
+# CPU-only torch, from the index of the workspace root (../pyproject.toml).
+# The spaCy models are not on PyPI, so they install from their release wheels.
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+de-core-news-md = { url = "https://github.com/explosion/spacy-models/releases/download/de_core_news_md-3.8.0/de_core_news_md-3.8.0-py3-none-any.whl" }
+de-dep-news-trf = { url = "https://github.com/explosion/spacy-models/releases/download/de_dep_news_trf-3.8.0/de_dep_news_trf-3.8.0-py3-none-any.whl" }
+fr-core-news-md = { url = "https://github.com/explosion/spacy-models/releases/download/fr_core_news_md-3.8.0/fr_core_news_md-3.8.0-py3-none-any.whl" }
+hr-core-news-md = { url = "https://github.com/explosion/spacy-models/releases/download/hr_core_news_md-3.8.0/hr_core_news_md-3.8.0-py3-none-any.whl" }
+it-core-news-md = { url = "https://github.com/explosion/spacy-models/releases/download/it_core_news_md-3.8.0/it_core_news_md-3.8.0-py3-none-any.whl" }
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
+
+# The project is not installed, so pytest needs this folder on the path to
+# import tlhelper.
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "fluent-syntax>=0.19.0",
+    "playwright>=1.63.0",
+    "pytest>=9.1.1",
+]
+# scripts/lessons.py reads a lesson from a web page. Not in the image: the
+# Dockerfile installs only the default groups.
+lessons = [
+    "beautifulsoup4",
+    "markdownify",
+]

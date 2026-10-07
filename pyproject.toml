@@ -1,0 +1,11 @@
+# The workspace root: no project of its own, one uv.lock for both members.
+# See README.md.
+[tool.uv.workspace]
+members = ["web", "tts"]
+
+# CPU-only torch for web/ (its [tool.uv.sources] selects this index). The
+# default PyPI wheel pulls several GB of CUDA libraries.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

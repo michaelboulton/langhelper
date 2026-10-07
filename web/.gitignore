@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+decks/
+# Your own copy of example.fly.toml. See README.md.
+/fly.toml

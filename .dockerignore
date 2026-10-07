@@ -1,0 +1,22 @@
+# One list for both images (web/Dockerfile, tts/Dockerfile). Both build with
+# the repository root as the context, which also holds .data/ with the models.
+*
+!pyproject.toml
+!uv.lock
+# Both lines for each folder: docker needs the first one, and podman (buildah)
+# needs the second one to include the files in the folder.
+!web/pyproject.toml
+!web/entrypoint.sh
+!web/tlhelper
+!web/tlhelper/**
+!web/static
+!web/static/**
+!web/decks
+!web/decks/**
+!tts/pyproject.toml
+!tts/omnivoice_server
+!tts/omnivoice_server/**
+# build_glosses.py only runs by hand, to make the accents.db and glosses.db
+# files of the language folders.
+web/tlhelper/build_glosses.py
+**/__pycache__

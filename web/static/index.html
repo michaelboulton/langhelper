@@ -1,0 +1,176 @@
+<!doctype html>
+<!-- i18n.js sets lang and dir from the locale of the user. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#171796">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/static/manifest.json">
+<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+<title>Sentence breakdown</title>
+<link rel="stylesheet" href="/static/css/breakdown.css">
+</head>
+<body>
+<!-- The English text of an element with data-l10n-id shows until i18n.js has
+     the catalog, and stays if there is none. The text of all languages is in
+     tlhelper/languages/*/ui.ftl. -->
+<!-- flashcards.js shows one .tab at a time. The address keeps the choice: #cards. -->
+<nav id="tabs">
+  <button type="button" data-tab="breakdown" data-l10n-id="tab-breakdown">Breakdown</button>
+  <button type="button" data-tab="cards" data-l10n-id="tab-cards">Flashcards</button>
+  <button type="button" data-tab="progress" data-l10n-id="tab-progress">Progress</button>
+  <!-- The options come from /api/v1/locales. -->
+  <label class="locale" hidden><span data-l10n-id="locale-label">Language of the page</span>
+    <select id="locale"></select></label>
+</nav>
+
+<div id="models" role="status" hidden></div>
+
+<section class="tab" id="tab-breakdown">
+<!-- breakdown.js gives the name of the selected language to each .language-text. -->
+<h1 class="language-text" data-l10n-id="breakdown-title"
+  data-l10n-args='{"language":"Croatian"}'>Croatian sentence breakdown</h1>
+<p class="sub language-text" data-l10n-id="breakdown-intro"
+  data-l10n-args='{"language":"Croatian"}'>Enter a Croatian sentence, or an English sentence to get it in
+  Croatian. Each word gets a color for its part of speech. Select a word for
+  the details.</p>
+
+<form id="form">
+  <div class="row direction">
+    <!-- The options come from /api/v1/languages. -->
+    <label><span data-l10n-id="breakdown-language">Language</span> <select id="language"></select></label>
+    <label><input type="radio" name="source" value="study" checked>
+      <span class="language-text" data-l10n-id="breakdown-source-study"
+        data-l10n-args='{"language":"Croatian"}'>I enter Croatian</span></label>
+    <label><input type="radio" name="source" value="en">
+      <span class="language-text" data-l10n-id="breakdown-source-english"
+        data-l10n-args='{"language":"Croatian"}'>I enter English, and get the Croatian translation</span></label>
+  </div>
+  <textarea id="text" maxlength="1000" autofocus></textarea>
+  <div class="row">
+    <!-- Only for a language with heavy models. -->
+    <label id="heavy-row"><input type="checkbox" id="heavy">
+      <span data-l10n-id="option-heavy">Large models (more exact, and the first request waits for their load)</span></label>
+    <!-- Only for a language with nonstandard models, and they are large ones. -->
+    <label id="nonstandard-row"><input type="checkbox" id="nonstandard">
+      <span data-l10n-id="option-nonstandard">Casual or chat-style text (models for slang and missing diacritics)</span></label>
+    <label><input type="checkbox" id="translate">
+      <span data-l10n-id="option-translate">Translate to English</span></label>
+    <label class="timeout"><span data-l10n-id="option-time-limit">Time limit</span>
+      <input type="number" id="timeout" value="5" min="1" max="600" step="1">
+      <span data-l10n-id="unit-seconds">s</span></label>
+    <button id="cancel" type="button" hidden data-l10n-id="breakdown-cancel">Cancel</button>
+    <button id="go" type="submit" data-l10n-id="breakdown-go">Break down</button>
+  </div>
+</form>
+
+<!-- What the light model of the language cannot do, from /api/v1/languages. -->
+<p class="sub" id="light-note" hidden></p>
+<div id="status"></div>
+<div id="result" class="result"></div>
+<div id="detail" class="detail"></div>
+<!-- explain.js. Only if the server has a key for an AI service. -->
+<div id="explain" class="explain" hidden></div>
+<!-- listen.js. Only if the server has a voice service. -->
+<div id="listen" class="listen" hidden></div>
+</section>
+
+<section class="tab" id="tab-cards" hidden>
+<h1 data-l10n-id="cards-title">Flashcards</h1>
+<p class="sub" data-l10n-id="cards-intro">A card shows a text. Enter it in the other language. You then see the breakdown of your
+  answer and of the correct answer, and the card comes back later: soon after a wrong answer, and after a
+  longer time with each right one.</p>
+<p class="callout" role="note" data-l10n-id="cards-language-note">The cards stay in the languages that they were written in. They can differ
+  from the language of the page.</p>
+<div id="cards-status"></div>
+
+<!-- The decks of the admin, from /api/v1/decks. -->
+<div id="deck-list"></div>
+
+<div id="card" hidden>
+  <div class="row card-head">
+    <strong id="deck-name"></strong>
+    <span id="deck-counts"></span>
+    <button type="button" id="to-decks" class="plain" data-l10n-id="cards-all-decks">All decks</button>
+  </div>
+  <p class="sub" id="card-task"></p>
+  <!-- The images and the sound clips of the prompt. -->
+  <div id="card-media" class="media"></div>
+  <!-- The prompt. After the answer: the answer of the user over it, and the
+       correct answer under it, both with their links to the prompt. -->
+  <div id="card-result" class="result"></div>
+  <form id="answer-form" autocomplete="off">
+    <input type="text" id="answer" maxlength="1000" autocapitalize="off" spellcheck="false">
+    <div class="row">
+      <label><input type="checkbox" id="cards-heavy">
+        <span data-l10n-id="option-heavy">Large models (more exact, and the first request waits for their load)</span></label>
+      <button type="button" id="give-up" class="plain" data-l10n-id="cards-give-up">I do not know</button>
+      <button type="submit" id="check" data-l10n-id="cards-check">Check</button>
+    </div>
+  </form>
+  <div id="answered" hidden>
+    <p id="diff"></p>
+    <p class="sub" id="other-answers"></p>
+    <!-- The images and the sound clips of the answer. -->
+    <div id="answer-media" class="media"></div>
+    <!-- The automatic rating is marked. Another button changes it. The
+         number is the key of the button. -->
+    <div class="row" id="ratings">
+      <button type="button" class="plain" data-rating="1" data-l10n-id="rating-button-1">1 Again</button>
+      <button type="button" class="plain" data-rating="2" data-l10n-id="rating-button-2">2 Hard</button>
+      <button type="button" class="plain" data-rating="3" data-l10n-id="rating-button-3">3 Good</button>
+      <button type="button" class="plain" data-rating="4" data-l10n-id="rating-button-4">4 Easy</button>
+      <span id="next-due"></span>
+    </div>
+    <div class="row">
+      <button type="button" id="speak" class="plain" data-l10n-id="cards-speak">Read it aloud</button>
+      <button type="button" id="next" data-l10n-id="cards-next">Next card</button>
+    </div>
+    <!-- explain.js: questions about this answer. -->
+    <div id="card-explain" class="explain" hidden></div>
+  </div>
+  <div id="card-detail" class="detail"></div>
+</div>
+</section>
+
+<!-- progress.js. From /api/v1/flashcards/stats, for all decks. -->
+<section class="tab" id="tab-progress" hidden>
+<div class="row">
+  <!-- One entry, but for an admin: each user. -->
+  <label><span data-l10n-id="progress-cards-of">Cards of</span> <select id="progress-user"></select></label>
+</div>
+<div id="progress-status"></div>
+<div id="stats" hidden>
+  <table id="stats-table"></table>
+  <p class="sub" data-l10n-id="progress-days-note">Answers a day, last 90 days. The dark part is the share that was not "Again".</p>
+  <div id="stats-days" class="days"></div>
+  <p class="sub" data-l10n-id="progress-rate-note">The share that was not "Again", each day. A day with no answer has no bar.</p>
+  <div id="stats-rate" class="days"></div>
+</div>
+</section>
+
+<!-- Under each tab that shows words. The CSS hides both on the progress tab. -->
+<div id="legend"></div>
+<!-- Only for a language with accent data. breakdown.js makes each accent
+     letter of the text bold. -->
+<p class="sub accents" id="accents" data-l10n-id="accents-legend">Accent marks: ȁ short falling, ȃ long falling, à short rising,
+  á long rising, ā long vowel with no stress. A form in (parentheses) is the dictionary form,
+  and the accent can differ in the form in the sentence. Source: Wiktionary, CC BY-SA.</p>
+<!-- The Fluent runtime, for i18n.js: the global FluentBundle. The version is
+     exact, because the hash is of that one file. For another version:
+       curl -s URL | openssl dgst -sha384 -binary | openssl base64 -A
+     Without this script, the page shows its English text. -->
+<script src="https://cdn.jsdelivr.net/npm/@fluent/bundle@0.19.1/index.js"
+  integrity="sha384-5IStNtQAZ5XCSZCsHUHaw3TzhZGeQgsxEpVPNdtF7jLM32HDXes054xhu+LJzC+t"
+  crossorigin="anonymous"></script>
+<!-- At the end of the body, because the scripts read the elements above.
+     Each script uses the functions of the ones before it. -->
+<script src="/static/js/i18n.js"></script>
+<script src="/static/js/breakdown.js"></script>
+<script src="/static/js/flashcards.js"></script>
+<script src="/static/js/explain.js"></script>
+<script src="/static/js/listen.js"></script>
+<script src="/static/js/progress.js"></script>
+</body>
+</html>

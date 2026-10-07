@@ -1,0 +1,162 @@
+# Local run of the image with the models that are already in ./.data, so the
+# container does not download them again:
+#   cp example.env .env      # one time, then fill in the keys
+#   docker compose up --build
+# Then open http://localhost:8000/
+services:
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # The app reads and writes the downloaded models and the SQLite databases under this path.
+      DATA_ROOT: /data
+      # The page, its script and its style sheet (web/static/).
+      STATIC_DIR: /app/static
+      # Never download. If the models are not in ./.data, classify returns 503.
+      DOWNLOAD_MODELS: "0"
+      # The page ticks "Large models" until the user makes a choice.
+      TLHELPER_ALWAYS_LARGE: "1"
+      # The "explain with AI" buttons (web/tlhelper/explain/__init__.py) ask the
+      # llamacpp service below. llama.cpp wants no key, but with no key the
+      # page has no buttons, so the key is any text. The model is the --alias
+      # of llamacpp.
+      TLHELPER_AI_API_BASE: http://llamacpp:9931/v1
+      TLHELPER_AI_API_KEY: local
+      TLHELPER_AI_MODEL: gemma-4-12b
+      # For a paid service, use these lines, put TLHELPER_AI_API_KEY in .env,
+      # and remove the three lines above:
+      # TLHELPER_AI_MODEL: gpt-5-mini
+      # TLHELPER_AI_API_BASE: https://openrouter.ai/api/v1
+      # The "Listen" buttons (web/tlhelper/speech/__init__.py) ask the voice
+      # service below.
+      TLHELPER_VOICE_URL: http://voice:8002
+    # The keys: DEEPL_API_KEY for "Translate to English", and the AI key for a
+    # paid service. See example.env. Without a DeepL key, the page shows the
+    # reason in place of the translation.
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./.data:/data
+
+    # The image has no curl. The app writes no access line for /healthz.
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz')"
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 2m
+
+  llamacpp:
+    # The server only, with the Vulkan backend (no CUDA). All its arguments:
+    #   docker run --rm ghcr.io/ggml-org/llama.cpp:server-vulkan --help
+    image: ghcr.io/ggml-org/llama.cpp:server-vulkan
+    container_name: llamacpp
+    restart: unless-stopped
+    # The web page of llama.cpp is at http://localhost:9931/. The port is open
+    # on each interface of the host, and the server asks for no key.
+    ports:
+      - "9931:9931"
+
+    devices:
+      - /dev/dri:/dev/dri
+
+    # `~` is not expanded here (no shell), so the model path is spelled out.
+    command:
+      - --model
+      - /root/.cache/huggingface/hub/models--google--gemma-4-12B-it-qat-q4_0-gguf/snapshots/29d097773436b69ff9feafd636ab4cf873786537/gemma-4-12b-it-qat-q4_0.gguf
+      # The audio and image encoder of the model. Without it the server
+      # refuses audio and images. One download, from the same repo:
+      #   hf download google/gemma-4-12B-it-qat-q4_0-gguf mmproj-gemma-4-12b-it-qat-q4_0.gguf
+      - --mmproj
+      - /root/.cache/huggingface/hub/models--google--gemma-4-12B-it-qat-q4_0-gguf/snapshots/29d097773436b69ff9feafd636ab4cf873786537/mmproj-gemma-4-12b-it-qat-q4_0.gguf
+      # The name of the model in the API (TLHELPER_AI_MODEL above).
+      - --alias
+      - gemma-4-12b
+      # The chat template of the model, with no thinking: an answer has 120
+      # words at most, and the thinking uses the same 500 tokens.
+      - --jinja
+      - --reasoning
+      - "off"
+      # The image has only the Vulkan backend, so no argument selects it.
+      - --host
+      - 0.0.0.0
+      # 9931 becomes the default of llama-server in a later release (now 8080).
+      - --port
+      - "9931"
+      - --ctx-size
+      - "32768"
+      - --flash-attn
+      - "on"
+      - --gpu-layers
+      - all
+
+    volumes:
+      # Mount the whole hub dir, not just the snapshot: the .gguf in there is a
+      # symlink into ../../blobs and would dangle otherwise.
+      - type: bind
+        source: ${HOME}/.cache/huggingface/hub
+        target: /root/.cache/huggingface/hub
+        read_only: true
+
+    tmpfs:
+      - /tmp:rw,exec,nosuid,nodev,size=2g
+
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - "exec 3<>/dev/tcp/127.0.0.1/9931"
+      interval: 1s
+      start_interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 5m
+
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  # Text to speech for the "Listen" buttons: tts/README.md. On the
+  # GPU through Vulkan, like llamacpp above. The first start downloads the
+  # two GGUFs (945 MB) into the Hugging Face cache of the host (the bind
+  # mount below). Each start then loads them in a few seconds.
+  voice:
+    build:
+      context: .
+      dockerfile: tts/Dockerfile
+    container_name: omnivoice
+    restart: unless-stopped
+    # For a curl from the host: http://localhost:8002/v1/models
+    ports:
+      - "8002:8002"
+    environment:
+      # Only the languages of the page. The model knows 600 more.
+      OMNIVOICE_LANGUAGES: hr,de,fr,it,en
+    devices:
+      - /dev/dri:/dev/dri
+    volumes:
+      - type: bind
+        source: ${HOME}/.cache/huggingface
+        target: /hf
+
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8002/healthz')"
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 5m

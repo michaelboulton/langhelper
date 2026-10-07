@@ -1,0 +1,24 @@
+[project]
+name = "omnivoice-server"
+version = "0.1.0"
+description = "Text to speech with OmniVoice, behind an OpenAI-shaped HTTP API"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi",
+    "huggingface-hub",
+    "lameenc",
+    "numpy",
+    "uvicorn",
+]
+
+# The project is not installed, so pytest needs this folder on the path to
+# import omnivoice_server.
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "httpx2",
+    "pytest>=9.1.1",
+]
