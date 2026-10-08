@@ -29,7 +29,7 @@ The AI service is the one of the app: set `TLHELPER_AI_API_KEY`,
 about 6 to 10 thousand input tokens and 1 to 2 thousand output tokens.
 
 With the `llamacpp` service of docker-compose.yml up, the three variables are
-those of the `classla` service there, with the port of the host:
+those of the `web` service there, with the port of the host:
 
 ```bash
 export TLHELPER_AI_API_BASE=http://localhost:9931/v1 TLHELPER_AI_API_KEY=local TLHELPER_AI_MODEL=gemma-4-12b

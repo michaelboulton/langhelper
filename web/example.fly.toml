@@ -1,4 +1,4 @@
-# fly.toml for the sentence breakdown service: Croatian with classla (https://github.com/clarinsi/classla)
+# fly.toml for the sentence breakdown service: NLP and transformer models for each study language.
 #
 # An example. Copy it to web/fly.toml (not in git), then set your own app
 # name and OIDC values. See README.md, section "1. Create the app".
@@ -34,8 +34,9 @@ primary_region = 'ord'
   OIDC_ISSUER = 'https://my-pocket-id-example.fly.dev'
   OIDC_CLIENT_ID = 'your-client-id-here'
 
-# Holds the downloaded classla models, which are the heavy models of Croatian
-# (so a request for them does not download them again), and lemmas.db, the count of how often each lemma was seen. Create once with:
+# Holds the downloaded models (the classla models of heavy Croatian), so a
+# request for them does not download them again, and the SQLite databases.
+# Create once with:
 #   fly volumes create model_data -r ord -s 2
 # The two sets of models take 1.1 GB.
 [mounts]

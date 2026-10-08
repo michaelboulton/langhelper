@@ -113,7 +113,7 @@ Port the response shapes from `tlhelper/schemas.py` (`Word` at 42-97,
 
 Load `/api/v1/locales` and `/api/v1/locales/{code}/ui.ftl`. Choose the locale
 as `i18n.js:91-160` does: `?locale=`, then the `shared_preferences` key
-`classla.locale`, then the browser locale. Set `Directionality` from
+`langhelper.locale`, then the browser locale. Set `Directionality` from
 `direction`. Bundle `tlhelper/languages/english/ui.ftl` as an asset for the
 fallback. A unit test formats every message id of the three catalogs with
 `package:fluent`, to catch syntax it does not support.
@@ -126,8 +126,12 @@ time limit, cancel. The models banner polls `/api/v1/status`. Chips use the
 UPOS palette from `breakdown.js:6-24` and the feature note from lines 99-127.
 A problem gets `TextDecoration.underline` with `TextDecorationStyle.wavy`.
 Selection opens the detail table (lines 150-209). The legend and the accents
-legend. Form state in `shared_preferences` (`classla.entry`, `classla.heavy`).
+legend. Form state in `shared_preferences` (`langhelper.entry`, `langhelper.heavy`).
 The result sits in a `SelectionArea`.
+
+The page keeps these settings under the keys `classla.*` in localStorage. On
+the web, `shared_preferences` adds the prefix `flutter.` to each key, so it
+cannot read the old keys. The saved settings reset one time.
 
 ### 5. Link layer: the curves
 
@@ -175,9 +179,9 @@ charts.
 
 ### 9. Remove `static/`, update README
 
-Delete `static/`, the file table (README 43-49), the PWA section (833-860:
-Chrome now installs from `app/web/manifest.json`, same address) and "Running
-locally" (1011-1038) for the new commands. Note the tab address change.
+Delete `static/`. In the README, update the `static/` rows of "Files", "Install
+on Android" (Chrome now installs from `app/web/manifest.json`, same address)
+and "Running locally" for the new commands. Note the tab address change.
 
 ## Pictures of the page, for a coding loop
 
@@ -206,7 +210,8 @@ the app exists.
 - `podman-compose up --build`, then the three tabs by hand: translation
   curves, a picture card with audio, dark mode, `?locale=hr`, a right-to-left
   language.
-- `fly deploy --ha=false`: the login redirect works, the manifest and icons
+- `fly deploy . --config web/fly.toml --dockerfile web/Dockerfile --ha=false`
+  from the repository root: the login redirect works, the manifest and icons
   open without a session, Chrome on Android offers to install.
 
 ## Later: a native app

@@ -2,7 +2,7 @@
 # Make sure that $DATA_ROOT (a persistent volume) is writable, then exec the
 # web server as the single foreground process.
 #
-# The volume holds the classla models and the lemma-count database. The app
+# The volume holds the downloaded models and the SQLite databases. The app
 # downloads any missing models at startup, so the first boot on an empty volume
 # is slow and later boots only load the models from disk.
 set -eu

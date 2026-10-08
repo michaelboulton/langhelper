@@ -1,7 +1,7 @@
 [project]
 name = "langhelper-web"
 version = "0.1.0"
-description = "Sentence breakdown (part of speech, lemma, morphology) for Croatian with classla, and German, French and Italian with spaCy"
+description = "Sentence breakdown (part of speech, lemma, morphology) and grammar checks for study languages, with spaCy and transformer models"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "authlib",

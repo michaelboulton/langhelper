@@ -12,7 +12,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      # The app reads and writes classla_resources/ and lemmas.db under this path.
+      # The app reads and writes the downloaded models and the SQLite databases under this path.
       DATA_ROOT: /data
       # The page, its script and its style sheet (web/static/).
       STATIC_DIR: /app/static

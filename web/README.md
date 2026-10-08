@@ -1,9 +1,9 @@
 # Sentence breakdown for Croatian, German, French and Italian on Fly.io
 
-A small FastAPI service around two taggers. The first is
-[classla](https://github.com/clarinsi/classla), the CLARIN.SI language pipeline
-for Croatian. The second is [spaCy](https://spacy.io/). It starts with small spaCy models, and loads the large models (classla for
-Croatian) only on request. You enter a sentence. The page
+A small FastAPI service around NLP models: [spaCy](https://spacy.io/) models
+for each study language, and larger transformer models on request, for example
+[classla](https://github.com/clarinsi/classla) for Croatian. You enter a
+sentence. The page
 shows each word with a color for its part of speech and its base form (lemma).
 Select a word to see its MULTEXT-East tag and its grammar features, for example
 case, gender, number, tense and person.
@@ -1058,7 +1058,7 @@ run has no login. `auth.py` uses Authlib and the authorization code flow
 with PKCE. The client is a public client, so there is no client secret.
 
 1. Add an OIDC client in the admin pages of Pocket ID, with these values:
-   - Name: `classla`
+   - Name: `langhelper`
    - Callback URL: `https://my-deployment-example.fly.dev/auth/callback`
    - Public Client: on
 2. Put the client ID into `OIDC_CLIENT_ID` under `[env]` in `fly.toml`. A

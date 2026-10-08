@@ -21,7 +21,7 @@ GET  /api/v1/speech ... the "Listen" buttons: an mp3 of a text from the voice
 GET  /auth/...          the OIDC login (auth.py), only used on a fly.dev hostname
 
 Everything that must survive a restart lives under DATA_ROOT (a Fly volume):
-the downloaded classla models, the SQLite file with the lemma counts and the
+the downloaded models, the SQLite file with the lemma counts and the
 cached translations, the decks of the admin, and the SQLite file with the
 flashcard progress of each user.
 """
@@ -65,7 +65,7 @@ UNTRACKED_UPOS = {"PUNCT", "SYM", "NUM"}
 
 logger = logging.getLogger("uvicorn.error")
 # The access line is complete as it is, so it gets a handler with no prefix.
-access_logger = logging.getLogger("classla.access")
+access_logger = logging.getLogger("tlhelper.access")
 access_logger.setLevel(logging.INFO)
 access_logger.propagate = False
 if not access_logger.handlers:
