@@ -22,6 +22,7 @@ three grammar problems](docs/breakdown.png)
 - Other languages with rtl text, different orthographies, etc. as described in [LANGUAGES.md](web/LANGUAGES.md)
 - Easier switching of heavy/light models for other languages too
 - A native app instead of a web app as in [DART.md](web/DART.md). Not that important, because you still need to run the server anyway!
+- Allow replacing Deepl more easily. I chose this as a basic free tier but it gets a lot of things wrong compared to Google translate
 
 ## Folders
 
