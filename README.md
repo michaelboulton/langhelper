@@ -14,7 +14,8 @@ these things:
 
 ![A Croatian sentence with a color for each part of speech, its English
 translation under it, and a line from each Croatian word to its English
-word](docs/breakdown.png)
+word. The wrong form "malog" has a red wavy line, and its card gives the
+three grammar problems](docs/breakdown.png)
 
 ## Folders
 
