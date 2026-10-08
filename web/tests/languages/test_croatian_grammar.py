@@ -212,8 +212,10 @@ def test_agreement():
     problems = flagged(words)
     assert problems == {
         "lijepa": [
-            "Does not agree with 'kuću': this form is nominative, but the noun is"
-            " accusative (case)."
+            (
+                "Does not agree with 'kuću': this form is nominative, but the noun is"
+                " accusative (case)."
+            )
         ]
     }
 

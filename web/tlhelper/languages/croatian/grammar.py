@@ -18,6 +18,8 @@ of coffees, a genitive plural). They can also flag a correct sentence, for
 example an adjective with its own object that GENITIVE_ADJECTIVES does not list.
 """
 
+from typing import ClassVar
+
 from ...messages import Problem
 from ..base import NO_SPELLING_UPOS, check_repeats
 
@@ -62,7 +64,7 @@ class Lexicon:
     forms {'kavu': 'kava'} and tagged {('kavu', 'Ncfsa'): 'kava'}. The tag is a
     MULTEXT-East tag, and the fifth letter of a noun tag is the case."""
 
-    CASE_LETTERS = {
+    CASE_LETTERS: ClassVar[dict[str, str]] = {
         "Nom": "n",
         "Gen": "g",
         "Dat": "d",
