@@ -60,7 +60,7 @@ login. The API refuses texts over `MAX_TEXT_CHARS`.
 | `entrypoint.sh`  | Makes sure that `/data` is writable, then execs uvicorn                 |
 | `../docker-compose.yml` | Local run with podman-compose and the models in `.data/` at the repository root, with a llama.cpp service for the AI buttons and the `tts/` service for the "Listen" buttons |
 | `tests/`         | The tests, one file for each module, with the languages in `tests/languages/` and the flashcards in `tests/flashcards/`. Run them with `uv run pytest` |
-| `fly.toml`       | Fly app configuration: one shared-cpu-2x 4 GB machine that stops at idle, and a 2 GB volume |
+| `example.fly.toml` | An example Fly app configuration: one shared-cpu-2x 4 GB machine that stops at idle, and a 2 GB volume. Copy it to `fly.toml`, which git ignores |
 
 ## API
 
@@ -77,7 +77,7 @@ login. The API refuses texts over `MAX_TEXT_CHARS`.
 | `source`      | `"study"` | The side that the text is in. `"en"` is for an English text     |
 
 ```bash
-curl -s https://boultonxyz-classla.fly.dev/api/v1/classify \
+curl -s https://my-deployment-example.fly.dev/api/v1/classify \
   -H 'content-type: application/json' \
   -d '{"text": "Ona je bila kod kuće."}'
 ```
@@ -1024,9 +1024,13 @@ If the host is slow on the day of the first deploy, use one of these:
 From the repository root, because the image builds from the uv workspace
 there:
 
+`web/example.fly.toml` is an example. Copy it to `web/fly.toml`, which git
+ignores. Then change `app` and the OIDC values in the copy to your own:
+
 ```bash
-fly apps create boultonxyz-classla             # first time only; change the name in fly.toml if taken
-fly volumes create classla_data -r lhr -s 2 --config web/fly.toml   # first time only; the models take 1.1 GB
+cp web/example.fly.toml web/fly.toml           # first time only
+fly apps create my-deployment-example          # first time only; use your own name, and put it in fly.toml
+fly volumes create model_data -r ord -s 2 --config web/fly.toml   # first time only; the models take 1.1 GB
 ```
 
 ## 2. Deploy
@@ -1034,7 +1038,7 @@ fly volumes create classla_data -r lhr -s 2 --config web/fly.toml   # first time
 ```bash
 fly deploy . --config web/fly.toml --dockerfile web/Dockerfile --ha=false   # --ha=false: one machine, not Fly's default of two
 fly logs --config web/fly.toml                     # shows "Application startup complete."
-curl https://boultonxyz-classla.fly.dev/healthz   # -> ok
+curl https://my-deployment-example.fly.dev/healthz   # -> ok
 ```
 
 The app opens its port first and loads the light models in a background
@@ -1049,13 +1053,13 @@ volume.
 
 On a hostname that ends in `.fly.dev`, every route except `/healthz` needs a
 login through [Pocket ID](https://pocket-id.org/), the OIDC provider at
-`https://boultonxyz-pocket-id.fly.dev` (`OIDC_ISSUER` in `fly.toml`). A local
+`https://my-pocket-id-example.fly.dev` (`OIDC_ISSUER` in `fly.toml`). A local
 run has no login. `auth.py` uses Authlib and the authorization code flow
 with PKCE. The client is a public client, so there is no client secret.
 
 1. Add an OIDC client in the admin pages of Pocket ID, with these values:
    - Name: `classla`
-   - Callback URL: `https://boultonxyz-classla.fly.dev/auth/callback`
+   - Callback URL: `https://my-deployment-example.fly.dev/auth/callback`
    - Public Client: on
 2. Put the client ID into `OIDC_CLIENT_ID` under `[env]` in `fly.toml`. A
    public client has no secret, so the client ID is safe to commit.
@@ -1254,5 +1258,5 @@ With Docker, from the repository root:
 
 ```bash
 docker build -f web/Dockerfile -t langhelper-web .
-docker run --rm -p 8000:8000 -v classla_data:/data langhelper-web
+docker run --rm -p 8000:8000 -v model_data:/data langhelper-web
 ```

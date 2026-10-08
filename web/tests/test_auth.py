@@ -18,7 +18,7 @@ from tlhelper import auth
 from tlhelper.flashcards import store
 
 ISSUER = "https://id.example"
-FLY = "https://boultonxyz-classla.fly.dev"
+FLY = "https://my-deployment-example.fly.dev"
 KEY = OctKey.import_key("0123456789abcdef0123456789abcdef", {"kid": "k1"})
 
 

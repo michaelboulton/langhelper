@@ -17,7 +17,7 @@ Other documents in `web/`:
 - `DART.md`: a plan to move `static/` to Flutter. Nothing in it exists yet.
 - `scripts/README.md`: admin tools that are not in the image.
 
-"classla" in the code and the docs is the Croatian NLP library (`import classla`, `classla_resources/`), not a folder. The Fly app `boultonxyz-classla`, its volume `classla_data` and the `classla.*` localStorage keys keep the old name on purpose, because a rename loses deployed state.
+"classla" in the code and the docs is the Croatian NLP library (`import classla`, `classla_resources/`), not a folder. The `classla.*` localStorage keys keep the old name on purpose, because a rename loses the settings that browsers saved. `web/example.fly.toml` and the app name `my-deployment-example` in the docs are examples. The real `web/fly.toml` is a copy that git ignores.
 
 ## Commands
 

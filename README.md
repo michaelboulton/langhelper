@@ -17,6 +17,12 @@ translation under it, and a line from each Croatian word to its English
 word. The wrong form "malog" has a red wavy line, and its card gives the
 three grammar problems](docs/breakdown.png)
 
+## TODO
+
+- Other languages with rtl text, different orthographies, etc. as described in [LANGUAGES.md](web/LANGUAGES.md)
+- Easier switching of heavy/light models for other languages too
+- A native app instead of a web app as in [DART.md](web/DART.md). Not that important, because you still need to run the server anyway!
+
 ## Folders
 
 | Folder or file | Contents |
@@ -78,8 +84,9 @@ and podman-compose.
    ```
 
 The two Dockerfiles use the root as the build context, because they need the
-root `pyproject.toml` and `uv.lock`. To deploy `web` to Fly.io, run this from
-the root:
+root `pyproject.toml` and `uv.lock`. To deploy `web` to Fly.io, copy
+`web/example.fly.toml` to `web/fly.toml` and set your own app name. Then run
+this from the root:
 
 ```bash
 fly deploy . --config web/fly.toml --dockerfile web/Dockerfile --ha=false

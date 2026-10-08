@@ -1,5 +1,8 @@
 # fly.toml for the sentence breakdown service: Croatian with classla (https://github.com/clarinsi/classla)
 #
+# An example. Copy it to web/fly.toml (not in git), then set your own app
+# name and OIDC values. See README.md, section "1. Create the app".
+#
 # Deploy from the repository root, the build context of web/Dockerfile:
 #   fly deploy . --config web/fly.toml --dockerfile web/Dockerfile --ha=false
 #
@@ -12,8 +15,8 @@
 #                              Signs the login cookies. On the fly.dev hostname
 #                              the page and the API need a Pocket ID login.
 
-app = 'boultonxyz-classla'
-primary_region = 'lhr'
+app = 'my-deployment-example'
+primary_region = 'ord'
 
 [build]
   dockerfile = 'Dockerfile'
@@ -28,15 +31,15 @@ primary_region = 'lhr'
   # TLHELPER_AI_API_BASE = 'https://openrouter.ai/api/v1'
   # The OIDC login (auth.py). The client is a public client with PKCE, so the
   # client ID is not a secret and there is no client secret. See the README.
-  OIDC_ISSUER = 'https://boultonxyz-pocket-id.fly.dev'
-  OIDC_CLIENT_ID = 'f9f5cd20-ba30-4a31-98a8-4211f562c8ff'
+  OIDC_ISSUER = 'https://my-pocket-id-example.fly.dev'
+  OIDC_CLIENT_ID = 'your-client-id-here'
 
 # Holds the downloaded classla models, which are the heavy models of Croatian
 # (so a request for them does not download them again), and lemmas.db, the count of how often each lemma was seen. Create once with:
-#   fly volumes create classla_data -r lhr -s 2
+#   fly volumes create model_data -r ord -s 2
 # The two sets of models take 1.1 GB.
 [mounts]
-  source = 'classla_data'
+  source = 'model_data'
   destination = '/data'
   initial_size = '2gb'
 

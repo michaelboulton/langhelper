@@ -4,3 +4,5 @@ __pycache__/
 .ruff_cache/
 decks/
 tlhelper/languages/*/*.db
+# Your own copy of example.fly.toml. See README.md.
+/fly.toml
