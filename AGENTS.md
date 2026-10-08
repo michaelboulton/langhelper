@@ -106,7 +106,7 @@ All persistent state is under `DATA_ROOT` (`/data` on Fly, `.data/` at the repos
 
 The app migrates rows from older table names at startup and leaves the old tables unchanged. The deck import runs at startup and skips an unchanged deck. Increase `IMPORT_VERSION` in `flashcards/decks.py` when a change to the import must read every deck again.
 
-`accents.db` and the `glosses.db` files in `tlhelper/languages/*/` are generated from Wiktionary by `build_glosses.py`. The image includes them.
+`accents.db` and the `glosses.db` files in `tlhelper/languages/*/` are generated from Wiktionary by `build_glosses.py`. They are in git LFS, and the image includes them.
 
 ### Login
 
