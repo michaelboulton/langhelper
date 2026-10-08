@@ -16,8 +16,10 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
-RUN git clone https://github.com/ServeurpersoCom/omnivoice.cpp.git . \
-    && git checkout --quiet "$OMNIVOICE_CPP_COMMIT" \
+RUN git init --quiet . \
+    && git remote add origin https://github.com/ServeurpersoCom/omnivoice.cpp.git \
+    && git fetch --quiet --depth 1 origin "$OMNIVOICE_CPP_COMMIT" \
+    && git checkout --quiet FETCH_HEAD \
     && git submodule update --init --depth 1
 
 # $ORIGIN in the RUNPATH: the ggml libraries resolve from the folder of
