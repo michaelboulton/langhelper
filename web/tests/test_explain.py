@@ -3,7 +3,7 @@ the Claude Code backend with a fake `claude` command."""
 
 from types import SimpleNamespace
 
-import httpx
+import httpx2
 import openai
 import pytest
 from tlhelper import explain
@@ -164,9 +164,9 @@ def test_the_client_gets_the_variables_of_the_app(monkeypatch, service):
 
 
 def test_the_errors_of_the_service(service):
-    request = httpx.Request("POST", "http://ai.test/v1/chat/completions")
+    request = httpx2.Request("POST", "http://ai.test/v1/chat/completions")
     busy = openai.RateLimitError(
-        "busy", response=httpx.Response(429, request=request), body=None
+        "busy", response=httpx2.Response(429, request=request), body=None
     )
     cases = [
         (openai.APITimeoutError(request), "in time"),

@@ -19,6 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: j178/prek-action@1382ad72dea72f9d53832f2bcb65b3e87a947204 # v3.0.1
+        env:
+          # ty needs the synced venv, so the tests job runs it.
+          SKIP: ty
 
   tests:
     needs: prek
@@ -45,7 +48,8 @@ jobs:
           key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
           restore-keys: uv-${{ runner.os }}-
       # No heavy German model: test_german.py skips its heavy variant.
-      - run: uv sync --all-packages --locked --no-install-package de-dep-news-trf
+      - run: uv sync --all-packages --all-groups --locked --no-install-package de-dep-news-trf
+      - run: uv run --no-sync ty check
       - run: uv run --no-sync pytest
         working-directory: tts
       - run: uv run --no-sync pytest

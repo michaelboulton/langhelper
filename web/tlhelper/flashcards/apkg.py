@@ -85,8 +85,9 @@ class Note:
     deck: tuple[str, ...] = ()
 
 
-def kind(name: str) -> tuple[str, str] | None:
-    return KINDS.get(Path(name).suffix.lower())
+def kind(name: str) -> tuple[str, str]:
+    """KeyError for a file that is not part of a card."""
+    return KINDS[Path(name).suffix.lower()]
 
 
 def media_of(value: str) -> list[str]:
@@ -99,7 +100,7 @@ def media_of(value: str) -> list[str]:
             # Anki writes the src as a URL: "my%20house.jpg".
             source = match["double"] or match["single"] or match["bare"] or ""
             name = unquote(html.unescape(source))
-        if kind(name) and name not in names:
+        if Path(name).suffix.lower() in KINDS and name not in names:
             names.append(name)
     return names
 

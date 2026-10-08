@@ -47,6 +47,11 @@ def fake_doc(text):
     return SimpleNamespace(sentences=[SimpleNamespace(text=text, words=words)])
 
 
+class Client(TestClient):
+    # The model types that the fake pipeline got.
+    requested: list[str]
+
+
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     requested = []
@@ -72,7 +77,7 @@ def client(tmp_path, monkeypatch):
         },
     )
     # No `with`: the lifespan (and so the model warm-up) does not run.
-    client = TestClient(service.app)
+    client = Client(service.app)
     client.requested = requested
     return client
 

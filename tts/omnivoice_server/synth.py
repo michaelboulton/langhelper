@@ -143,7 +143,7 @@ class Synth:
         clip = self.clip(language) if instruct is None else None
         if instruct is None and clip is None:
             instruct = settings.instruct()
-        voice = f"clip:{clip}" if clip else instruct
+        voice = (f"clip:{clip}" if clip else instruct) or ""
         key = (model_id, text, language, voice, num_step)
         # A hit does not wait for a generation that is under way.
         if voice and key in self.cache:

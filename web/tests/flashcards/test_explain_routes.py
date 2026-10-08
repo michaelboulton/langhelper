@@ -39,7 +39,7 @@ class Loaded:
 )
 def test_a_question_loads_no_other_model(loaded, variant):
     language = Loaded(loaded)
-    explain_routes.tagged(language, "Pijem kavu")
+    explain_routes.tagged(language, "Pijem kavu")  # ty: ignore[invalid-argument-type]
     # One call, and with the model that is in memory.
     assert language.asked == [variant]
 

@@ -113,8 +113,8 @@ def fluent_script(request):
     network. The file stays in the cache of pytest, and it must have the hash
     of the integrity attribute: the browser refuses another file."""
     html = service.INDEX_HTML.read_text(encoding="utf-8")
-    url = re.search(r'src="(https://cdn\.jsdelivr\.net/[^"]+)"', html).group(1)
-    integrity = re.search(r'integrity="sha384-([^"]+)"', html).group(1)
+    [url] = re.findall(r'src="(https://cdn\.jsdelivr\.net/[^"]+)"', html)
+    [integrity] = re.findall(r'integrity="sha384-([^"]+)"', html)
     cached = request.config.cache.mkdir("fluent") / url.rsplit("@", 1)[1].replace(
         "/", "-"
     )

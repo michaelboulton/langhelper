@@ -21,4 +21,5 @@ testpaths = ["tests"]
 dev = [
     "httpx2",
     "pytest>=9.1.1",
+    "ty>=0.0.85",
 ]

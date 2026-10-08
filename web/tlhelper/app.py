@@ -344,7 +344,10 @@ def healthz() -> PlainTextResponse:
 
 
 # A response is the dict of the code: no key that the code did not set.
-API = {"tags": ["breakdown"], "response_model_exclude_unset": True}
+API: schemas.RouteOptions = {
+    "tags": ["breakdown"],
+    "response_model_exclude_unset": True,
+}
 
 
 @app.get("/api/v1/languages", response_model=schemas.LanguagesResponse, **API)

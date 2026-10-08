@@ -27,7 +27,7 @@ class Variables(Visitor):
 
 def messages(code: str) -> dict[str, set[str]]:
     """Each message of a catalog, with the variables that it uses."""
-    text, _ = locales.read(code)
+    text = locales.catalogs()[code].path.read_text(encoding="utf-8")
     resource = FluentParser().parse(text)
     junk = [each.content for each in resource.body if isinstance(each, ast.Junk)]
     assert junk == [], f"{code}: the parser does not understand this"

@@ -6,7 +6,7 @@ client that has no catalog.
 """
 
 import hashlib
-import sys
+import inspect
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -26,7 +26,7 @@ class Catalog:
 
 def _folder(language: Language) -> Path:
     """The folder of the package of the language."""
-    return Path(sys.modules[type(language).__module__].__file__).parent
+    return Path(inspect.getfile(type(language))).parent
 
 
 @lru_cache(maxsize=1)

@@ -123,9 +123,7 @@ def day_start(when: datetime) -> float:
     return when.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
 
 
-def iso(timestamp: float | None) -> str | None:
-    if timestamp is None:
-        return None
+def iso(timestamp: float) -> str:
     return datetime.fromtimestamp(timestamp, UTC).isoformat(timespec="seconds")
 
 
@@ -372,7 +370,11 @@ def next_card(user: str, deck_id: int) -> dict:
     if totals["new"] or totals["due"]:
         tomorrow = args["today"] + DAY
         next_due = min(next_due or tomorrow, tomorrow)
-    return {"done": True, "next_due": iso(next_due), "counts": totals}
+    return {
+        "done": True,
+        "next_due": None if next_due is None else iso(next_due),
+        "counts": totals,
+    }
 
 
 # The answers

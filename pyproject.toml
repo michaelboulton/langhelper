@@ -9,3 +9,7 @@ members = ["web", "tts"]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
 explicit = true
+
+[tool.ty.analysis]
+# A compiled module with no type stubs.
+allowed-unresolved-imports = ["lameenc"]

@@ -27,7 +27,7 @@ LOCAL_USER = "local"
 
 router = APIRouter(prefix="/api/v1", tags=["flashcards"])
 # A response is the dict of the code: no key that the code did not set.
-UNSET = {"response_model_exclude_unset": True}
+UNSET: schemas.RouteOptions = {"response_model_exclude_unset": True}
 HEAVY = "Use the heavy models of the study language for the breakdown."
 
 
@@ -220,11 +220,12 @@ def media_file(deck_id: int, name: str) -> Response:
         if package is None:
             raise store.NotFound(f"deck {deck_id} has no package any more")
         data = apkg.read_media(package, name)
+        media_type = apkg.kind(name)[1]
     except (store.NotFound, KeyError, apkg.BadDeck) as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return Response(
         data,
-        media_type=apkg.kind(name)[1],
+        media_type=media_type,
         headers={
             "X-Content-Type-Options": "nosniff",
             # Of a user with a login, so not for a shared cache.

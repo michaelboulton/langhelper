@@ -199,7 +199,9 @@ def declension(noun) -> str:
     return "strong"
 
 
-def expected_ending(kind: str, case: str, gender: str, number: str) -> str | None:
+def expected_ending(
+    kind: str, case: str | None, gender: str | None, number: str | None
+) -> str | None:
     if case not in CASE_NAMES:
         return None
     if number == "Plur":

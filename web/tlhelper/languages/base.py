@@ -27,12 +27,12 @@ lemma is the key of the glosses, of the lemma counts and of the word links.
 import ctypes
 import gc
 import threading
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal, Protocol
+from typing import ClassVar, Literal, Protocol
 
 from spellchecker import SpellChecker
 
@@ -85,7 +85,7 @@ class StudySlot:
         self.loading: tuple[str, str] | None = None
 
     @contextmanager
-    def use(self, key: tuple[str, str], load: Callable[[], object]) -> Iterator:
+    def use(self, key: tuple[str, str], load: Callable[[], object]) -> Generator:
         """Hold the lock and give the model of this key. load() makes it."""
         with self._lock:
             if self.key != key:
@@ -176,7 +176,7 @@ class Language(Protocol):
     info: LanguageInfo
     # Common words where the glosses of Wiktionary have a gap: lemma to
     # English words, the main meaning first.
-    extra_glosses: dict[str, list[str]]
+    extra_glosses: ClassVar[dict[str, list[str]]]
 
     def warm_up(self) -> None:
         """Load the default models. Runs in a thread at the start of the app."""

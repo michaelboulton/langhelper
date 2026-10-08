@@ -21,7 +21,7 @@ Other documents in `web/`:
 
 ## Commands
 
-Run `uv sync --all-packages` at the root one time. It makes one `.venv` at the root for both members. After a change to any `pyproject.toml`, run `uv lock` at the root. The members have no lockfile of their own. The torch index is in the root `pyproject.toml`.
+Run `uv sync --all-packages --all-groups` at the root one time. It makes one `.venv` at the root for both members. ty needs every group, because `web/scripts/lessons.py` imports the `lessons` group. After a change to any `pyproject.toml`, run `uv lock` at the root. The members have no lockfile of their own. The torch index is in the root `pyproject.toml`.
 
 Run the tests from the member folder (`web/` or `tts/`). The members are not installed, so pytest finds the package through `pythonpath = ["."]`.
 
@@ -32,7 +32,7 @@ uv run pytest tests/flashcards/test_store.py::test_x   # one test
 uv run pytest -k grade                                 # tests whose name matches
 ```
 
-Lint and format from the repository root with [prek](https://github.com/j178/prek). It runs `ruff check --fix` and `ruff format`:
+Lint, format and type-check from the repository root with [prek](https://github.com/j178/prek). It runs `ruff check --fix`, `ruff format`, actionlint and the [ty](https://github.com/astral-sh/ty) type checker. The ty hook uses the root `.venv`, so run the `uv sync` above first. The ty settings are in the root `pyproject.toml`:
 
 ```bash
 prek run --all-files
@@ -67,7 +67,7 @@ Tests that need resources skip when the resources are missing:
 - The heavy German tests need `de_dep_news_trf`.
 - `test_the_clips_of_the_repo` needs the voice clips in `tts/omnivoice_server/voices/`.
 
-CI (`.github/workflows/tests.yml`) runs prek, then the tests of both members, without the heavy German model.
+CI (`.github/workflows/tests.yml`) runs prek without ty. Then it syncs the venv without the heavy German model, runs ty, and runs the tests of both members.
 
 ## web architecture
 

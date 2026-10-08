@@ -52,10 +52,11 @@ runs all three services on one machine and needs no login.
 You need [uv](https://docs.astral.sh/uv/). For the containers, you need Docker
 with the compose plugin.
 
-1. Install the dependencies of both folders into one `.venv` at the root:
+1. Install the dependencies of both folders, with all their groups, into one
+   `.venv` at the root:
 
    ```bash
-   uv sync --all-packages
+   uv sync --all-packages --all-groups
    ```
 
 2. Run the tests. Run them in each folder:
@@ -65,8 +66,8 @@ with the compose plugin.
    (cd tts && uv run pytest)
    ```
 
-   GitHub Actions runs prek and then these tests on `main` and on each pull
-   request, without the heavy models.
+   GitHub Actions runs prek, ty and then these tests on `main` and on each
+   pull request, without the heavy models.
 
 3. Start the page at <http://localhost:8000/>, with no login:
 
@@ -86,7 +87,9 @@ with the compose plugin.
    `podman-compose -f podman-compose.yaml up --build --force-recreate`.
    See "With podman" in `web/README.md`.
 
-5. Lint and format with [prek](https://github.com/j178/prek):
+5. Lint, format and type-check with [prek](https://github.com/j178/prek). It
+   runs ruff, actionlint and the [ty](https://github.com/astral-sh/ty) type
+   checker. ty uses the `.venv` of step 1:
 
    ```bash
    prek run --all-files

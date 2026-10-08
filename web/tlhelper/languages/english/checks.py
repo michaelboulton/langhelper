@@ -164,7 +164,9 @@ def check_agreement(tokens: list, words: list[dict]) -> None:
     by_token = {token.i: word for token, word in zip(tokens, words)}
     for token in tokens:
         kind = subject_kind(token)
-        verb = finite_verb(token) if kind else None
+        if kind is None:
+            continue
+        verb = finite_verb(token)
         if verb is None or verb.i not in by_token:
             continue
         problem = agreement_problem(kind, verb)

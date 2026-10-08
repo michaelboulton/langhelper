@@ -17,6 +17,13 @@ def form(text, *tags):
     return {"form": text, "tags": list(tags)}
 
 
+def accent(text, lemma, upos, feats) -> dict:
+    """accent_for, for a word that has an accent."""
+    found = accents.accent_for(text, lemma, upos, feats)
+    assert found is not None
+    return found
+
+
 SAMPLE = [
     {
         "word": "kuća",
@@ -184,8 +191,8 @@ def test_accent_picks_the_form_by_case_and_number(db):
         "form": "kȕćē",
         "exact": True,
     }
-    assert accents.accent_for("kuće", "kuća", "NOUN", nom_pl)["form"] == "kȕće"
-    assert accents.accent_for("kuća", "kuća", "NOUN", gen_pl)["form"] == "kȗćā"
+    assert accent("kuće", "kuća", "NOUN", nom_pl)["form"] == "kȕće"
+    assert accent("kuća", "kuća", "NOUN", gen_pl)["form"] == "kȗćā"
 
 
 def test_accent_is_ambiguous_without_a_matching_case(db):
@@ -203,7 +210,7 @@ def test_accent_falls_back_to_the_dictionary_form(db):
         "exact": False,
     }
     # The capital of "Radim" does not go onto another word.
-    assert accents.accent_for("Radim", "raditi", "VERB", {})["form"] == "ráditi"
+    assert accent("Radim", "raditi", "VERB", {})["form"] == "ráditi"
     assert accents.accent_for("raditi", "raditi", "VERB", {}) == {
         "form": "ráditi",
         "exact": True,
@@ -221,9 +228,9 @@ def test_accent_gives_each_reading_of_a_homograph(db):
 
 def test_accent_keeps_the_capital(db):
     feats = {"Case": "Nom", "Number": "Sing"}
-    assert accents.accent_for("Kuća", "kuća", "NOUN", feats)["form"] == "Kȕća"
+    assert accent("Kuća", "kuća", "NOUN", feats)["form"] == "Kȕća"
     loc = {"Case": "Loc", "Number": "Sing"}
-    assert accents.accent_for("Zagrebu", "Zagreb", "PROPN", loc)["form"] == "Zágrebu"
+    assert accent("Zagrebu", "Zagreb", "PROPN", loc)["form"] == "Zágrebu"
 
 
 def test_accent_unknown_word_and_punctuation(db):
@@ -235,10 +242,10 @@ def test_accent_unknown_word_and_punctuation(db):
 def test_clitics_have_no_accent(db):
     clitic = {"form": "je", "exact": True, "clitic": True}
     assert accents.accent_for("je", "biti", "AUX", {}) == clitic
-    assert accents.accent_for("se", "sebe", "PRON", {"Case": "Acc"})["clitic"]
-    assert accents.accent_for("li", "li", "PART", {})["clitic"]
+    assert accent("se", "sebe", "PRON", {"Case": "Acc"})["clitic"]
+    assert accent("li", "li", "PART", {})["clitic"]
     # "ti" is a clitic in the dative, and the stressed tȋ in the nominative.
-    assert accents.accent_for("ti", "ti", "PRON", {"Case": "Dat"})["clitic"]
+    assert accent("ti", "ti", "PRON", {"Case": "Dat"})["clitic"]
     nom = {"Case": "Nom", "Number": "Sing"}
     assert accents.accent_for("ti", "ti", "PRON", nom) == {"form": "tȋ", "exact": True}
 
@@ -278,5 +285,5 @@ def test_a_german_build_has_only_the_glosses(tmp_path):
 def test_real_accents_file(monkeypatch):
     monkeypatch.setattr(accents, "_conn", None)
     gen_pl = {"Case": "Gen", "Number": "Plur"}
-    assert accents.accent_for("kuća", "kuća", "NOUN", gen_pl)["form"] == "kȗćā"
-    assert accents.accent_for("večeras", "večeras", "ADV", {})["form"] == "večèras"
+    assert accent("kuća", "kuća", "NOUN", gen_pl)["form"] == "kȗćā"
+    assert accent("večeras", "večeras", "ADV", {})["form"] == "večèras"
