@@ -48,8 +48,8 @@ runs all three services on one machine and needs no login.
 
 ## Quick start
 
-You need [uv](https://docs.astral.sh/uv/). For the containers, you need podman
-and podman-compose.
+You need [uv](https://docs.astral.sh/uv/). For the containers, you need Docker
+with the compose plugin.
 
 1. Install the dependencies of both folders into one `.venv` at the root:
 
@@ -71,11 +71,16 @@ and podman-compose.
    ```
 
 4. Or start all the services from the root. Read "Running locally" in
-   `web/README.md` first, for the DeepL secret:
+   `web/README.md` first, for the keys in `.env`:
 
    ```bash
-   podman-compose up --build --force-recreate
+   cp example.env .env
+   docker compose up --build
    ```
+
+   To use with podman, use
+   `podman-compose -f podman-compose.yaml up --build --force-recreate`.
+   See "With podman" in `web/README.md`.
 
 5. Lint and format with [prek](https://github.com/j178/prek):
 

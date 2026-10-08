@@ -1,7 +1,9 @@
-# Local run of the image with the models that are already in ./.data, so the
-# container does not download them again:
-#   cp example.env .env      # one time, then fill in the keys
-#   docker compose up --build
+# docker-compose.yml for rootless podman. Local run of the image with the
+# models that are already in ./.data, so the container does not download them
+# again:
+#   podman-compose -f podman-compose.yaml up --build --force-recreate
+# Without --force-recreate, podman-compose starts the old container again, and
+# that container still uses the image from before the build.
 # Then open http://localhost:8000/
 services:
   web:
@@ -20,27 +22,32 @@ services:
       # The page ticks "Large models" until the user makes a choice.
       TLHELPER_ALWAYS_LARGE: "1"
       # The "explain with AI" buttons (web/tlhelper/explain/__init__.py) ask the
-      # llamacpp service below. llama.cpp wants no key, but with no key the
-      # page has no buttons, so the key is any text. The model is the --alias
-      # of llamacpp.
-      TLHELPER_AI_API_BASE: http://llamacpp:9931/v1
+      # llamacpp service below. The network has no DNS, so the address is the
+      # fixed address of llamacpp on that network (see networks at the end).
+      # llama.cpp wants no key, but with no key the page has no buttons, so the
+      # key is any text. The model is the --alias of llamacpp.
+      TLHELPER_AI_API_BASE: http://10.89.231.10:9931/v1
       TLHELPER_AI_API_KEY: local
       TLHELPER_AI_MODEL: gemma-4-12b
-      # For a paid service, use these lines, put TLHELPER_AI_API_KEY in .env,
-      # and remove the three lines above:
+      # For a paid service, use these lines and the tlhelper_ai_api_key secret
+      # below, and remove the three lines above:
       # TLHELPER_AI_MODEL: gpt-5-mini
       # TLHELPER_AI_API_BASE: https://openrouter.ai/api/v1
       # The "Listen" buttons (web/tlhelper/speech/__init__.py) ask the voice
-      # service below.
-      TLHELPER_VOICE_URL: http://voice:8002
-    # The keys: DEEPL_API_KEY for "Translate to English", and the AI key for a
-    # paid service. See example.env. Without a DeepL key, the page shows the
-    # reason in place of the translation.
-    env_file:
-      - path: .env
-        required: false
+      # service below, at its fixed address on the network.
+      TLHELPER_VOICE_URL: http://10.89.231.11:8002
+    # For "Translate to English". web/entrypoint.sh reads the key from
+    # /run/secrets/deepl_api_key. If you have no key, remove this block and the
+    # secrets block at the end. The page then shows the reason in place of the
+    # translation.
+    secrets:
+      - deepl_api_key
+      # - tlhelper_ai_api_key
     volumes:
       - ./.data:/data
+    # The image runs as uid 1000. With rootless podman, this maps that uid to
+    # your own user, so the container can write to ./.data.
+    userns_mode: keep-id
 
     # The image has no curl. The app writes no access line for /healthz.
     healthcheck:
@@ -54,17 +61,29 @@ services:
       retries: 3
       start_period: 2m
 
+    logging:
+      driver: passthrough-tty
+
   llamacpp:
     # The server only, with the Vulkan backend (no CUDA). All its arguments:
-    #   docker run --rm ghcr.io/ggml-org/llama.cpp:server-vulkan --help
+    #   podman run --rm ghcr.io/ggml-org/llama.cpp:server-vulkan --help
     image: ghcr.io/ggml-org/llama.cpp:server-vulkan
     container_name: llamacpp
     restart: unless-stopped
+    # The web service calls this address (TLHELPER_AI_API_BASE above).
+    networks:
+      default:
+        ipv4_address: 10.89.231.10
     # The web page of llama.cpp is at http://localhost:9931/. The port is open
     # on each interface of the host, and the server asks for no key.
     ports:
       - "9931:9931"
 
+    # uid 0 in the container maps to `michael` on the host under rootless
+    # podman, and the logind ACL on /dev/dri/{card1,renderD128} grants michael
+    # rw — so this is what gets RADV a device. Same trick as the jellyfin
+    # container in the notes, without needing the subgid entries.
+    user: "0:0"
     devices:
       - /dev/dri:/dev/dri
 
@@ -98,6 +117,8 @@ services:
       - --gpu-layers
       - all
 
+    logging:
+      driver: passthrough-tty
     volumes:
       # Mount the whole hub dir, not just the snapshot: the .gguf in there is a
       # symlink into ../../blobs and would dangle otherwise.
@@ -137,12 +158,20 @@ services:
       dockerfile: tts/Dockerfile
     container_name: omnivoice
     restart: unless-stopped
+    # The web service calls this address (TLHELPER_VOICE_URL above).
+    networks:
+      default:
+        ipv4_address: 10.89.231.11
     # For a curl from the host: http://localhost:8002/v1/models
     ports:
       - "8002:8002"
     environment:
       # Only the languages of the page. The model knows 600 more.
       OMNIVOICE_LANGUAGES: hr,de,fr,it,en
+    # The image runs as uid 1000, and keep-id maps that to your own user, so
+    # the container can write the GGUFs of the model into your cache, and
+    # the logind ACL on /dev/dri (see llamacpp) lets it open the GPU.
+    userns_mode: keep-id
     devices:
       - /dev/dri:/dev/dri
     volumes:
@@ -160,3 +189,31 @@ services:
       timeout: 5s
       retries: 3
       start_period: 5m
+
+    logging:
+      driver: passthrough-tty
+
+# podman normally runs its own DNS server (aardvark-dns) on a compose network,
+# so that services find each other by name. With rootless podman and a local
+# resolver on the host (nameserver 127.0.0.1), that server resolves nothing.
+# So turn it off. Each container then gets the resolvers of the host, and
+# web calls llamacpp at a fixed address in a fixed subnet. The port that
+# llamacpp publishes on the host is no use for this: from web,
+# host.containers.internal:9931 gets no answer, and the request waits until
+# the AI timeout.
+# An old network keeps its old setting: podman network rm langhelper_default
+networks:
+  default:
+    x-podman.disable_dns: true
+    ipam:
+      config:
+        - subnet: 10.89.231.0/24
+
+# Create it one time:  printf '%s' "$KEY" | podman secret create deepl_api_key -
+secrets:
+  deepl_api_key:
+    external: true
+  # A secret that does not exist stops the start, so this one is a comment:
+  #   printf '%s' "$KEY" | podman secret create tlhelper_ai_api_key -
+  # tlhelper_ai_api_key:
+  #   external: true

@@ -17,8 +17,8 @@ if [ ! -w "$DATA_ROOT" ]; then
     exit 1
 fi
 
-# A podman or docker secret arrives as a file, not as a variable. A variable
-# that is already set (a Fly secret) wins.
+# A podman secret (podman-compose.yaml) arrives as a file, not as a variable.
+# A variable that is already set (.env, a Fly secret) wins.
 : "${DEEPL_API_KEY_FILE:=/run/secrets/deepl_api_key}"
 if [ -z "${DEEPL_API_KEY:-}" ] && [ -r "$DEEPL_API_KEY_FILE" ]; then
     DEEPL_API_KEY=$(cat "$DEEPL_API_KEY_FILE")

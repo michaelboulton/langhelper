@@ -132,9 +132,7 @@ every few seconds.
 The library loads every ggml backend in the image and takes the best device:
 `Vulkan0` when the container sees a GPU, else the CPU. The log of the start
 names it: `[Load] LM backend: Vulkan0`. The compose file passes `/dev/dri`
-to the container, as it does for the llamacpp service; the image runs as uid
-1000 and `keep-id` maps that to your user, whose logind ACL opens the
-device. The Mesa drivers in the image cover AMD (RADV) and Intel (ANV).
+to the container, as it does for the llamacpp service. The Mesa drivers in the image cover AMD (RADV) and Intel (ANV).
 `GGML_BACKEND=CPU` in the environment forces the CPU.
 
 ## Language codes
@@ -185,7 +183,7 @@ only accepts the codes from its list.
 
 ## Running
 
-With the web page: `podman-compose up --build` at the repository root. The
+With the web page: `docker compose up --build` at the repository root. The
 `voice` service there binds `~/.cache/huggingface` of the host to `/hf`, so
 the GGUFs download once and stay. The first build compiles omnivoice.cpp,
 which takes a few minutes.
@@ -193,15 +191,15 @@ which takes a few minutes.
 The image alone, built from the repository root:
 
 ```bash
-podman build -f tts/Dockerfile -t omnivoice .
-podman run --rm -p 8002:8002 -v ~/.cache/huggingface:/hf --userns=keep-id --device /dev/dri omnivoice
+docker build -f tts/Dockerfile -t omnivoice .
+docker run --rm -p 8002:8002 -v ~/.cache/huggingface:/hf --device /dev/dri omnivoice
 ```
 
 The image also has the `omnivoice-tts` CLI of omnivoice.cpp, for a check
 without the server:
 
 ```bash
-podman run --rm -it -v ~/.cache/huggingface:/hf --userns=keep-id omnivoice bash
+docker run --rm -it -v ~/.cache/huggingface:/hf omnivoice bash
 echo "Dobar dan." | omnivoice-tts --model /hf/hub/models--Serveurperso--OmniVoice-GGUF/snapshots/*/omnivoice-base-Q8_0.gguf \
   --codec /hf/hub/models--Serveurperso--OmniVoice-GGUF/snapshots/*/omnivoice-tokenizer-Q8_0.gguf --lang hr -o /tmp/out.wav \
   --ref-wav omnivoice_server/voices/hr.wav --ref-text omnivoice_server/voices/hr.txt

@@ -58,7 +58,9 @@ login. The API refuses texts over `MAX_TEXT_CHARS`.
 | `../uv.lock`     | Locked versions of the whole uv workspace. Update with `uv lock --upgrade` |
 | `Dockerfile`     | `python:3.12-slim` plus `uv sync --frozen`, runs as uid 1000. Its build context is the repository root |
 | `entrypoint.sh`  | Makes sure that `/data` is writable, then execs uvicorn                 |
-| `../docker-compose.yml` | Local run with podman-compose and the models in `.data/` at the repository root, with a llama.cpp service for the AI buttons and the `tts/` service for the "Listen" buttons |
+| `../docker-compose.yml` | Local run with Docker Compose and the models in `.data/` at the repository root, with a llama.cpp service for the AI buttons and the `tts/` service for the "Listen" buttons |
+| `../example.env` | The keys for `docker-compose.yml`. Copy it to `.env`, which git ignores |
+| `../podman-compose.yaml` | The same local run with rootless podman. See "With podman" |
 | `tests/`         | The tests, one file for each module, with the languages in `tests/languages/` and the flashcards in `tests/flashcards/`. Run them with `uv run pytest` |
 | `example.fly.toml` | An example Fly app configuration: one shared-cpu-2x 4 GB machine that stops at idle, and a 2 GB volume. Copy it to `fly.toml`, which git ignores |
 
@@ -691,8 +693,8 @@ service sends one. An entry with no such field (OpenAI itself) is taken to
 read every language of the page.
 
 1. Set `TLHELPER_VOICE_URL` to the address of the service, with no path.
-   The compose file sets `http://10.89.231.11:8002`, the fixed address of the
-   `voice` service on its network.
+   The compose file sets `http://voice:8002`, the name of the `voice`
+   service.
 2. `TLHELPER_VOICE_MODEL` names the model. Default: the first one in the
    list of the service.
 3. `TLHELPER_VOICE_API_KEY` goes in the `Authorization` header, for a paid
@@ -1195,68 +1197,80 @@ uv run pytest tests/test_browser_breakdown.py --screenshots=shots
 At the end of each test, each page saves a full-page PNG with the name of the
 test to that folder. Without the option, the tests save nothing.
 
-With podman-compose, from the repository root. The compose file mounts the
-models that are already in `.data/` there:
+With Docker Compose, from the repository root. The compose file mounts the
+models that are already in `.data/` there. The keys are in the file `.env`,
+which git ignores. Make it one time from `example.env`, and fill it in:
 
 ```bash
-podman-compose up --build --force-recreate
+cp example.env .env
+docker compose up --build
 ```
 
-`--build` builds a new image from the current code. `--force-recreate` replaces
-the container. Without it, podman-compose starts the existing container again,
-and that container still uses the old image.
+`--build` builds a new image from the current code, and Docker Compose then
+replaces the container.
+
+`.env` holds:
+
+- `DEEPL_API_KEY`: the key for "Translate to English". Without it, the page
+  shows the reason in place of the translation.
+- `TLHELPER_AI_API_KEY`: the key of a paid AI service. The compose file uses
+  the `llamacpp` service, which needs no key.
 
 The compose file sets `DOWNLOAD_MODELS=0`, so the container never downloads. If
 the models are not in `.data/`, `/api/v1/classify` returns 503 with the reason.
 
-The compose file sets the log driver `passthrough-tty`, which only podman has.
-It writes the log lines of the container directly to the terminal. With Docker
-Compose, remove the `logging` block.
-
-The compose file turns off the DNS server of podman (aardvark-dns) on its
-network, with `x-podman.disable_dns`. That server resolves no names on a host
-that has rootless podman and a local resolver (`nameserver 127.0.0.1`). The
-translation then fails with "Temporary failure in name resolution". An existing
-network keeps its old setting. If the network is older than the setting, remove
-it one time:
-
-```bash
-podman-compose down
-podman network rm langhelper_default
-```
-
-The compose file gives the DeepL key to the container as a secret with the name
-`deepl_api_key`. A secret is a value that podman or Docker stores outside the
-image and mounts as the file `/run/secrets/deepl_api_key`. `entrypoint.sh` reads
-that file into `DEEPL_API_KEY`. Create the secret one time, before the first
-`podman-compose up`:
-
-```bash
-printf '%s' 'your-deepl-key' | podman secret create deepl_api_key -
-podman secret ls                     # shows the name, never the value
-podman secret rm deepl_api_key       # to replace the key, remove it and create it again
-```
-
-To keep the key out of the shell history, read it from a file:
-`podman secret create deepl_api_key ./deepl.key`. If you have no key, remove the
-two `secrets` blocks from `docker-compose.yml`.
-
-Docker has `docker secret create` only in swarm mode. With Docker Compose,
-change the last block of `docker-compose.yml` so that the secret comes from a
-variable, and then run `DEEPL_API_KEY=... docker compose up --build`:
-
-```yaml
-secrets:
-  deepl_api_key:
-    environment: DEEPL_API_KEY
-```
-
-With plain `podman run` or `docker run`, the flag is `--secret deepl_api_key`
-for podman, and `-e DEEPL_API_KEY=...` for Docker.
-
-With Docker, from the repository root:
+Without compose, from the repository root:
 
 ```bash
 docker build -f web/Dockerfile -t langhelper-web .
-docker run --rm -p 8000:8000 -v model_data:/data langhelper-web
+docker run --rm -p 8000:8000 -v model_data:/data --env-file .env langhelper-web
 ```
+
+### With podman
+
+To use rootless podman, use the file `podman-compose.yaml` at the repository
+root:
+
+```bash
+podman-compose -f podman-compose.yaml up --build --force-recreate
+```
+
+`--force-recreate` replaces the container. Without it, podman-compose starts
+the existing container again, and that container still uses the old image.
+
+The file differs from `docker-compose.yml` in these ways:
+
+- `userns_mode: keep-id` maps the uid 1000 of the images to your own user, so
+  the containers can write to `.data/` and to the Hugging Face cache, and the
+  logind ACL on `/dev/dri` lets them open the GPU.
+- The log driver `passthrough-tty`, which only podman has, writes the log
+  lines of the containers directly to the terminal.
+- `x-podman.disable_dns` turns off the DNS server of podman (aardvark-dns) on
+  the network. That server resolves no names on a host that has rootless
+  podman and a local resolver (`nameserver 127.0.0.1`). The translation then
+  fails with "Temporary failure in name resolution". So the services call
+  each other at fixed addresses. An existing network keeps its old setting.
+  If the network is older than the setting, remove it one time:
+
+  ```bash
+  podman-compose -f podman-compose.yaml down
+  podman network rm langhelper_default
+  ```
+
+- The keys are podman secrets, not `.env`. podman mounts a secret as the
+  file `/run/secrets/<name>`, and `entrypoint.sh` reads that file into the
+  variable. Create the secret one time, before the first start:
+
+  ```bash
+  printf '%s' 'your-deepl-key' | podman secret create deepl_api_key -
+  podman secret ls                     # shows the name, never the value
+  podman secret rm deepl_api_key       # to replace the key, remove it and create it again
+  ```
+
+  To keep the key out of the shell history, read it from a file:
+  `podman secret create deepl_api_key ./deepl.key`. If you have no key,
+  remove the two `secrets` blocks from `podman-compose.yaml`.
+
+Without compose, `podman build` and `podman run` take the same arguments as
+the Docker commands above, with `--userns=keep-id` and
+`--secret deepl_api_key` in place of `--env-file .env`.

@@ -1,5 +1,5 @@
 # Build from the repository root, which holds the uv workspace:
-#   podman build -f web/Dockerfile -t langhelper-web .
+#   docker build -f web/Dockerfile -t langhelper-web .
 FROM python:3.12-slim
 
 COPY --from=ghcr.io/astral-sh/uv:0.8 /uv /usr/local/bin/uv

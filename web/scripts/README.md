@@ -35,11 +35,12 @@ those of the `web` service there, with the port of the host:
 export TLHELPER_AI_API_BASE=http://localhost:9931/v1 TLHELPER_AI_API_KEY=local TLHELPER_AI_MODEL=gemma-4-12b
 ```
 
-For a paid service, the key of the podman secret `tlhelper_ai_api_key` goes
-straight into the variable, and never into a file:
+For a paid service, the key is `TLHELPER_AI_API_KEY` in `.env` at the
+repository root (README.md, "Running locally"). Export the variables of that
+file, from `web/`:
 
 ```bash
-export TLHELPER_AI_API_KEY=$(podman secret inspect --showsecret --format '{{.SecretData}}' tlhelper_ai_api_key)
+set -a; . ../.env; set +a
 ```
 
 With Claude Code installed and logged in, `--backend claude` (or

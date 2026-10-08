@@ -207,7 +207,7 @@ the app exists.
 
 - `flutter analyze` and `flutter test` clean in `web/app`.
 - `uv run pytest` green, with Chromium and with the network blocked.
-- `podman-compose up --build`, then the three tabs by hand: translation
+- `docker compose up --build`, then the three tabs by hand: translation
   curves, a picture card with audio, dark mode, `?locale=hr`, a right-to-left
   language.
 - `fly deploy . --config web/fly.toml --dockerfile web/Dockerfile --ha=false`

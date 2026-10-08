@@ -14,8 +14,8 @@ The speech API of OpenAI (openai.py), the default synthesizer
     this repo) limits the buttons to those languages. An entry with no list
     is taken to read every language.
     1. Set TLHELPER_VOICE_URL to the address of the service, with no path:
-       docker-compose.yml sets http://10.89.231.11:8002, the omnivoice
-       service of this repo. With no address, the page has no buttons.
+       docker-compose.yml sets http://voice:8002, the omnivoice service of
+       this repo. With no address, the page has no buttons.
     2. TLHELPER_VOICE_MODEL, if set, names the model. Default: the first
        model in the list of the service.
     3. TLHELPER_VOICE_API_KEY, if set, goes in the Authorization header. The

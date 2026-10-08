@@ -7,9 +7,8 @@ part of the cache key, so a new service does not show the texts of the old one.
 DeepL (deepl.py), the only translator now
     1. Make an API account at https://www.deepl.com/pro-api and copy the key.
        The README ("Translation") has the limits of the free plan.
-    2. Set DEEPL_API_KEY. In the container, entrypoint.sh can read the key
-       from the secret /run/secrets/deepl_api_key (see docker-compose.yml).
-       On Fly: fly secrets set DEEPL_API_KEY=...
+    2. Set DEEPL_API_KEY. With docker compose, put it in .env (see
+       example.env). On Fly: fly secrets set DEEPL_API_KEY=...
     3. With a paid key, set DEEPL_URL=https://api.deepl.com/v2/translate.
 
 To add a translator

@@ -52,9 +52,9 @@ uv run python -m tlhelper.flashcards.make_toml decks/x.apkg --language hr --name
 Both Dockerfiles use the repository root as the build context, because they need the root `pyproject.toml` and `uv.lock`. One root `.dockerignore` serves both. From the root:
 
 ```bash
-podman-compose up --build --force-recreate             # web, llamacpp and tts, with the models in .data/
-podman build -f web/Dockerfile -t langhelper-web .
-podman build -f tts/Dockerfile -t omnivoice .
+docker compose up --build                              # web, llamacpp and tts, with the models in .data/ and the keys in .env
+docker build -f web/Dockerfile -t langhelper-web .
+docker build -f tts/Dockerfile -t omnivoice .
 fly deploy . --config web/fly.toml --dockerfile web/Dockerfile --ha=false   # deploy web to Fly.io
 ```
 

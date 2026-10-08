@@ -16,9 +16,8 @@ The OpenAI SDK (openai.py), the default backend
     or a Gemini subscription gives no API access: the key must be an API key.
     Each variable has the prefix TLHELPER_AI_, and the backend gives the key
     and the address to the SDK.
-    1. Set TLHELPER_AI_API_KEY. In the container, entrypoint.sh can read the
-       key from the secret /run/secrets/tlhelper_ai_api_key (see
-       docker-compose.yml). On Fly: fly secrets set TLHELPER_AI_API_KEY=...
+    1. Set TLHELPER_AI_API_KEY. With docker compose, put it in .env (see
+       example.env). On Fly: fly secrets set TLHELPER_AI_API_KEY=...
     2. Set TLHELPER_AI_MODEL to a model of the service. A small model is
        enough.
     3. For a service that is not OpenAI, set TLHELPER_AI_API_BASE:

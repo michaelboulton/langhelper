@@ -1,5 +1,5 @@
 # Build from the repository root, which holds the uv workspace:
-#   podman build -f tts/Dockerfile -t omnivoice .
+#   docker build -f tts/Dockerfile -t omnivoice .
 #
 # Stage 1: omnivoice.cpp as a shared library, from the pinned commit
 # (README.md, "Notes"). The same base as the final stage, so the library
