@@ -64,6 +64,9 @@ with the compose plugin.
    (cd tts && uv run pytest)
    ```
 
+   GitHub Actions runs prek and then these tests on `main` and on each pull
+   request, without the heavy models.
+
 3. Start the page at <http://localhost:8000/>, with no login:
 
    ```bash

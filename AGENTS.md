@@ -64,6 +64,10 @@ Tests that need resources skip when the resources are missing:
 - The browser tests need the Playwright Chromium.
 - DeepL and the AI service are fakes in the tests, so the tests need no key.
 - The `tts/` tests use a fake model and need no build of `libomnivoice.so`.
+- The heavy German tests need `de_dep_news_trf`.
+- `test_the_clips_of_the_repo` needs the voice clips in `tts/omnivoice_server/voices/`.
+
+CI (`.github/workflows/tests.yml`) runs prek, then the tests of both members, without the heavy German model.
 
 ## web architecture
 
@@ -114,7 +118,7 @@ The UI text is in a Fluent file `ui.ftl` in each language folder. `english/ui.ft
 
 ## tts architecture
 
-`native.py` mirrors the structs of `omnivoice.h` at the commit that `tts/Dockerfile` pins (`OMNIVOICE_CPP_COMMIT`). When you change that commit, compare the structs and update `ABI_VERSION`. The reference clips in `omnivoice_server/voices/` are in git LFS. Without `git lfs pull`, the server does not start. `languages.py` is generated and is not for manual edits.
+`native.py` mirrors the structs of `omnivoice.h` at the commit that `tts/Dockerfile` pins (`OMNIVOICE_CPP_COMMIT`). When you change that commit, compare the structs and update `ABI_VERSION`. The reference clips in `omnivoice_server/voices/` are not in git. Without clips, each language gets the voice of `OMNIVOICE_INSTRUCT`. `languages.py` is generated and is not for manual edits.
 
 ## Documentation style
 

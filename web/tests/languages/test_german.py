@@ -2,6 +2,8 @@
 dependencies (de_core_news_md and de_dep_news_trf), so nothing is faked. The
 checks must give the same result with both."""
 
+from importlib.util import find_spec
+
 import pytest
 from tlhelper.languages import LANGUAGES
 from tlhelper.languages.base import STUDY
@@ -9,10 +11,22 @@ from tlhelper.languages.german import checks
 
 GERMAN = LANGUAGES["de"]
 
+# CI does not install the heavy model (.github/workflows/tests.yml).
+VARIANTS = [
+    pytest.param(
+        variant,
+        marks=pytest.mark.skipif(
+            variant == "heavy" and find_spec("de_dep_news_trf") is None,
+            reason="de_dep_news_trf is not installed",
+        ),
+    )
+    for variant in GERMAN.info.variants
+]
+
 
 # The module scope makes pytest run all tests with one model and then all
 # tests with the other, so each model loads one time.
-@pytest.fixture(scope="module", params=GERMAN.info.variants)
+@pytest.fixture(scope="module", params=VARIANTS)
 def problems(request):
     def problems(text):
         """{word: its problems} for the words that have one."""
@@ -26,7 +40,7 @@ def problems(request):
     return problems
 
 
-@pytest.mark.parametrize("variant", GERMAN.info.variants)
+@pytest.mark.parametrize("variant", VARIANTS)
 def test_words_have_the_keys_of_the_other_languages(variant):
     [sentence] = GERMAN.analyze("Ich gehe mit dem Hund.", variant=variant)
     assert sentence["text"] == "Ich gehe mit dem Hund."

@@ -42,7 +42,6 @@ def read_clip(path: Path) -> np.ndarray:
             shape = (clip.getframerate(), clip.getnchannels(), clip.getsampwidth())
             frames = clip.readframes(clip.getnframes())
     except (wave.Error, EOFError) as exc:
-        # A clone without git lfs has a text pointer in place of the WAV.
         raise ValueError(
             f'{path} is not a WAV ({exc}): see README.md, "Voice"'
         ) from exc

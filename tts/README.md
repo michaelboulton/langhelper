@@ -25,7 +25,7 @@ steps on the Radeon of a Strix Halo laptop. On the CPU it takes about 6 s at
 | `omnivoice_server/synth.py` | The models in memory, one lock for a load and a generation, the cache of the last mp3s, and the mp3 encoder (`lameenc`) |
 | `omnivoice_server/native.py` | `libomnivoice.so` through ctypes: the structs of `omnivoice.h`, the load, one `generate`, the log callback |
 | `omnivoice_server/languages.py` | The 646 language ids, generated (see "Notes") |
-| `omnivoice_server/voices/` | The reference clips, `<language>.wav` in git lfs with the transcript in `<language>.txt` (see "Voice") |
+| `omnivoice_server/voices/` | The reference clips, `<language>.wav` with the transcript in `<language>.txt`. Not in git (see "Voice") |
 | `omnivoice_server/settings.py` | The environment variables, read when they are used |
 | `tests/` | The routes with a fake model, and the encoder with a real signal. Run with `uv run pytest`; no library and no model needed |
 | `Dockerfile` | Its build context is the repository root. Two stages: a build of omnivoice.cpp at a pinned commit with the Vulkan and CPU backends, then `python:3.12-slim` plus the Mesa Vulkan drivers and `uv sync --frozen`, uid 1000, the Hugging Face cache at `/hf` |
@@ -107,9 +107,9 @@ ffmpeg -i recording.m4a -ss 0.7 -to 11.45 -ac 1 -ar 24000 -sample_fmt s16 \
 ```
 
 `ffmpeg -i recording.m4a -af silencedetect=noise=-35dB:d=0.35 -f null -`
-lists the pauses, to find where the sentence ends. The WAVs are in git lfs
-(`.gitattributes`): a clone without `git lfs pull` has small text pointers in
-their place, and the server refuses to start with them.
+lists the pauses, to find where the sentence ends. The clips are not in git
+(`omnivoice_server/.gitignore`), so a new clone has none. Without clips, each
+language gets the voice of `OMNIVOICE_INSTRUCT`.
 
 `instruct` describes the voice, and the model only takes its own items, with
 `, ` between them. The English items are: `female`, `male`; `child`,

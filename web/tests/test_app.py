@@ -11,6 +11,7 @@ import re
 import resource
 import sqlite3
 import time
+from importlib.util import find_spec
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -727,6 +728,9 @@ def test_download_off_gives_503_and_no_download(tmp_path, monkeypatch):
 @pytest.mark.skipif(
     not (REAL_MODELS / "hr" / "lemma" / "nonstandard.pt").exists(),
     reason="the real models are not in .data/ at the repository root",
+)
+@pytest.mark.skipif(
+    find_spec("de_dep_news_trf") is None, reason="de_dep_news_trf is not installed"
 )
 def test_real_models(tmp_path, monkeypatch):
     monkeypatch.setattr(service, "DB_PATH", tmp_path / "lemmas.db")

@@ -173,9 +173,8 @@ def test_a_cloned_voice_is_cached(voices):
     assert len(service.synth.models[MODEL].calls) == 1
 
 
-def lfs_pointer(folder):
-    """What a clone without git lfs has in place of the WAV."""
-    (folder / "hr.wav").write_text("version https://git-lfs.github.com/spec/v1\n")
+def not_a_wav(folder):
+    (folder / "hr.wav").write_text("Not a WAV.\n")
     (folder / "hr.txt").write_text("Dobar dan.\n")
 
 
@@ -184,7 +183,7 @@ def lfs_pointer(folder):
     [
         (lambda folder: write_clip(folder / "hr.wav", rate=44100), "44100 Hz"),
         (lambda folder: write_clip(folder / "hr.wav", text=""), "hr.txt"),
-        (lfs_pointer, "not a WAV"),
+        (not_a_wav, "not a WAV"),
     ],
 )
 def test_a_bad_clip_stops_the_start(fake, monkeypatch, tmp_path, make, error):
@@ -194,6 +193,10 @@ def test_a_bad_clip_stops_the_start(fake, monkeypatch, tmp_path, make, error):
         pass
 
 
+@pytest.mark.skipif(
+    not any(settings.DEFAULT_VOICES.glob("*.wav")),
+    reason="no voice clips in omnivoice_server/voices/ (not in git)",
+)
 def test_the_clips_of_the_repo():
     clips = synth.read_voices(settings.DEFAULT_VOICES)
     assert "hr" in clips
