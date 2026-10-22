@@ -72,10 +72,11 @@ def side(
     card: dict, text: str, heavy: bool, *, prompt: bool, check: bool
 ) -> list[dict]:
     """Break down the prompt of a card, or an answer to it. The prompt of a
-    "to_study" card is English, and so is an answer to a "to_english" card."""
+    "to_study" card is English, and so is an answer to a "to_english" or a
+    "listen" card."""
     if not text.strip():
         return []
-    if prompt == (card["direction"] == store.TO_STUDY):
+    if prompt == (card["direction"] in store.STUDY_ANSWERS):
         return ENGLISH.analyze(text, check=check)
     language = LANGUAGES[card["language"]]
     return language.analyze(text, variant=model_type(language, heavy), check=check)
@@ -84,7 +85,7 @@ def side(
 def linked(card: dict, prompt: list[dict], answer: list[dict]) -> dict:
     """An answer with its links to the prompt. As in /api/v1/classify, a link
     is [word of the study language, English word], whatever the direction."""
-    if card["direction"] == store.TO_STUDY:
+    if card["direction"] in store.STUDY_ANSWERS:
         study, english = answer, prompt
     else:
         study, english = prompt, answer
@@ -127,16 +128,16 @@ def next_card(
         if "card" not in result:
             return result
         card = result["card"]
+        # The text of a "listen" card is what the user must hear.
+        shown = "" if card["direction"] == store.LISTEN else card["prompt"]
         return {
             "card_id": card["id"],
             "direction": card["direction"],
             "language": card["language"],
-            "prompt": card["prompt"],
+            "prompt": shown,
             "media": media(card, card["prompt_media"]),
             # No answers: the page must not have them before the user answers.
-            "prompt_sentences": side(
-                card, card["prompt"], heavy, prompt=True, check=False
-            ),
+            "prompt_sentences": side(card, shown, heavy, prompt=True, check=False),
             "counts": result["counts"],
         }
     except store.NotFound as exc:
@@ -156,8 +157,8 @@ def answer(card_id: int, req: AnswerRequest, user: User) -> dict:
     the correct answer."""
     try:
         card = store.get_card(card_id)
-        # The answers of a "to_english" card are English.
-        study = card["direction"] == store.TO_STUDY
+        # The answers of a "to_english" or a "listen" card are English.
+        study = card["direction"] in store.STUDY_ANSWERS
         answers_in = LANGUAGES[card["language"]] if study else ENGLISH
         result = grade.grade(req.typed, card["answers"], answers_in.info.grading)
         # The models first: a failure must not leave a review behind.
@@ -178,6 +179,9 @@ def answer(card_id: int, req: AnswerRequest, user: User) -> dict:
         "diff": result["diff"],
         "answers": card["answers"],
         "media": media(card, card["answer_media"]),
+        # For a "listen" card, the first time the page gets the text.
+        "prompt": card["prompt"],
+        "prompt_sentences": prompt,
         "typed": linked(card, prompt, typed),
         "correct": linked(card, prompt, correct),
     }

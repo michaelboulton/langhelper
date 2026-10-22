@@ -346,6 +346,35 @@ def test_the_subdecks_are_a_tree(page, deck_dir, make_apkg):
     expect(page.locator("#card")).to_contain_text("Pijem")
 
 
+def test_a_listen_card_shows_its_text_after_the_answer(
+    page, deck_dir, make_apkg, clock
+):
+    notes = [("guid-coffee", "I drink coffee.", "Pijem kavu.[sound:kava.mp3]")]
+    make_apkg(deck_dir / "basics.apkg", notes, media={"kava.mp3": b"a clip"})
+    (deck_dir / "basics.toml").write_text(TOML + "listen = true\n", encoding="utf-8")
+    decks.import_decks()
+    # The card of the other direction, out of the way: Easy, and a day ago.
+    answer_as(routes.LOCAL_USER, 4)
+    clock.add(days=1)
+    page.goto("/#cards")
+    page.locator("button.deck").click()
+    expect(page.locator("#card-task")).to_have_text(
+        "Enter what you see or hear in English."
+    )
+    expect(page.locator("#card-media audio")).to_have_count(1)
+    expect(page.locator("#card")).not_to_contain_text("Pijem")
+
+    page.locator("#answer").fill("I drink coffee.")
+    page.locator("#check").click()
+    expect(page.locator("#answered")).to_be_visible(timeout=60_000)
+    expect(page.locator("#ratings button.current")).to_have_text("3 Good")
+    expect(page.locator("#card-result")).to_contain_text("Pijem")
+    # The text of the clip is in Croatian, and between the two answers.
+    lines = page.locator("#card-result .sentence")
+    expect(lines).to_have_count(3)
+    expect(lines.nth(1)).to_have_attribute("lang", "hr")
+
+
 def test_a_card_with_a_picture_and_a_clip(page, deck_dir, make_apkg):
     notes = [("guid-house", '<img src="my house.png">', "kuća[sound:kuća.mp3]")]
     media = {"my house.png": PNG, "kuća.mp3": b"a clip"}

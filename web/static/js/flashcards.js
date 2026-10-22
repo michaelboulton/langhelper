@@ -159,10 +159,15 @@ function deckButton(each) {
 
 // A card
 
+// The user enters the study language: a "to_study" or a "dictation" card.
+function studyAnswers(card) {
+  return card.direction === "to_study" || card.direction === "dictation";
+}
+
 // The language of the prompt and the language of the answer.
 function sides() {
   const study = languages[card.language];
-  return card.direction === "to_study" ? [englishInfo, study] : [study, englishInfo];
+  return studyAnswers(card) ? [englishInfo, study] : [study, englishInfo];
 }
 
 // The images and the sound clips of one side of a card. play: start the
@@ -251,12 +256,17 @@ async function check(typed) {
 }
 
 function showAnswer(typed) {
-  const [, answerInfo] = sides();
+  const [promptInfo, answerInfo] = sides();
   const result = cardView.result;
+  // A "listen" card gets the text of its clip only now.
+  if (!card.prompt && answered.prompt) {
+    card.prompt = answered.prompt;
+    promptChips = renderSentences(result, answered.prompt_sentences, promptInfo, cardView);
+  }
   // The answer of the user goes over the prompt, and the correct answer
   // under it. A link is [word of the study language, English word], and
   // drawLinks needs the upper chip first.
-  const toStudy = card.direction === "to_study";
+  const toStudy = studyAnswers(card);
   const pairs = (side, chips, above) => ["links", "guesses"].flatMap((kind) =>
     (side[kind] || []).map(([i, j]) => {
       const [answer, prompt] = toStudy ? [chips[i], promptChips[j]] : [chips[j], promptChips[i]];
@@ -338,7 +348,7 @@ function loadVoices() {
 
 async function speak() {
   const info = languages[card.language];
-  const text = card.direction === "to_study" ? answered.correct.sentences.map((s) => s.text).join(" ")
+  const text = studyAnswers(card) ? answered.correct.sentences.map((s) => s.text).join(" ")
     : card.prompt;
   const voices = await loadVoices();
   const voice = voices.find((each) => each.lang.replace("_", "-").startsWith(info.code));

@@ -25,6 +25,14 @@ service comes from the same TLHELPER_AI_* variables as the app (README.md,
     uv run --group lessons python -m scripts.lessons --backend claude \\
         --course decks/croatian-course lessons/03.md
 
+With --voice, the voice service of TLHELPER_VOICE_URL reads each answer, and
+the deck gets listen and dictation cards. The clips stay in <course>.clips/,
+so a later run asks only for the new answers. --build-only --voice adds the
+clips to a course that has none:
+
+    TLHELPER_VOICE_URL=http://localhost:8002 uv run --group lessons \\
+        python -m scripts.lessons --course decks/croatian-course --build-only --voice
+
 Run it from the folder of the project, as a module.
 """
 
@@ -36,7 +44,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from tlhelper import explain
+from tlhelper import explain, speech
 from tlhelper.flashcards import make_deck, make_toml
 from tlhelper.languages import LANGUAGES
 
@@ -456,20 +464,63 @@ def guid(lesson_key: str, english: str) -> str:
     return hashlib.sha1(f"{lesson_key}\t{english}".encode()).hexdigest()[:10]
 
 
+def clip_name(language: str, text: str) -> str:
+    # From the text: a changed answer gets a new clip.
+    return hashlib.sha1(f"{language}\t{text}".encode()).hexdigest()[:12] + ".mp3"
+
+
+def clips_of(course: Course, folder: Path) -> dict[str, str]:
+    """{answer: the file name of its clip in folder}. The clip reads the first
+    form of the answer. Only a clip that is not in the folder yet goes to the
+    voice service."""
+    folder.mkdir(parents=True, exist_ok=True)
+    synthesizer = None
+    clips = {}
+    for lesson in course.lessons:
+        for card in lesson.cards:
+            text = card.answer.split(" / ")[0]
+            name = clip_name(course.language, text)
+            clips[card.answer] = name
+            path = folder / name
+            if path.exists():
+                continue
+            try:
+                if synthesizer is None:
+                    synthesizer = speech.current()
+                print(f"  clip: {text}")
+                data = synthesizer.synthesize(text, course.language)
+            except speech.SpeechError as exc:
+                raise LessonError(f"no clip for {text!r}: {exc}") from exc
+            # The file is complete or not there, as the memory file.
+            partial = path.with_suffix(".tmp")
+            partial.write_bytes(data)
+            partial.replace(path)
+    return clips
+
+
 def build_deck(
-    course: Course, stem: Path, new_per_day: int, reviews_per_day: int
+    course: Course,
+    stem: Path,
+    new_per_day: int,
+    reviews_per_day: int,
+    voice: bool = False,
 ) -> Path:
+    folder = stem.with_suffix(".clips")
+    clips = clips_of(course, folder) if voice else {}
     notes = [
         make_deck.PackageNote(
             guid(lesson.key, card.english),
             card.english,
-            card.answer,
+            # The import reads the clip from the tag, and leaves the tag out
+            # of the text.
+            f"{card.answer} [sound:{clips[card.answer]}]" if voice else card.answer,
             deck_name(course, lesson),
         )
         for lesson in sorted(course.lessons, key=lambda lesson: lesson.number)
         for card in lesson.cards
     ]
-    package = make_deck.write_package(stem.with_suffix(".apkg"), notes)
+    media = {name: (folder / name).read_bytes() for name in sorted(set(clips.values()))}
+    package = make_deck.write_package(stem.with_suffix(".apkg"), notes, media)
     config = {
         "name": course.name,
         "language": course.language,
@@ -480,6 +531,8 @@ def build_deck(
         "new_per_day": new_per_day,
         "reviews_per_day": reviews_per_day,
     }
+    if voice:
+        config |= {"listen": True, "dictation": True}
     stem.with_suffix(".toml").write_text(make_toml.render(config), encoding="utf-8")
     return package
 
@@ -540,6 +593,12 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         action="store_true",
         help="write the package and the toml from the memory file, with no AI call",
     )
+    parser.add_argument(
+        "--voice",
+        action="store_true",
+        help="put a clip of each answer in the package, from the voice service"
+        " of TLHELPER_VOICE_URL, and add listen and dictation cards",
+    )
     parser.add_argument("--new-per-day", type=int, default=10)
     parser.add_argument("--reviews-per-day", type=int, default=100)
     args = parser.parse_args(argv)
@@ -588,9 +647,10 @@ def run(args: argparse.Namespace) -> None:
     if not course.lessons:
         print(f"{memory}: no lessons, so no deck")
         return
-    if changed or args.build_only or not args.course.with_suffix(".apkg").exists():
+    package = args.course.with_suffix(".apkg")
+    if changed or args.build_only or args.voice or not package.exists():
         package = build_deck(
-            course, args.course, args.new_per_day, args.reviews_per_day
+            course, args.course, args.new_per_day, args.reviews_per_day, args.voice
         )
         cards = sum(len(lesson.cards) for lesson in course.lessons)
         print(f"{package}: {len(course.lessons)} lessons, {cards} cards")
