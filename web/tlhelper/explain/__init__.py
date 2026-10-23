@@ -35,7 +35,7 @@ The OpenAI SDK (openai.py), the default backend
 Claude Code (claude_cli.py), TLHELPER_AI_BACKEND=claude
     Each request is one `claude -p` process, with no tools and no session
     file, so a machine with the CLI and its login needs no key. For a local
-    run and for the scripts (scripts/README.md); the image has no CLI.
+    run and for the scripts (tools/README.md); the image has no CLI.
     TLHELPER_AI_MODEL, if set, goes to `claude --model`: an alias such as
     "sonnet", or a full model name. TLHELPER_AI_MAX_TOKENS does nothing here.
 

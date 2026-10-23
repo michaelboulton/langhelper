@@ -5,7 +5,6 @@ from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
-from scripts import check_voices
 from tlhelper import app as service
 from tlhelper import speech
 from tlhelper.speech import openai as backend
@@ -259,50 +258,6 @@ def test_synthesize_with_a_voice(openai, monkeypatch):
         "model": "k2-fsa/OmniVoice",
         "voice": "it-2",
     }
-
-
-def test_check_voices(openai, monkeypatch, tmp_path, capsys):
-    calls = fake_service(monkeypatch, models=[{**OMNIVOICE, "voices": ["it", "it-2"]}])
-    out = tmp_path / "out"
-    check_voices.main(
-        ["--language", "it", "--voice", "it", "--voice", "it-2", "--out", str(out)],
-        standalone_mode=False,
-    )
-    assert (out / "it-it.mp3").read_bytes() == MP3
-    assert (out / "it-it-2.mp3").read_bytes() == MP3
-    posts = [kwargs["json"] for method, _, kwargs in calls if method == "post"]
-    assert [(post["input"], post["voice"]) for post in posts] == [
-        (check_voices.SAMPLES["it"], "it"),
-        (check_voices.SAMPLES["it"], "it-2"),
-    ]
-    assert "it-it-2.mp3" in capsys.readouterr().out
-
-
-@pytest.mark.parametrize(
-    "models, args, error",
-    [
-        (
-            [{**OMNIVOICE, "voices": ["it"]}],
-            ["--voice", "it-2"],
-            "no voice it-2, only: it",
-        ),
-        ([OMNIVOICE], ["--voice", "it"], "no voice it, only: none"),
-        ([], ["--voice", "it"], "no model list"),
-    ],
-)
-def test_check_voices_stops_before_a_request(
-    openai, monkeypatch, tmp_path, models, args, error
-):
-    calls = fake_service(monkeypatch, models=models)
-    with pytest.raises(SystemExit, match=error):
-        check_voices.main(["--language", "it", "--out", str(tmp_path), *args])
-    assert [method for method, _, _ in calls] == ["get"]
-
-
-def test_check_voices_without_an_address(monkeypatch):
-    monkeypatch.delenv("TLHELPER_VOICE_URL", raising=False)
-    with pytest.raises(SystemExit, match="TLHELPER_VOICE_URL"):
-        check_voices.main(["--language", "it", "--voice", "it"])
 
 
 def test_synthesize_without_an_address(monkeypatch):

@@ -61,3 +61,5 @@ jobs:
         working-directory: tts
       - run: uv run --no-sync pytest
         working-directory: web
+      - run: uv run --no-sync pytest
+        working-directory: tools

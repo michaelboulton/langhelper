@@ -1,8 +1,8 @@
 """Pitch accent lookup for Croatian words.
 
 The data comes from the Serbo-Croatian entries of English Wiktionary, through
-kaikki.org (CC BY-SA). build_glosses.py turns that export into accents.db, a
-read-only SQLite file with three tables:
+kaikki.org (CC BY-SA). tools/scripts/build_glosses.py turns that export into
+accents.db, a read-only SQLite file with three tables:
 
     lemmas(key, form)                         'kuća|NOUN', 'kȕća'
     forms(key, surface, form, gcase, number)  'kuća|NOUN', 'kuće', 'kȕćē', 'gen', 'sg'

@@ -2,7 +2,7 @@
 the user selects the other side from LANGUAGES.
 
 To add a language: make a subfolder with a class that implements
-base.Language, add it here, and build its gloss file (build_glosses.py). The
+base.Language, add it here, and build its gloss file (tools/scripts/build_glosses.py). The
 machine translator (translators/) must have the language, with a map of its
 code if the service has another one, and a tagger must exist for it.
 """

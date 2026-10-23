@@ -4,7 +4,7 @@
 service of docker-compose.yml (Gemma with its --mmproj), or any service with
 the chat completions API of OpenAI and `input_audio`. A quick check that a
 clip is speech, such as the mp3 of the voice service or a reference clip of
-omnivoice. The set-up is in scripts/README.md.
+omnivoice. The set-up is in tools/README.md.
 
 With no TLHELPER_AI_* variables set, it asks the llamacpp service at
 http://localhost:9931/v1. Each variable that is set replaces its default.
@@ -49,7 +49,7 @@ LANGUAGE_PROMPT = (
     " transcript."
 )
 # A little randomness and a repeat penalty: at 0 and with no penalty, Gemma
-# can repeat one token of its template until max_tokens (see scripts/README.md).
+# can repeat one token of its template until max_tokens (see tools/README.md).
 TEMPERATURE = 0.3
 REPEAT_PENALTY = 1.3
 MAX_TOKENS = 300

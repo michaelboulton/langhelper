@@ -9,7 +9,7 @@ The output is one shell script, `.data/audio/<course>/plan.sh` at the
 repository root. Write it, but never run it. The user reads it, edits it, and
 runs it.
 
-The commands are in `web/scripts/README.md`, sections "audio_lessons.py" and
+The commands are in `tools/README.md`, sections "audio_lessons.py" and
 "Flashcards from the scripts". Read them before you write the plan.
 
 ## The input
@@ -69,7 +69,7 @@ for each lesson, in the order of the syllabus:
 #  2. <topic> | <grammar step>
 set -euo pipefail
 : "${TLHELPER_VOICE_URL:?set it to the voice service, such as http://localhost:8002}"
-cd "$(dirname "$0")/../../../web"
+cd "$(dirname "$0")/../../../tools"
 COURSE=../.data/audio/<course>
 DECKS=../.data/decks/<course>
 

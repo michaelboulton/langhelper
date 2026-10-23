@@ -30,7 +30,8 @@ three grammar problems](docs/breakdown.png)
 | -------------- | -------- |
 | `web/` | The FastAPI app (`tlhelper`) and the page. See [web/README.md](web/README.md) |
 | `tts/` | The text-to-speech service for the "Listen" buttons, with OmniVoice. See [tts/README.md](tts/README.md) |
-| `pyproject.toml`, `uv.lock` | The uv workspace of the two folders, with one set of locked versions |
+| `tools/` | The admin tools: flashcard decks from lessons, audio lessons, voice checks and the gloss files. Not in an image. See [tools/README.md](tools/README.md) |
+| `pyproject.toml`, `uv.lock` | The uv workspace of the three folders, with one set of locked versions |
 | `docker-compose.yml` | A local run of `web`, `tts` and a llama.cpp server for the AI buttons |
 | `.data/` | The downloaded models and the databases of a local run. Not in git |
 | `docs/` | The pictures of this README |

@@ -1,0 +1,27 @@
+[project]
+name = "langhelper-tools"
+version = "0.1.0"
+description = "Admin tools of langhelper-web: decks, audio lessons, voice checks and the gloss files. Not in any image"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "beautifulsoup4",
+    "click",
+    "langhelper-web",
+    "markdownify",
+    "requests",
+    "tqdm",
+]
+
+[tool.uv.sources]
+langhelper-web = { workspace = true }
+
+# The project is not installed, so pytest needs this folder on the path to
+# import scripts. ../web/tests gives the package writer of the web tests.
+[tool.pytest.ini_options]
+pythonpath = [".", "../web/tests"]
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]

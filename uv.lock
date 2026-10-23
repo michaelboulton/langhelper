@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = "==3.12.*"
 resolution-markers = [
     "sys_platform != 'darwin'",
@@ -8,6 +8,7 @@ resolution-markers = [
 
 [manifest]
 members = [
+    "langhelper-tools",
     "langhelper-web",
     "omnivoice-server",
 ]
@@ -670,13 +671,43 @@ wheels = [
 ]
 
 [[package]]
+name = "langhelper-tools"
+version = "0.1.0"
+source = { virtual = "tools" }
+dependencies = [
+    { name = "beautifulsoup4" },
+    { name = "click" },
+    { name = "langhelper-web" },
+    { name = "markdownify" },
+    { name = "requests" },
+    { name = "tqdm" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "beautifulsoup4" },
+    { name = "click" },
+    { name = "langhelper-web", editable = "web" },
+    { name = "markdownify" },
+    { name = "requests" },
+    { name = "tqdm" },
+]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=9.1.1" }]
+
+[[package]]
 name = "langhelper-web"
 version = "0.1.0"
-source = { virtual = "web" }
+source = { editable = "web" }
 dependencies = [
     { name = "authlib" },
     { name = "classla" },
-    { name = "click" },
     { name = "de-core-news-md" },
     { name = "de-dep-news-trf" },
     { name = "en-core-web-sm" },
@@ -694,7 +725,6 @@ dependencies = [
     { name = "spacy" },
     { name = "torch", version = "2.14.1", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform == 'darwin'" },
     { name = "torch", version = "2.14.1+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "sys_platform != 'darwin'" },
-    { name = "tqdm" },
     { name = "uvicorn" },
     { name = "zstandard" },
 ]
@@ -705,16 +735,11 @@ dev = [
     { name = "playwright" },
     { name = "pytest" },
 ]
-lessons = [
-    { name = "beautifulsoup4" },
-    { name = "markdownify" },
-]
 
 [package.metadata]
 requires-dist = [
     { name = "authlib" },
     { name = "classla" },
-    { name = "click" },
     { name = "de-core-news-md", url = "https://github.com/explosion/spacy-models/releases/download/de_core_news_md-3.8.0/de_core_news_md-3.8.0-py3-none-any.whl" },
     { name = "de-dep-news-trf", url = "https://github.com/explosion/spacy-models/releases/download/de_dep_news_trf-3.8.0/de_dep_news_trf-3.8.0-py3-none-any.whl" },
     { name = "en-core-web-sm", url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" },
@@ -731,7 +756,6 @@ requires-dist = [
     { name = "requests" },
     { name = "spacy" },
     { name = "torch", index = "https://download.pytorch.org/whl/cpu" },
-    { name = "tqdm" },
     { name = "uvicorn" },
     { name = "zstandard", specifier = ">=0.25.0" },
 ]
@@ -741,10 +765,6 @@ dev = [
     { name = "fluent-syntax", specifier = ">=0.19.0" },
     { name = "playwright", specifier = ">=1.63.0" },
     { name = "pytest", specifier = ">=9.1.1" },
-]
-lessons = [
-    { name = "beautifulsoup4" },
-    { name = "markdownify" },
 ]
 
 [[package]]

@@ -1,6 +1,6 @@
 """The English glosses of Wiktionary for the words of one language.
 
-build_glosses.py writes a read-only SQLite file for each language, with the
+tools/scripts/build_glosses.py writes a read-only SQLite file for each language, with the
 table that align.py needs:
 
     glosses(key, word, rank)    'haus|NOUN', 'house', 0

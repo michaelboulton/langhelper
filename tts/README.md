@@ -90,7 +90,7 @@ gets `unknown-voice`, and a request with both `voice` and `instruct` gets
 `voice-and-instruct`. The server reads the clips at the start, so a new clip
 needs a restart. The image has no clips: the compose files mount `voices/`
 into the container, so a new clip needs no new build.
-`../web/scripts/README.md`, section "check_voices.py", has a check by ear of
+`../tools/README.md`, section "check_voices.py", has a check by ear of
 the named clips.
 
 The clips are there because a description alone fails on short texts. The

@@ -6,7 +6,6 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "authlib",
     "classla",
-    "click",
     "de-core-news-md",
     "de-dep-news-trf",
     "en-core-web-sm",
@@ -23,7 +22,6 @@ dependencies = [
     "requests",
     "spacy",
     "torch",
-    "tqdm",
     "uvicorn",
     "zstandard>=0.25.0",
 ]
@@ -39,8 +37,6 @@ hr-core-news-md = { url = "https://github.com/explosion/spacy-models/releases/do
 it-core-news-md = { url = "https://github.com/explosion/spacy-models/releases/download/it_core_news_md-3.8.0/it_core_news_md-3.8.0-py3-none-any.whl" }
 en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
 
-# The project is not installed, so pytest needs this folder on the path to
-# import tlhelper.
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
@@ -51,9 +47,13 @@ dev = [
     "playwright>=1.63.0",
     "pytest>=9.1.1",
 ]
-# scripts/lessons.py reads a lesson from a web page. Not in the image: the
-# Dockerfile installs only the default groups.
-lessons = [
-    "beautifulsoup4",
-    "markdownify",
-]
+
+# A package only so that ../tools can depend on it. The image does not
+# install it: web/Dockerfile copies tlhelper/ in place.
+[build-system]
+requires = ["uv_build>=0.8,<0.12"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "tlhelper"
+module-root = ""

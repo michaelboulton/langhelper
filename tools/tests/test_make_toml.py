@@ -1,6 +1,7 @@
 import pytest
 import tomllib
-from tlhelper.flashcards import decks, make_toml, store
+from scripts import make_toml
+from tlhelper.flashcards import decks, store
 from tlhelper.flashcards.apkg import Note
 
 NOTES = [

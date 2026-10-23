@@ -1,6 +1,6 @@
 """Scripts of audio lessons from topics: a language model writes a spoken
 lesson for each topic, with a memory of the earlier lessons. The format, the
-memory and the prompt are in scripts/README.md.
+memory and the prompt are in tools/README.md.
 
 The first run makes the course folder and its course.toml. Each topic becomes
 the next lesson, NN.txt, and a run skips a topic that is in the course:
@@ -46,11 +46,10 @@ import click
 from pydantic import ValidationError
 from tlhelper import explain, speech
 from tlhelper.audio_lessons import script
-from tlhelper.flashcards import make_toml
 from tlhelper.languages import LANGUAGES
 from tqdm import tqdm
 
-from scripts import lessons
+from scripts import lessons, make_toml
 
 TARGET_LINES = 500
 # Measured on a voiced lesson: 109 lines in 286 seconds.

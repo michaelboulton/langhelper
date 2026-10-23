@@ -4,18 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository layout
 
-The repository is one uv workspace. The root `pyproject.toml` lists the members, and the root `uv.lock` holds the versions of both. Each member has its own `pyproject.toml`, `Dockerfile`, `README.md` and `tests/`:
+The repository is one uv workspace. The root `pyproject.toml` lists the members, and the root `uv.lock` holds the versions of all of them. Each member has its own `pyproject.toml`, `README.md` and `tests/`:
 
-- `web/`: the language-learning web app (uv project `langhelper-web`). The Python package is `tlhelper`, a FastAPI service. The page is plain JS in `static/`, with no build step.
-- `tts/`: the text-to-speech service (uv project `omnivoice-server`). The Python package is `omnivoice_server`, a ctypes binding to `libomnivoice.so` behind an OpenAI-shaped speech API.
+- `web/`: the language-learning web app (uv project `langhelper-web`). The Python package is `tlhelper`, a FastAPI service. The page is plain JS in `static/`, with no build step. It has a `Dockerfile`.
+- `tts/`: the text-to-speech service (uv project `omnivoice-server`). The Python package is `omnivoice_server`, a ctypes binding to `libomnivoice.so` behind an OpenAI-shaped speech API. It has a `Dockerfile`.
+- `tools/`: the admin tools (uv project `langhelper-tools`), in the package `scripts`: the flashcard decks from lessons, the audio lessons, the voice checks, and the build of the `glosses.db` files. It depends on `langhelper-web` and imports `tlhelper`. No image has it. Code that only these tools use goes here, not in `tlhelper/`.
 
-`README.md` at the root is a short overview. `web/README.md` and `tts/README.md` are the full reference: the API, the environment variables, the data files and the deploy steps. Read the relevant section before a change.
+`README.md` at the root is a short overview. `web/README.md`, `tts/README.md` and `tools/README.md` are the full reference: the API, the environment variables, the data files and the deploy steps. Read the relevant section before a change.
 
 Other documents in `web/`:
 
 - `LANGUAGES.md`: the extra work for a study language with a non-Latin script or no spaces.
 - `DART.md`: a plan to move `static/` to Flutter. Nothing in it exists yet.
-- `scripts/README.md`: admin tools that are not in the image.
 
 To plan an audio course ("a course of 20 lessons of Italian, with flashcards"), follow `.claude/skills/audio-course/SKILL.md`. It writes a `plan.sh` of the commands for the user to run.
 
@@ -23,9 +23,9 @@ To plan an audio course ("a course of 20 lessons of Italian, with flashcards"), 
 
 ## Commands
 
-Run `git lfs pull` and `uv sync --all-packages` at the root one time. The web tests need the LFS files (`accents.db` and the `glosses.db` files, see "Storage"). Without them, each of those files is a pointer of about 130 bytes, and the tests that tag Croatian fail with `sqlite3.DatabaseError: file is not a database`. `uv sync --all-packages` makes one `.venv` at the root for both members. After a change to any `pyproject.toml`, run `uv lock` at the root. The members have no lockfile of their own. The torch index is in the root `pyproject.toml`.
+Run `git lfs pull` and `uv sync --all-packages` at the root one time. The web tests need the LFS files (`accents.db` and the `glosses.db` files, see "Storage"). Without them, each of those files is a pointer of about 130 bytes, and the tests that tag Croatian fail with `sqlite3.DatabaseError: file is not a database`. `uv sync --all-packages` makes one `.venv` at the root for all members. After a change to any `pyproject.toml`, run `uv lock` at the root. The members have no lockfile of their own. The torch index is in the root `pyproject.toml`.
 
-Run the tests from the member folder (`web/` or `tts/`). The members are not installed, so pytest finds the package through `pythonpath = ["."]`.
+Run the tests from the member folder (`web/`, `tts/` or `tools/`). `uv sync` installs `web/` as an editable package, so `tools/` can import `tlhelper`. The other members are not installed, so pytest finds their package through `pythonpath = ["."]`.
 
 ```bash
 uv run pytest                                          # all tests of the member
@@ -47,11 +47,16 @@ DATA_ROOT=../.data uv run uvicorn tlhelper.app:app --port 8000 --no-access-log  
 uv run playwright install --only-shell chromium        # one time, for the browser tests
 uv run pytest tests/test_browser_breakdown.py --screenshots=shots   # save a PNG of each browser test
 uv run pytest tests/test_locales.py                    # check the Fluent catalogs
-uv run python -m tlhelper.build_glosses --language de kaikki.org-dictionary-German.jsonl   # rebuild a glosses.db
-uv run python -m tlhelper.flashcards.make_toml decks/x.apkg --language hr --name "X"      # write the .toml of a deck
 ```
 
-Both Dockerfiles use the repository root as the build context, because they need the root `pyproject.toml` and `uv.lock`. One root `.dockerignore` serves both. From the root:
+Commands for `tools/`, from `tools/`:
+
+```bash
+uv run python -m scripts.build_glosses --language de kaikki.org-dictionary-German.jsonl   # rebuild a glosses.db
+uv run python -m scripts.make_toml ../web/decks/x.apkg --language hr --name "X"          # write the .toml of a deck
+```
+
+Both Dockerfiles use the repository root as the build context, because they need the root `pyproject.toml` and `uv.lock`. One root `.dockerignore` serves both. `web/Dockerfile` installs from an export of the locked dependencies of `web/` alone, so a change in `tools/` or `tts/` does not reinstall torch (`web/README.md`, "The image"). From the root:
 
 ```bash
 docker compose up --build                              # web, llamacpp and tts, with the models in .data/ and the keys in .env
@@ -69,7 +74,7 @@ Tests that need resources skip when the resources are missing:
 - The heavy German tests need `de_dep_news_trf`.
 - `test_the_clips_of_the_repo` needs the voice clips in `tts/omnivoice_server/voices/`.
 
-CI (`.github/workflows/tests.yml`) runs prek, then the tests of both members. It installs the heavy German model and caches the classla models in `.data/`, so `test_real_models` runs.
+CI (`.github/workflows/tests.yml`) runs prek, then the tests of each member. It installs the heavy German model and caches the classla models in `.data/`, so `test_real_models` runs.
 
 ## web architecture
 
@@ -108,7 +113,7 @@ All persistent state is under `DATA_ROOT` (`/data` on Fly, `.data/` at the repos
 
 The app migrates rows from older table names at startup and leaves the old tables unchanged. The deck import runs at startup and skips an unchanged deck. Increase `IMPORT_VERSION` in `flashcards/decks.py` when a change to the import must read every deck again.
 
-`accents.db` and the `glosses.db` files in `tlhelper/languages/*/` are generated from Wiktionary by `build_glosses.py`. They are in git LFS, and the image includes them.
+`accents.db` and the `glosses.db` files in `tlhelper/languages/*/` are generated from Wiktionary by `tools/scripts/build_glosses.py`. They are in git LFS, and the image includes them.
 
 ### Login
 

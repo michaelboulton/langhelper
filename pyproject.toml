@@ -1,7 +1,7 @@
-# The workspace root: no project of its own, one uv.lock for both members.
+# The workspace root: no project of its own, one uv.lock for all members.
 # See README.md.
 [tool.uv.workspace]
-members = ["web", "tts"]
+members = ["web", "tts", "tools"]
 
 # CPU-only torch for web/ (its [tool.uv.sources] selects this index). The
 # default PyPI wheel pulls several GB of CUDA libraries.

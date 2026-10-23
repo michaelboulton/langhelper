@@ -1,11 +1,11 @@
 """Make a deck package from a text file, for an admin with no Anki at hand:
 
 \b
-    uv run python -m tlhelper.flashcards.make_deck decks/basics.tsv
+    uv run python -m scripts.make_deck ../web/decks/basics.tsv
 
 Each line of the text file is "English<TAB>answer". The result is
-decks/basics.apkg, with the fields Front and Back. It holds only what apkg.py
-reads (the notes, the field names and the Anki decks), so Anki itself cannot
+../web/decks/basics.apkg, with the fields Front and Back. It holds only what
+tlhelper/flashcards/apkg.py reads (the notes, the field names and the Anki decks), so Anki itself cannot
 import it. write_package() is the writer for a caller that has its own notes
 and wants an Anki deck for each group of them (scripts/lessons.py).
 """

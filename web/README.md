@@ -39,10 +39,9 @@ login. The API refuses texts over `MAX_TEXT_CHARS`.
 | `tlhelper/languages/german/` | `checks.py`: the grammar checks of a German text            |
 | `tlhelper/languages/french/` | `checks.py`: the grammar checks of a French text            |
 | `tlhelper/languages/italian/` | `checks.py`: the grammar checks of an Italian text          |
-| `tlhelper/flashcards/` | The flashcards. `apkg.py` reads an Anki deck, and `decks.py` imports the decks. `store.py` keeps the progress of each user and the schedule. `grade.py` grades a typed answer, and `routes.py` is the API. `make_deck.py` makes a deck from a text file, and `make_toml.py` writes the `.toml` of a deck |
+| `tlhelper/flashcards/` | The flashcards. `apkg.py` reads an Anki deck, and `decks.py` imports the decks. `store.py` keeps the progress of each user and the schedule. `grade.py` grades a typed answer, and `routes.py` is the API |
 | `decks/`         | The decks that go in the image. The section "Flashcards" describes the files |
-| `scripts/`       | Local tools for the admin, not in the image. `lessons.py` makes a deck of flashcards from the lessons of a course with the AI service. See `scripts/README.md` |
-| `tlhelper/build_glosses.py` | Builds the data files below from the kaikki.org export. Not in the image |
+| `../tools/`      | Local tools for the admin, not in the image: the decks, the audio lessons and the data files below. See `../tools/README.md` |
 | `tlhelper/languages/croatian/accents.db` | Generated SQLite file with the accented word forms and the English glosses from Wiktionary |
 | `tlhelper/languages/german/glosses.db` | Generated SQLite file with the English glosses of the German words from Wiktionary |
 | `tlhelper/languages/french/glosses.db` | Generated SQLite file with the English glosses of the French words from Wiktionary |
@@ -58,7 +57,7 @@ login. The API refuses texts over `MAX_TEXT_CHARS`.
 | `static/manifest.json`, `static/icon*.svg`, `static/icon*.png` | The web app manifest and the icons, for the install on a phone. See "Install on Android" |
 | `pyproject.toml` | Dependencies. Pins `torch` to the CPU-only wheel index of the root `pyproject.toml` |
 | `../uv.lock`     | Locked versions of the whole uv workspace. Update with `uv lock --upgrade` |
-| `Dockerfile`     | `python:3.12-slim` plus `uv sync --frozen`, runs as uid 1000. Its build context is the repository root |
+| `Dockerfile`     | `python:3.12-slim` plus the locked dependencies of `web/`, runs as uid 1000. Its build context is the repository root. See "The image" |
 | `entrypoint.sh`  | Makes sure that `/data` is writable, then execs uvicorn                 |
 | `../docker-compose.yml` | Local run with Docker Compose and the models in `.data/` at the repository root, with a llama.cpp service for the AI buttons and the `tts/` service for the "Listen" buttons |
 | `../example.env` | The keys for `docker-compose.yml`. Copy it to `.env`, which git ignores |
@@ -227,11 +226,11 @@ preposition (`ȕ grād`). It does not select between two words with the same
 spelling, for example `grȃd` (city) and `grȁd` (hail).
 
 `accents.db` has 36,551 accented dictionary forms and 242,415 accented word
-forms, in 15 MB. To build it again from newer data:
+forms, in 15 MB. To build it again from newer data, from `../tools/`:
 
 ```bash
 curl -LO https://kaikki.org/dictionary/Serbo-Croatian/kaikki.org-dictionary-SerboCroatian.jsonl
-uv run python -m tlhelper.build_glosses kaikki.org-dictionary-SerboCroatian.jsonl
+uv run python -m scripts.build_glosses kaikki.org-dictionary-SerboCroatian.jsonl
 ```
 
 kaikki.org marks that file as deprecated. The script also accepts the full raw
@@ -452,10 +451,10 @@ A shared package can have some notes with the two fields the other way round.
 The import looks for common English words in the two fields of each note. If
 only the answer field has such words, the import swaps the two fields.
 
-To write the `.toml` of a package, use this script:
+To write the `.toml` of a package, use this script, from `../tools/`:
 
 ```bash
-uv run python -m tlhelper.flashcards.make_toml decks/mydeck.apkg --language hr --name "My deck"
+uv run python -m scripts.make_toml ../web/decks/mydeck.apkg --language hr --name "My deck"
 ```
 
 The script prints the note types and the fields of the package, and some of the
@@ -493,14 +492,14 @@ card, so a new export keeps the progress of all users. A note that is not in
 the new export leaves the queue, and its answers stay in the log.
 
 With no Anki at hand, make a deck from a text file with one
-"English, tab, answer" pair on each line:
+"English, tab, answer" pair on each line, from `../tools/`:
 
 ```bash
-uv run python -m tlhelper.flashcards.make_deck decks/mydeck.tsv
+uv run python -m scripts.make_deck ../web/decks/mydeck.tsv
 ```
 
 To make a deck from the lessons of a course, with the AI service writing 10 to
-20 cards for each lesson and a subdeck for each lesson, see `scripts/README.md`.
+20 cards for each lesson and a subdeck for each lesson, see `../tools/README.md`.
 
 ### Grades and the schedule
 
@@ -653,7 +652,7 @@ party.
 The second backend is Claude Code: `TLHELPER_AI_BACKEND=claude` runs one
 `claude -p` process for each request, with no tools and no session file. The
 login of the CLI is the credential, so it needs no key. It is for a local run
-and for `scripts/` (the image has no CLI). `TLHELPER_AI_MODEL` then goes to
+and for `../tools/` (the image has no CLI). `TLHELPER_AI_MODEL` then goes to
 `claude --model`, as an alias such as `sonnet` or a full model name.
 
 Three things limit the cost. `TLHELPER_AI_MAX_TOKENS` limits one answer.
@@ -734,11 +733,11 @@ In each lesson, two actors have a short dialogue, and a narrator then asks
 for its phrases, with a pause to say each one aloud. The tab shows the
 courses and their lessons. A click on a lesson shows a player for its mp3 and
 the script under it. The tab only plays the lessons.
-`scripts/audio_lessons.py` writes the scripts and the mp3s
-(`scripts/README.md`, "audio_lessons.py").
+`../tools/scripts/audio_lessons.py` writes the scripts and the mp3s
+(`../tools/README.md`, "audio_lessons.py").
 
 The courses are the folders of `DATA_ROOT/audio/`, one folder for each
-course, in the layout of `scripts/README.md`, "The course folder". The app
+course, in the layout of `../tools/README.md`, "The course folder". The app
 reads `course.toml`, the scripts `NN.txt` and the mp3s `NN.mp3`. It does not
 need the clip folders `NN/`. A course with no `course.toml` is not listed.
 A course or a lesson that does not parse is not listed, and the log has the
@@ -854,11 +853,12 @@ the same form in each case. So the case checks only trust an article, an
 adjective and a pronoun. They miss an error that is a valid form in that place:
 "Ich wohne in die Stadt" reads as `in` with the accusative.
 
-To build `glosses.db` again from newer data (the download is 1 GB):
+To build `glosses.db` again from newer data (the download is 1 GB), from
+`../tools/`:
 
 ```bash
 curl -LO https://kaikki.org/dictionary/German/kaikki.org-dictionary-German.jsonl
-uv run python -m tlhelper.build_glosses --language de kaikki.org-dictionary-German.jsonl
+uv run python -m scripts.build_glosses --language de kaikki.org-dictionary-German.jsonl
 ```
 
 French has only a light model. It has no tag set of its own: its tag is the
@@ -882,7 +882,7 @@ The French glosses come from Wiktionary in the same way:
 
 ```bash
 curl -LO https://kaikki.org/dictionary/French/kaikki.org-dictionary-French.jsonl
-uv run python -m tlhelper.build_glosses --language fr kaikki.org-dictionary-French.jsonl
+uv run python -m scripts.build_glosses --language fr kaikki.org-dictionary-French.jsonl
 ```
 
 The gloss keys have no grave or acute accent (`glosses.py`), so `à` and `a` are
@@ -916,7 +916,7 @@ The Italian glosses come from Wiktionary in the same way:
 
 ```bash
 curl -LO https://kaikki.org/dictionary/Italian/kaikki.org-dictionary-Italian.jsonl
-uv run python -m tlhelper.build_glosses --language it kaikki.org-dictionary-Italian.jsonl
+uv run python -m scripts.build_glosses --language it kaikki.org-dictionary-Italian.jsonl
 ```
 
 The file is 15 MB, twice the French one, because Italian Wiktionary has an
@@ -944,7 +944,7 @@ language than its ISO 639-1 code in capital letters, add the code to
    and the spelling check for a language that pyspellchecker has.
 3. Add the class to `LANGUAGES` in `languages/__init__.py`. The page reads its
    list from the API, so it needs no change.
-4. Add the language to `LANGUAGES` in `build_glosses.py`, and build its gloss
+4. Add the language to `LANGUAGES` in `../tools/scripts/build_glosses.py`, and build its gloss
    file in the folder of the language. The image gets the file with the code.
 5. For a spaCy model, pin its wheel in `pyproject.toml`.
 
@@ -1290,6 +1290,20 @@ Without compose, from the repository root:
 docker build -f web/Dockerfile -t langhelper-web .
 docker run --rm -p 8000:8000 -v model_data:/data --env-file .env langhelper-web
 ```
+
+### The image
+
+The image has only the server: `tlhelper/`, `static/`, `decks/` and the
+dependencies of `web/pyproject.toml`. The tools of `../tools/` are not in it.
+
+`uv.lock` at the repository root holds the versions of all the members, so a
+change to the dependencies of `tts/` or `tools/` changes it too. The first
+stage of the Dockerfile exports the locked dependencies of `web/` alone to
+`pylock.toml` (`uv export --package langhelper-web`). The second stage
+installs them with `uv pip sync`. Docker reuses the install layer while
+`pylock.toml` stays the same, so only a change to the dependencies of `web/`
+installs torch and the models again. A change to `tlhelper/` or `static/`
+copies only those folders again.
 
 ### With podman
 

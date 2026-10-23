@@ -36,7 +36,7 @@ The app has no code for one of these languages. It only has the parts that are t
     - `MAX_DISTANCE` and `MAX_SHIFT` assume a similar number of words on both sides. These languages give more tokens than English.
     - Arabic and Hebrew write "and", "in", and "the" onto the next word, and the tagger makes a word of each. That also gives more words on the study side.
     - Move these rules into a record on `LanguageInfo`, as `Grading` does for the answers. Tune them with real sentences.
-2. The gloss build (`tlhelper/build_glosses.py`).
+2. The gloss build (`../tools/scripts/build_glosses.py`).
     - Add the language to `LANGUAGES`.
     - Add the Wiktionary word classes that the `UPOS` map does not have, for example "counter", "suffix", and "prefix".
 3. The text of the page and of the API names Croatian in some places. The text of the page is in the catalogs, `tlhelper/languages/*/ui.ftl`.

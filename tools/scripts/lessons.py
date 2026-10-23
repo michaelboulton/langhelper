@@ -1,32 +1,32 @@
 """Flashcards from lessons: a language model writes 10 to 20 cards for each
 lesson of a course, with a memory of the earlier lessons, and the result is
 one deck package with a subdeck for each lesson. The set-up, the memory file
-and the prompt are in scripts/README.md.
+and the prompt are in tools/README.md.
 
 A course grows one run at a time. The first run makes the scaffolding: the
 memory file <course>.json, the package <course>.apkg and its <course>.toml.
 Each later run appends the lessons it gets and builds the deck again:
 
 \b
-    # Lesson 1: creates decks/croatian-course.json, .apkg and .toml
-    uv run --group lessons python -m scripts.lessons \\
-        --language hr --name "Croatian course" --course decks/croatian-course \\
+    # Lesson 1: creates ../web/decks/croatian-course.json, .apkg and .toml
+    uv run python -m scripts.lessons \\
+        --language hr --name "Croatian course" --course ../web/decks/croatian-course \\
         lessons/01.md
 
 \b
     # Lesson 2, later: appends it and rebuilds the deck. The cards of lesson 1
     # keep their guids, so the progress of every user stays.
-    uv run --group lessons python -m scripts.lessons \\
-        --course decks/croatian-course https://www.easy-croatian.com/2014/11/16.html
+    uv run python -m scripts.lessons \\
+        --course ../web/decks/croatian-course https://www.easy-croatian.com/2014/11/16.html
 
 A lesson is a markdown file or the address of a web page. The model of the AI
-service comes from the same TLHELPER_AI_* variables as the app (README.md,
+service comes from the same TLHELPER_AI_* variables as the app (web/README.md,
 "Set up the AI service"). With --backend claude, each request is one
 `claude -p` process of Claude Code instead, with its login and no key:
 
 \b
-    uv run --group lessons python -m scripts.lessons --backend claude \\
-        --course decks/croatian-course lessons/03.md
+    uv run python -m scripts.lessons --backend claude \\
+        --course ../web/decks/croatian-course lessons/03.md
 
 With --voice, the voice service of TLHELPER_VOICE_URL reads each answer, and
 the deck gets listen and dictation cards. The clips stay in <course>.clips/,
@@ -34,8 +34,8 @@ so a later run asks only for the new answers. --build-only --voice adds the
 clips to a course that has none:
 
 \b
-    TLHELPER_VOICE_URL=http://localhost:8002 uv run --group lessons \\
-        python -m scripts.lessons --course decks/croatian-course --build-only --voice
+    TLHELPER_VOICE_URL=http://localhost:8002 uv run \\
+        python -m scripts.lessons --course ../web/decks/croatian-course --build-only --voice
 
 Run it from the folder of the project, as a module.
 """
@@ -48,10 +48,14 @@ from types import SimpleNamespace
 from urllib.parse import urlparse
 
 import click
+import requests
+from bs4 import BeautifulSoup
+from markdownify import ATX, markdownify
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from tlhelper import explain, speech
-from tlhelper.flashcards import make_deck, make_toml
 from tlhelper.languages import LANGUAGES
+
+from scripts import make_deck, make_toml
 
 # A longer lesson is cut at a paragraph, so one lesson has a bounded cost.
 MAX_LESSON_CHARS = 20_000
@@ -71,7 +75,6 @@ TRIES = 3
 BUSY_WAIT = 10
 FETCH_TIMEOUT = 30
 USER_AGENT = "tlhelper-lessons (+https://github.com/michaelboulton/hosted-mcps)"
-INSTALL = "uv run --group lessons python -m scripts.lessons"
 # What the reader of a package splits an Anki deck name on (apkg.decks_of).
 DECK_SEPARATORS = ("::", "\x1f")
 HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*#*\s*$", re.MULTILINE)
@@ -174,7 +177,7 @@ class Lesson(Strict):
     # The position in the course: the deck name and the order.
     number: int
     source: str
-    # Part of the key of the progress: see scripts/README.md.
+    # Part of the key of the progress: see tools/README.md.
     title: str
     model: str
     summary: str
@@ -247,8 +250,6 @@ def cut(text: str, limit: int = MAX_LESSON_CHARS) -> tuple[str, bool]:
 
 
 def fetch(url: str) -> str:
-    import requests
-
     try:
         response = requests.get(
             url, timeout=FETCH_TIMEOUT, headers={"User-Agent": USER_AGENT}
@@ -264,13 +265,6 @@ def markdown_of_html(html: str) -> tuple[str, str]:
     the first of <article>, <main> and <body>, without the navigation, the
     scripts and the styles, and without each element whose id or class has
     "comment" in it: the comments of the readers are not the lesson."""
-    try:
-        from bs4 import BeautifulSoup
-        from markdownify import ATX, markdownify
-    except ImportError as exc:
-        raise LessonError(
-            f"a web page needs the packages of the lessons group: {INSTALL} ({exc})"
-        ) from exc
     soup = BeautifulSoup(html, "html.parser")
     title = one_line(soup.title.get_text(" ")) if soup.title else ""
     content = soup.find("article") or soup.find("main") or soup.body or soup

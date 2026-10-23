@@ -1,6 +1,6 @@
 """A check by ear of the named voices of the voice service: the same sentence
 in each voice that --voice names, one mp3 for each. The set-up is in
-scripts/README.md.
+tools/README.md.
 
 \b
     TLHELPER_VOICE_URL=http://localhost:8002 uv run python -m scripts.check_voices \\

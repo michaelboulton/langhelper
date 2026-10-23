@@ -1,28 +1,29 @@
 """Build the data file of one language from the kaikki.org export of Wiktionary.
+The paths below are under web/tlhelper/. Run this from tools/.
 
 Croatian, with the accents and the glosses (languages/croatian/accents.db):
 
 \b
     curl -LO https://kaikki.org/dictionary/Serbo-Croatian/kaikki.org-dictionary-SerboCroatian.jsonl
-    uv run python -m tlhelper.build_glosses kaikki.org-dictionary-SerboCroatian.jsonl
+    uv run python -m scripts.build_glosses kaikki.org-dictionary-SerboCroatian.jsonl
 
 German, with the glosses only (languages/german/glosses.db):
 
 \b
     curl -LO https://kaikki.org/dictionary/German/kaikki.org-dictionary-German.jsonl
-    uv run python -m tlhelper.build_glosses --language de kaikki.org-dictionary-German.jsonl
+    uv run python -m scripts.build_glosses --language de kaikki.org-dictionary-German.jsonl
 
 French, with the glosses only (languages/french/glosses.db):
 
 \b
     curl -LO https://kaikki.org/dictionary/French/kaikki.org-dictionary-French.jsonl
-    uv run python -m tlhelper.build_glosses --language fr kaikki.org-dictionary-French.jsonl
+    uv run python -m scripts.build_glosses --language fr kaikki.org-dictionary-French.jsonl
 
 Italian, with the glosses only (languages/italian/glosses.db):
 
 \b
     curl -LO https://kaikki.org/dictionary/Italian/kaikki.org-dictionary-Italian.jsonl
-    uv run python -m tlhelper.build_glosses --language it kaikki.org-dictionary-Italian.jsonl
+    uv run python -m scripts.build_glosses --language it kaikki.org-dictionary-Italian.jsonl
 
 The full raw dump from https://kaikki.org/dictionary/rawdata.html works too,
 because the script only reads the lines of one language. Run this by hand
@@ -37,12 +38,11 @@ import unicodedata
 from pathlib import Path
 
 import click
-
-from .languages.croatian.accents import ACCENTS_PATH, SCHEMA
-from .languages.french import GLOSSES_PATH as FRENCH_GLOSSES_PATH
-from .languages.german import GLOSSES_PATH as GERMAN_GLOSSES_PATH
-from .languages.glosses import GLOSSES_SCHEMA, entry_key, plain
-from .languages.italian import GLOSSES_PATH as ITALIAN_GLOSSES_PATH
+from tlhelper.languages.croatian.accents import ACCENTS_PATH, SCHEMA
+from tlhelper.languages.french import GLOSSES_PATH as FRENCH_GLOSSES_PATH
+from tlhelper.languages.german import GLOSSES_PATH as GERMAN_GLOSSES_PATH
+from tlhelper.languages.glosses import GLOSSES_SCHEMA, entry_key, plain
+from tlhelper.languages.italian import GLOSSES_PATH as ITALIAN_GLOSSES_PATH
 
 # Our language code: (the lang_code of Wiktionary, the file, its schema). Only
 # Wiktionary has one code for Croatian and Serbian. A file with no accent

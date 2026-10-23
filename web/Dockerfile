@@ -1,5 +1,22 @@
 # Build from the repository root, which holds the uv workspace:
 #   docker build -f web/Dockerfile -t langhelper-web .
+#
+# Stage 1: the pinned dependencies of web/ only, out of the uv.lock of the
+# workspace (README.md, "The image").
+FROM python:3.12-slim AS lock
+
+COPY --from=ghcr.io/astral-sh/uv:0.8 /uv /usr/local/bin/uv
+
+WORKDIR /src
+# uv reads the pyproject.toml of each workspace member.
+COPY pyproject.toml uv.lock ./
+COPY web/pyproject.toml web/
+COPY tts/pyproject.toml tts/
+COPY tools/pyproject.toml tools/
+RUN uv export --quiet --frozen --no-dev --package langhelper-web --no-emit-workspace \
+    --format pylock.toml -o /pylock.toml
+
+# Stage 2: the server.
 FROM python:3.12-slim
 
 COPY --from=ghcr.io/astral-sh/uv:0.8 /uv /usr/local/bin/uv
@@ -7,12 +24,10 @@ COPY --from=ghcr.io/astral-sh/uv:0.8 /uv /usr/local/bin/uv
 WORKDIR /app
 
 # Dependencies first, so a change to tlhelper/ or static/ does not reinstall
-# torch. The root pyproject.toml pins torch to the CPU-only wheel index. uv
-# reads the pyproject.toml of each workspace member, so tts/ needs its file too.
-COPY pyproject.toml uv.lock /app/
-COPY web/pyproject.toml /app/web/
-COPY tts/pyproject.toml /app/tts/
-RUN UV_COMPILE_BYTECODE=1 uv sync --frozen --no-dev --package langhelper-web --no-install-workspace --no-cache
+# torch. The layer changes only when pylock.toml changes.
+COPY --from=lock /pylock.toml /app/
+RUN uv venv --quiet /app/.venv \
+    && UV_COMPILE_BYTECODE=1 uv pip sync --quiet --python /app/.venv --no-cache /app/pylock.toml
 
 # The flashcard decks of the image. More decks can go in /data/decks.
 COPY web/decks/ /app/decks/

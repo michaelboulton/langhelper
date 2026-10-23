@@ -1,4 +1,4 @@
-"""Tests for accents.py and build_glosses.py. Run with: uv run pytest
+"""Tests for tlhelper/languages/croatian/accents.py and build_glosses.py.
 
 The `db` fixture builds a small accents.db from a kaikki-style sample, so
 these tests cover the builder and the lookup together and need no real data.
@@ -8,7 +8,7 @@ import json
 import sqlite3
 
 import pytest
-from tlhelper import build_glosses
+from scripts import build_glosses
 from tlhelper.languages.croatian import accents
 from tlhelper.languages.glosses import GlossFile
 

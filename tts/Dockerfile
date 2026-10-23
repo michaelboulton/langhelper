@@ -49,11 +49,12 @@ RUN apt-get update \
 WORKDIR /app
 
 # Dependencies first, so a change to omnivoice_server/ does not reinstall
-# them. uv reads the pyproject.toml of each workspace member, so web/ needs
-# its file too.
+# them. uv reads the pyproject.toml of each workspace member, so web/ and
+# tools/ need their files too.
 COPY pyproject.toml uv.lock /app/
 COPY web/pyproject.toml /app/web/
 COPY tts/pyproject.toml /app/tts/
+COPY tools/pyproject.toml /app/tools/
 RUN UV_COMPILE_BYTECODE=1 uv sync --frozen --no-dev --package omnivoice-server --no-install-workspace --no-cache
 
 COPY tts/omnivoice_server/ /app/omnivoice_server/

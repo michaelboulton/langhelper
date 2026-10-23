@@ -1,14 +1,30 @@
-# scripts/
+# tools/
 
-Local tools for the admin. Nothing here runs in the web app or in its image.
-Run each one from the folder of the project, as a module, so that it imports
-`tlhelper` without an install of the project.
+Local tools for the admin, in the package `scripts/`. Nothing here runs in the
+web app or in its image, and a change here does not change the image
+(`../web/README.md`, "The image"). The uv project `langhelper-tools` depends
+on `langhelper-web`, so the tools import `tlhelper`. Run each one from this
+folder, as a module: `uv run python -m scripts.<name>`.
+
+The tests are in `tests/`. Run them from this folder with `uv run pytest`.
+`tests/conftest.py` takes the deck writer of the web tests through the
+`pythonpath` of `pyproject.toml`.
+
+## make_deck.py, make_toml.py and build_glosses.py
+
+- `make_deck.py` makes a deck package from a text file.
+- `make_toml.py` writes the `.toml` of a deck package.
+- `build_glosses.py` builds `accents.db` and the `glosses.db` files of
+  `../web/tlhelper/languages/`.
+
+`../web/README.md` has their commands, in the sections "Flashcards",
+"Accents" and "Languages".
 
 ## lessons.py: flashcards from lessons
 
 A language model writes 10 to 20 flashcards for each lesson of a course. The
 result is one deck package with a subdeck for each lesson, which the app
-imports like any other deck (README.md, "Flashcards"). The script keeps a
+imports like any other deck (`../web/README.md`, "Flashcards"). The script keeps a
 memory of the earlier lessons, so the cards of a lesson use the grammar of that
 lesson with the words of the lessons before it: the verb "to wander" from
 lesson 1 and the past tense from lesson 10 give "We wandered." in the deck of
@@ -16,16 +32,12 @@ lesson 10.
 
 ### Set-up
 
-The HTML step needs two packages that the image does not have. They are the
-dependency group `lessons`:
-
-```bash
-uv sync --group lessons
-```
+The HTML step needs `beautifulsoup4` and `markdownify`, two dependencies of
+this project that the image does not have.
 
 The AI service is the one of the app: set `TLHELPER_AI_API_KEY`,
 `TLHELPER_AI_MODEL` and, for a service that is not OpenAI,
-`TLHELPER_AI_API_BASE` (README.md, "Set up the AI service"). A lesson costs
+`TLHELPER_AI_API_BASE` (`../web/README.md`, "Set up the AI service"). A lesson costs
 about 6 to 10 thousand input tokens and 1 to 2 thousand output tokens.
 
 With the `llamacpp` service of docker-compose.yml up, the three variables are
@@ -36,8 +48,8 @@ export TLHELPER_AI_API_BASE=http://localhost:9931/v1 TLHELPER_AI_API_KEY=local T
 ```
 
 For a paid service, the key is `TLHELPER_AI_API_KEY` in `.env` at the
-repository root (README.md, "Running locally"). Export the variables of that
-file, from `web/`:
+repository root (`../web/README.md`, "Running locally"). Export the variables
+of that file, from `tools/`:
 
 ```bash
 set -a; . ../.env; set +a
@@ -46,8 +58,8 @@ set -a; . ../.env; set +a
 With Claude Code installed and logged in, `--backend claude` (or
 `TLHELPER_AI_BACKEND=claude`) sends each request through one `claude -p`
 process instead, so no key variable is needed. That is the Claude Code
-backend of the app (`tlhelper/explain/claude_cli.py`; README.md, "Set up the
-AI service"). `TLHELPER_AI_MODEL`, if set, goes to `claude --model` (an alias
+backend of the app (`../web/tlhelper/explain/claude_cli.py`;
+`../web/README.md`, "Set up the AI service"). `TLHELPER_AI_MODEL`, if set, goes to `claude --model` (an alias
 such as `sonnet`, or a full name) and is the model in the memory file;
 without it, the CLI uses its default and the memory file says `claude`.
 
@@ -58,8 +70,8 @@ package `<course>.apkg` and its `<course>.toml`. It needs the language and the
 name of the deck:
 
 ```bash
-uv run --group lessons python -m scripts.lessons \
-    --language hr --name "Croatian course" --course decks/croatian-course \
+uv run python -m scripts.lessons \
+    --language hr --name "Croatian course" --course ../web/decks/croatian-course \
     lessons/01.md
 ```
 
@@ -67,8 +79,8 @@ Each later run appends the lessons it gets, in the order given, and builds the
 deck again. The language and the name come from the memory file:
 
 ```bash
-uv run --group lessons python -m scripts.lessons \
-    --course decks/croatian-course https://www.easy-croatian.com/2014/11/16.html
+uv run python -m scripts.lessons \
+    --course ../web/decks/croatian-course https://www.easy-croatian.com/2014/11/16.html
 ```
 
 A lesson is a markdown file or the address of a web page. Its key is the stem
@@ -141,15 +153,15 @@ a pause, up to three times.
 The package has the fields `Front` and `Back` and the Anki deck
 `<name>::<NNN> <title>` for each lesson, with three digits so that lesson 100
 sorts after lesson 99. The toml sets `subdecks = true` and splits an answer on
-" / " only. `tlhelper/flashcards/make_deck.py` has the writer.
+" / " only. `scripts/make_deck.py` has the writer.
 
 ### Clips
 
 With `--voice`, the voice service reads the first form of each answer (the
 text before the first " / "). The service is the one of the app:
 `TLHELPER_VOICE_URL` and the other `TLHELPER_VOICE_*` variables of
-`tlhelper/speech/__init__.py`. Start it with `docker compose up voice`, or run
-the whole stack. The answer field gets a `[sound:...]` tag, the package holds
+`../web/tlhelper/speech/__init__.py`. Start it with `docker compose up voice`,
+or run the whole stack. The answer field gets a `[sound:...]` tag, the package holds
 the mp3 files, and the toml sets `listen = true` and `dictation = true`. The
 app then shows two more cards for each note: one plays the clip and asks for
 the English, and one plays the clip and asks for the answer.
@@ -162,8 +174,8 @@ run, and the clips that are in the folder stay.
 To add clips to a course that has none, build it again:
 
 ```bash
-TLHELPER_VOICE_URL=http://localhost:8002 uv run --group lessons \
-    python -m scripts.lessons --course decks/croatian-course --build-only --voice
+TLHELPER_VOICE_URL=http://localhost:8002 uv run \
+    python -m scripts.lessons --course ../web/decks/croatian-course --build-only --voice
 ```
 
 A run without `--voice` that builds the package again writes it with no clips,
@@ -210,7 +222,7 @@ audio/<course>/
 `course.toml` has `language` and `name`. The first run writes it. An optional
 table `[voices]` gives a speaker a named clip of the voice service
 (`../tts/README.md`, "Voice"), such as `"actor 2" = "it-2"`.
-`tlhelper/audio_lessons/script.py` reads both kinds of file.
+`../web/tlhelper/audio_lessons/script.py` reads both kinds of file.
 
 ### The script format
 
@@ -245,7 +257,7 @@ one of narrator, actor 1, actor 2 or pause`.
 
 ### A course, one run at a time
 
-From `web/`:
+From `tools/`:
 
 ```bash
 uv run python -m scripts.audio_lessons --course ../.data/audio/it-course \
@@ -314,8 +326,8 @@ script asks once more and then stops with the answer in the message.
 With `--voice`, the voice service reads each spoken line of each lesson into
 one clip, and ffmpeg joins the clips of a lesson into `NN.mp3`. The voice
 service is the one of the app: `TLHELPER_VOICE_URL` and the other
-`TLHELPER_VOICE_*` variables of `tlhelper/speech/__init__.py`. Start it with
-`docker compose up voice` at the repository root. From `web/`:
+`TLHELPER_VOICE_*` variables of `../web/tlhelper/speech/__init__.py`. Start it
+with `docker compose up voice` at the repository root. From `tools/`:
 
 ```bash
 TLHELPER_VOICE_URL=http://localhost:8002 uv run python -m scripts.audio_lessons \
@@ -435,7 +447,7 @@ mp3 for each. It needs no extra dependency group.
    or an mp3 (`../tts/README.md`, "Voice").
 2. Start the service again, so it reads the clips: `docker compose up --build voice`
    at the repository root.
-3. Run the script from `web/`:
+3. Run the script from `tools/`:
 
 ```bash
 TLHELPER_VOICE_URL=http://localhost:8002 uv run python -m scripts.check_voices \

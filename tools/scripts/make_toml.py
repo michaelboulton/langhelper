@@ -1,9 +1,9 @@
 """Write the .toml file of a deck package, from a look at its notes:
 
 \b
-    uv run python -m tlhelper.flashcards.make_toml decks/basics.apkg --language hr
+    uv run python -m scripts.make_toml ../web/decks/basics.apkg --language hr
 
-The result is decks/basics.toml. The guesses are the two fields with the most
+The result is ../web/decks/basics.toml. The guesses are the two fields with the most
 text, which of them is English (the one with fewer letters outside ASCII), and
 the note types that have both fields. Read the result, and correct it by hand
 or with the options.
@@ -14,9 +14,8 @@ from collections import Counter
 from pathlib import Path
 
 import click
-
-from ..languages import LANGUAGES
-from . import apkg, decks
+from tlhelper.flashcards import apkg, decks
+from tlhelper.languages import LANGUAGES
 
 # A note type with a smaller share of the notes is not part of the guess.
 # These are mostly the few notes that the author made for something else.
