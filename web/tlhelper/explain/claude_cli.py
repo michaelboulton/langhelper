@@ -54,7 +54,8 @@ class ClaudeCLI:
         if model_option():
             command += ["--model", model_option()]
         try:
-            run = subprocess.run(
+            # A list with no shell: the user text goes in on stdin.
+            run = subprocess.run(  # noqa: S603
                 command,
                 input=prompt,
                 capture_output=True,

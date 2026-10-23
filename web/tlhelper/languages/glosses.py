@@ -76,15 +76,13 @@ class GlossFile:
         first word of the first sense in Wiktionary, which is the main
         meaning. The tagger can give a lemma with another meaning, so this
         also reads the entry of the word itself."""
-        keys = {entry_key(lemma, upos), entry_key(text, upos)}
+        keys = (entry_key(lemma, upos), entry_key(text, upos))
         with self._lock:
             conn = self.connect()
             if conn is None:
                 return {}
-            marks = ",".join("?" * len(keys))
             rows = conn.execute(
-                f"SELECT word, min(rank) FROM glosses WHERE key IN ({marks})"
-                " GROUP BY word",
-                tuple(keys),
+                "SELECT word, min(rank) FROM glosses WHERE key IN (?, ?) GROUP BY word",
+                keys,
             ).fetchall()
         return dict(rows)
