@@ -1185,7 +1185,10 @@ uv run pytest
 
 Most tests use a fake pipeline and need no models. `test_real_models` loads the
 real models from `.data/` at the repository root. If the models are not there,
-pytest skips that test.
+pytest skips that test. At its end, it checks the peak memory of the test
+process. A peak of 3600 MB or more gives a warning in the pytest summary, not
+a failure: the peak moves by about 20 MB from one CI run to the next, and it
+is close to that limit since torch 2.14.
 
 `tests/flashcards/test_browser.py` and `tests/test_browser_breakdown.py` open
 the page in a headless Chromium, with Playwright. The breakdown tests use the
