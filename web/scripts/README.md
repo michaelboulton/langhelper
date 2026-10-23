@@ -212,3 +212,33 @@ uv run python -m scripts.transcribe --language Croatian --tries 3 out/*.mp3
 - Temperature 0.3 and a repeat penalty of 1.3 (a parameter of llama-server):
   at temperature 0 with no penalty, Gemma sometimes repeats the empty
   thinking block of its chat template until the token limit.
+
+## check_voices.py: hear each named voice
+
+A check by ear that the voice service has two distinct voices for one
+language, such as the two actors of a dialogue. The service clones a named
+clip for each `voice` of a request (`../tts/README.md`, "Voice"). The script
+asks for the same sentence in each voice that `--voice` names, and writes one
+mp3 for each. It needs no extra dependency group.
+
+1. Put each clip and its transcript in `tts/omnivoice_server/voices/`, such
+   as `it.mp3` with `it.txt` and `it-2.mp3` with `it-2.txt`. A clip is a WAV
+   or an mp3 (`../tts/README.md`, "Voice").
+2. Start the service again, so it reads the clips: `docker compose up --build voice`
+   at the repository root.
+3. Run the script from `web/`:
+
+```bash
+TLHELPER_VOICE_URL=http://localhost:8002 uv run python -m scripts.check_voices \
+    --language it --voice it --voice it-2
+```
+
+It writes `voice-check/it-it.mp3` and `voice-check/it-it-2.mp3`. Each file
+must be the sample sentence, and each in its own voice: the voice of its
+clip. `--text` reads another text, and `--out` names another folder. The
+script has a sample sentence for each language of the app. For another
+language, `--text` is needed.
+
+The script stops before a request when the service lists no such voice, and
+prints the voices that it has. `scripts.transcribe` on the mp3s checks that
+they are speech.

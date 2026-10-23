@@ -85,12 +85,14 @@ class OpenAISpeech:
             return None
         return [str(code) for code in entry["languages"]]
 
-    def synthesize(self, text: str, language: str) -> bytes:
+    def synthesize(self, text: str, language: str, voice: str | None = None) -> bytes:
         if not self.available():
             raise SpeechError("TLHELPER_VOICE_URL is not set", "voice-no-service")
         body = {"input": text, "language": language, "response_format": "mp3"}
         if self.model():
             body["model"] = self.model()
+        if voice:
+            body["voice"] = voice
         try:
             response = requests.post(
                 f"{url()}/v1/audio/speech",

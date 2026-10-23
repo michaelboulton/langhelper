@@ -21,7 +21,7 @@ Other documents in `web/`:
 
 ## Commands
 
-Run `uv sync --all-packages` at the root one time. It makes one `.venv` at the root for both members. After a change to any `pyproject.toml`, run `uv lock` at the root. The members have no lockfile of their own. The torch index is in the root `pyproject.toml`.
+Run `git lfs pull` and `uv sync --all-packages` at the root one time. The web tests need the LFS files (`accents.db` and the `glosses.db` files, see "Storage"). Without them, each of those files is a pointer of about 130 bytes, and the tests that tag Croatian fail with `sqlite3.DatabaseError: file is not a database`. `uv sync --all-packages` makes one `.venv` at the root for both members. After a change to any `pyproject.toml`, run `uv lock` at the root. The members have no lockfile of their own. The torch index is in the root `pyproject.toml`.
 
 Run the tests from the member folder (`web/` or `tts/`). The members are not installed, so pytest finds the package through `pythonpath = ["."]`.
 
