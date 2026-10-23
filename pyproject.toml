@@ -9,3 +9,9 @@ members = ["web", "tts"]
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
 explicit = true
+
+[tool.ruff.lint]
+extend-select = ["S"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101"]

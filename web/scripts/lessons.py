@@ -461,12 +461,15 @@ def deck_name(course: Course, lesson: Lesson) -> str:
 
 def guid(lesson_key: str, english: str) -> str:
     # From the key and the English text: a changed answer keeps the progress.
-    return hashlib.sha1(f"{lesson_key}\t{english}".encode()).hexdigest()[:10]
+    return hashlib.sha1(
+        f"{lesson_key}\t{english}".encode(), usedforsecurity=False
+    ).hexdigest()[:10]
 
 
 def clip_name(language: str, text: str) -> str:
     # From the text: a changed answer gets a new clip.
-    return hashlib.sha1(f"{language}\t{text}".encode()).hexdigest()[:12] + ".mp3"
+    digest = hashlib.sha1(f"{language}\t{text}".encode(), usedforsecurity=False)
+    return digest.hexdigest()[:12] + ".mp3"
 
 
 def clips_of(course: Course, folder: Path) -> dict[str, str]:

@@ -93,7 +93,9 @@ def make_deck(source: Path) -> Path:
     notes = [
         PackageNote(
             # From the English text, so a changed answer keeps the progress.
-            hashlib.sha1(english.strip().encode()).hexdigest()[:10],
+            hashlib.sha1(english.strip().encode(), usedforsecurity=False).hexdigest()[
+                :10
+            ],
             english.strip(),
             answer.strip(),
             source.stem,
