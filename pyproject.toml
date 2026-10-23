@@ -10,6 +10,15 @@ name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
 explicit = true
 
+# classla 2.2.3 pins protobuf==4.21.2 and torch<=2.6, which have security
+# advisories. Remove these when classla allows the fixed versions.
+[tool.uv]
+override-dependencies = ["protobuf>=6.33.5", "torch>=2.8.0"]
+
+# The override above needs its own copy of the CPU source of web/pyproject.toml.
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
 [tool.ruff.lint]
 extend-select = ["S"]
 
