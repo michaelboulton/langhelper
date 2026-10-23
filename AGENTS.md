@@ -125,3 +125,9 @@ The UI text is in a Fluent file `ui.ftl` in each language folder. `english/ui.ft
 ## Documentation style
 
 The READMEs use a controlled, simplified English: short sentences, active voice, simple tenses and one topic for each paragraph. Keep that style in documentation changes. Put explanations in the README of the project, not in long code comments. Each environment variable is listed in the README of its project, so a new variable needs an entry there.
+
+## Pull requests
+
+A PR that changes what the page shows (`web/static/`, `ui.ftl`, or a route that the page reads) must have a screenshot in its description. Show the changed part at phone width (390px) and at desktop width. To take a screenshot, run the app and use `uv run playwright screenshot --viewport-size "390, 700" --wait-for-timeout 5000 <url> <file>.png` from `web/`.
+
+The GitHub API cannot upload an image to a PR description. So commit the PNG files in `pr-screenshots/` on the PR branch, and delete them in the next commit. In the description, link each image by the SHA of the commit that adds it: `![phone](https://github.com/michaelboulton/langhelper/raw/<sha>/pr-screenshots/<file>.png)`. The ref `refs/pull/<N>/head` keeps that commit, so the link works after the merge, and the PNG files do not reach `main` in a squash merge.
