@@ -1,6 +1,7 @@
 """The routes of the "explain with AI" buttons, with a fake backend and the
 real light models."""
 
+import sqlite3
 from types import SimpleNamespace
 
 import pytest
@@ -8,7 +9,7 @@ from fastapi.testclient import TestClient
 from tlhelper import app as service
 from tlhelper import explain
 from tlhelper.explain import routes as explain_routes
-from tlhelper.flashcards import decks, routes
+from tlhelper.flashcards import decks, routes, store
 
 TOML = """
 name = "Basics"
@@ -107,6 +108,29 @@ def test_a_question_about_the_sentence_of_a_card(client, backend, review_id):
     # The side in the study language, and nothing of the answer of the user.
     assert "The sentence (Croatian): Pijem kavu." in backend.prompts[0]
     assert "kava" not in backend.prompts[0].replace("(kava:", "")
+
+
+def test_a_question_about_a_dictation_card(deck_dir, make_apkg, backend):
+    notes = [("guid-coffee", "I drink coffee.", "Pijem kavu.[sound:kava.mp3]")]
+    make_apkg(deck_dir / "voiced.apkg", notes, media={"kava.mp3": b"a clip"})
+    (deck_dir / "voiced.toml").write_text(TOML + "dictation = true\n")
+    decks.import_decks()
+    client = TestClient(service.app)
+    conn = sqlite3.connect(store.DB_PATH)
+    [[card_id]] = conn.execute("SELECT id FROM card WHERE direction = 'dictation'")
+    conn.close()
+    result = client.post(
+        f"/api/v1/cards/{card_id}/answer", json={"typed": "Pijem kava"}
+    )
+    review_id = result.json()["review_id"]
+    body = {"question": "why_wrong"}
+    response = client.post(f"/api/v1/reviews/{review_id}/explain", json=body)
+    assert response.status_code == 200
+    [prompt] = backend.prompts
+    # The user heard the clip, and the tagger notes are of the Croatian answer.
+    assert "The flashcard showed: (a sound clip)" in prompt
+    assert "The learner entered: Pijem kava" in prompt
+    assert "kavu (kava: NOUN" in prompt
 
 
 def test_the_review_of_another_user(client, backend, review_id):

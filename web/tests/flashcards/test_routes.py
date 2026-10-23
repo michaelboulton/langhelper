@@ -129,6 +129,59 @@ def test_a_card_with_a_picture_and_a_clip(deck_dir, make_apkg, clock):
     assert client.get(picture["url"]).status_code == 404
 
 
+def easy_tomorrow(client, card, typed, clock):
+    """Answer the card, and leave the learning steps: the next card of the
+    same note comes the day after."""
+    result = client.post(
+        f"/api/v1/cards/{card['card_id']}/answer", json={"typed": typed}
+    ).json()
+    client.post(f"/api/v1/reviews/{result['review_id']}/rating", json={"rating": 4})
+    clock.add(days=1)
+    return result
+
+
+def test_listen_and_dictation_cards(deck_dir, make_apkg, clock):
+    notes = [("guid-coffee", "I drink coffee.", "Pijem kavu.[sound:kava.mp3]")]
+    make_apkg(deck_dir / "voiced.apkg", notes, media={"kava.mp3": b"a clip"})
+    toml = TOML.replace("reverse = true", "listen = true\ndictation = true")
+    (deck_dir / "voiced.toml").write_text(toml)
+    decks.import_decks()
+    client = TestClient(service.app)
+    [deck] = client.get("/api/v1/decks").json()["decks"]
+    first = client.get(f"/api/v1/decks/{deck['id']}/next").json()
+    assert first["direction"] == "to_study"
+    easy_tomorrow(client, first, "Pijem kavu.", clock)
+
+    # The clip, and no text: that is what the user must hear.
+    card = client.get(f"/api/v1/decks/{deck['id']}/next").json()
+    assert (card["direction"], card["prompt"], card["prompt_sentences"]) == (
+        "listen",
+        "",
+        [],
+    )
+    [clip] = card["media"]
+    assert clip["kind"] == "audio"
+    assert client.get(clip["url"]).content == b"a clip"
+    result = easy_tomorrow(client, card, "I drink coffee", clock)
+    assert result["rating"] == 3
+    # The text comes with the answer, and the links are [Croatian, English].
+    assert result["prompt"] == "Pijem kavu."
+    assert texts(result["prompt_sentences"]) == ["Pijem", "kavu", "."]
+    assert [1, 2] in result["typed"]["links"]
+
+    card = client.get(f"/api/v1/decks/{deck['id']}/next").json()
+    assert (card["direction"], card["prompt"]) == ("dictation", "")
+    assert [each["kind"] for each in card["media"]] == ["audio"]
+    result = client.post(
+        f"/api/v1/cards/{card['card_id']}/answer", json={"typed": "Pijem kava"}
+    ).json()
+    # The rules and the models of Croatian.
+    assert result["rating"] == 2
+    assert result["answers"] == ["Pijem kavu."]
+    assert result["correct"]["sentences"][0]["words"][1]["lemma"] == "kava"
+    assert result["prompt_sentences"] == []
+
+
 def test_an_empty_answer_is_again(client):
     result = client.post("/api/v1/cards/1/answer", json={"typed": ""}).json()
     assert result["rating"] == 1

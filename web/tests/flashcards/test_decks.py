@@ -73,6 +73,53 @@ def test_the_media_of_a_card(deck_dir, make_apkg):
     assert decks.deck_path("absent") is None
 
 
+def test_listen_and_dictation_cards(deck_dir, make_apkg):
+    notes = [
+        ("guid-house", "house<img src='house.jpg'>", "kuća / dom[sound:kuća.mp3]"),
+        ("guid-cat", "cat", "mačka"),
+        # A picture is not a clip.
+        ("guid-dog", "dog", "pas<img src='pas.jpg'>"),
+    ]
+    make_apkg(deck_dir / "basics.apkg", notes)
+    (deck_dir / "basics.toml").write_text(
+        TOML + "listen = true\ndictation = true\n", encoding="utf-8"
+    )
+    decks.import_decks()
+    conn = sqlite3.connect(store.DB_PATH)
+    rows = conn.execute(
+        "SELECT guid, direction, prompt, answers, prompt_media, answer_media"
+        " FROM card ORDER BY position"
+    ).fetchall()
+    assert rows == [
+        (
+            "guid-house",
+            "to_study",
+            "house",
+            '["kuća", "dom"]',
+            '["house.jpg"]',
+            '["kuća.mp3"]',
+        ),
+        (
+            "guid-house",
+            "listen",
+            "kuća / dom",
+            '["house"]',
+            '["kuća.mp3"]',
+            '["house.jpg"]',
+        ),
+        (
+            "guid-house",
+            "dictation",
+            "",
+            '["kuća", "dom"]',
+            '["kuća.mp3"]',
+            '["house.jpg"]',
+        ),
+        ("guid-cat", "to_study", "cat", '["mačka"]', "[]", "[]"),
+        ("guid-dog", "to_study", "dog", '["pas"]', "[]", '["pas.jpg"]'),
+    ]
+
+
 def test_a_note_with_its_fields_the_other_way_round(deck_dir, make_apkg):
     notes = [
         ("guid-thanks", "Hvala vam/ti puno[sound:hvala.mp3]", "Thank you very much"),

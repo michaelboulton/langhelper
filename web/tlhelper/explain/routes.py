@@ -171,7 +171,7 @@ def explain_review(review_id: int, req: ExplainRequest, user: User) -> dict:
     try:
         review = store.get_review(user, review_id)
         card = store.get_card(review["card_id"])
-        to_study = card["direction"] == store.TO_STUDY
+        to_study = card["direction"] in store.STUDY_ANSWERS
         language = LANGUAGES[card["language"]]
         rules = (language if to_study else languages.ENGLISH).info.grading
         correct = grade.grade(review["typed"], card["answers"], rules)["answer"]
@@ -193,12 +193,18 @@ def explain_review(review_id: int, req: ExplainRequest, user: User) -> dict:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ModelsMissing as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
+    # The user of a "listen" or a "dictation" card heard the prompt, and did
+    # not read it.
+    if card["direction"] in (store.LISTEN, store.DICTATION):
+        shown = "(a sound clip)"
+    else:
+        shown = card["prompt"] or "(a picture or a sound)"
     values = {
         "language": language.info.name,
         "learner_language": locales.english_name(req.locale),
         "sentence_language": language.info.name,
         "sentence": sentence,
-        "flashcard_input": card["prompt"] or "(a picture or a sound)",
+        "flashcard_input": shown,
         "user_input": review["typed"] or "(nothing: the learner did not know)",
         "correct_answer": correct,
         "accepted_answers": " / ".join(card["answers"]),

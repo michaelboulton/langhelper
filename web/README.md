@@ -429,6 +429,8 @@ review log. If the files come back, the progress comes back with them.
 | `reviews_per_day`  | `100`          | The most cards that come back in one day        |
 | `subdecks`         | `false`        | Make one deck for each Anki deck of the package that has cards |
 | `to_english_notetypes` | `[]`       | A note of these note types only gets a card that asks for the English |
+| `listen`           | `false`        | Also make a card that plays the clip of the answer field and asks for the English |
+| `dictation`        | `false`        | Also make a card that plays the clip of the answer field and asks for the answer |
 
 An Anki package can hold a tree of decks. Two examples are
 `Sentences::Read Training::2` and `Sentences::Speak Training::2`. With `subdecks`, each Anki
@@ -473,6 +475,14 @@ only a picture, the picture is the prompt. Such a note gets no card that asks
 for the English. The file types are jpg, png, gif, webp, mp3, ogg, wav and m4a.
 The app does not copy the files. For each request of the page, it reads the
 file from the package, so the package must stay in the folder.
+
+With `listen` or `dictation`, each note with a sound clip in its answer field
+gets one more card for each key. The clip is the whole prompt, and the page
+shows no text before the answer. A `listen` card asks for the English. After
+the answer, it shows the text of the clip, with its links to the answer. A
+`dictation` card asks for the text in the study language, with the grades of
+the study language. A note with no clip gets neither card. An Anki package
+with clips needs no new export: add the keys to its `.toml`.
 
 A note keeps its `guid` in each Anki export. The app uses it as the key of a
 card, so a new export keeps the progress of all users. A note that is not in
@@ -557,8 +567,8 @@ on the device, and some devices have no Croatian voice.
 | Route | Purpose |
 | ----- | ------- |
 | `GET /api/v1/decks` | The decks, each with the card counts of the user. A subdeck has a `path`: the name of its package, then the parts of its Anki name |
-| `GET /api/v1/decks/{id}/next?heavy=false` | The next card with the breakdown of its prompt, or `{"done": true, "next_due": ...}`. The accepted answers are not in it |
-| `POST /api/v1/cards/{id}/answer` | The body is `{"typed": "...", "heavy": false, "elapsed_ms": 4000}`. Grades the answer and schedules the card. Returns `rating`, `diff`, `answers`, `next_due`, `review_id`, and the breakdowns `typed` and `correct` with their links |
+| `GET /api/v1/decks/{id}/next?heavy=false` | The next card with the breakdown of its prompt, or `{"done": true, "next_due": ...}`. The accepted answers are not in it. `direction` is `to_study`, `to_english`, `listen` or `dictation`. A `listen` card has an empty `prompt` |
+| `POST /api/v1/cards/{id}/answer` | The body is `{"typed": "...", "heavy": false, "elapsed_ms": 4000}`. Grades the answer and schedules the card. Returns `rating`, `diff`, `answers`, `next_due`, `review_id`, the `prompt` with its breakdown `prompt_sentences`, and the breakdowns `typed` and `correct` with their links |
 | `POST /api/v1/reviews/{id}/rating` | The body is `{"rating": 1}` to `{"rating": 4}`. Changes the rating of the last answer to a card |
 | `GET /api/v1/flashcards/stats?deck=1&of=sub` | The numbers of the user, for one deck or for all. `of` is the `sub` of another user. If the user is not an admin, `of` gives 403 |
 | `GET /api/v1/flashcards/users` | The users whose numbers the user can see, as `{"me": ..., "admin": false, "users": [{"id": ..., "name": ...}]}`. The first entry is the user |

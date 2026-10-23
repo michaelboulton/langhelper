@@ -15,6 +15,8 @@ from Anki) and basics.toml:
     reviews_per_day = 100        # optional
     subdecks = true              # optional: one deck for each Anki deck with cards
     to_english_notetypes = ["Read"]  # optional: these notes ask for the English
+    listen = true                # optional: hear the clip, type the English
+    dictation = true             # optional: hear the clip, type the answer
 
 A line break of a field is "\\n" in separators, for a deck with each accepted
 answer on its own line. In all other decks it is a space.
@@ -27,6 +29,10 @@ queue and its own limits for a day.
 A card shows the images and the sound clips of its two fields: those of the
 prompt with the prompt, and those of the answer (and of media_fields) after
 the user answered. A note with only a picture as its English is a card too.
+
+With listen or dictation, a note with a sound clip in its answer field gets
+one more card for each: the clip is the whole prompt, and the text comes only
+after the answer. A note with no clip gets no such card.
 
 The folders are decks/ next to the code (in the image) and decks/ under
 DATA_ROOT (the volume). For the same stem, the volume wins.
@@ -158,6 +164,8 @@ DEFAULTS = {
     "reviews_per_day": 100,
     "subdecks": False,
     "to_english_notetypes": [],
+    "listen": False,
+    "dictation": False,
 }
 REQUIRED = ("name", "language", "english_field", "answer_field")
 
@@ -249,6 +257,32 @@ def cards_of(notes: list[apkg.Note], config: dict) -> list[dict]:
                     "prompt": " / ".join(answers),
                     "answers": english_answers,
                     "prompt_media": answer_media,
+                    "answer_media": unique(english_media + more_media),
+                }
+            )
+        clips = [name for name in answer_media if apkg.kind(name)[0] == "audio"]
+        if clips and config["listen"] and english_answers:
+            cards.append(
+                {
+                    "guid": note.guid,
+                    "deck": note.deck,
+                    "direction": store.LISTEN,
+                    # The route holds it back until the user answered.
+                    "prompt": " / ".join(answers),
+                    "answers": english_answers,
+                    "prompt_media": clips,
+                    "answer_media": unique(english_media + more_media),
+                }
+            )
+        if clips and config["dictation"]:
+            cards.append(
+                {
+                    "guid": note.guid,
+                    "deck": note.deck,
+                    "direction": store.DICTATION,
+                    "prompt": "",
+                    "answers": answers,
+                    "prompt_media": clips,
                     "answer_media": unique(english_media + more_media),
                 }
             )
