@@ -173,9 +173,33 @@ def test_a_cloned_voice_is_cached(voices):
     assert len(service.synth.models[MODEL].calls) == 1
 
 
+def test_an_mp3_clip_is_converted_to_the_rate_of_a_wav(tmp_path):
+    # One second of a sine at 44.1 kHz.
+    steps = np.arange(44100)
+    tone = (0.5 * np.sin(2 * np.pi * 440 * steps / 44100)).astype(np.float32)
+    (tmp_path / "hr.mp3").write_bytes(synth.mp3(tone, 44100))
+    (tmp_path / "hr.txt").write_text("Dobar dan.\n")
+    [(name, (samples, text))] = synth.read_voices(tmp_path).items()
+    assert (name, text) == ("hr", "Dobar dan.")
+    assert samples.dtype == np.float32
+    # The decoder keeps some padding of the encoder, a few ms.
+    assert abs(len(samples) - RATE) < RATE // 10
+    assert 0.4 < np.abs(samples).max() < 0.6
+
+
 def not_a_wav(folder):
     (folder / "hr.wav").write_text("Not a WAV.\n")
     (folder / "hr.txt").write_text("Dobar dan.\n")
+
+
+def not_an_mp3(folder):
+    (folder / "hr.mp3").write_text("Not an mp3.\n")
+    (folder / "hr.txt").write_text("Dobar dan.\n")
+
+
+def a_wav_and_an_mp3(folder):
+    write_clip(folder / "hr.wav")
+    (folder / "hr.mp3").write_bytes(synth.mp3(sine(0.5), RATE))
 
 
 @pytest.mark.parametrize(
@@ -184,6 +208,8 @@ def not_a_wav(folder):
         (lambda folder: write_clip(folder / "hr.wav", rate=44100), "44100 Hz"),
         (lambda folder: write_clip(folder / "hr.wav", text=""), "hr.txt"),
         (not_a_wav, "not a WAV"),
+        (not_an_mp3, "not an mp3"),
+        (a_wav_and_an_mp3, "both a WAV and an mp3"),
     ],
 )
 def test_a_bad_clip_stops_the_start(fake, monkeypatch, tmp_path, make, error):
@@ -194,7 +220,7 @@ def test_a_bad_clip_stops_the_start(fake, monkeypatch, tmp_path, make, error):
 
 
 @pytest.mark.skipif(
-    not any(settings.DEFAULT_VOICES.glob("*.wav")),
+    not any(p.suffix in synth.READERS for p in settings.DEFAULT_VOICES.glob("*")),
     reason="no voice clips in omnivoice_server/voices/ (not in git)",
 )
 def test_the_clips_of_the_repo():
