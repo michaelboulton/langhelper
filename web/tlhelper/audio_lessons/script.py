@@ -3,6 +3,8 @@
 audio/<course>/
   course.toml   # language, name, and the voice of each speaker
   01.txt        # the script of lesson 1
+  01/           # the clips of lesson 1, e.g. 1.05-3fa2c1.mp3
+  01.mp3        # lesson 1 as one file
 """
 
 import re
@@ -133,6 +135,14 @@ def read_script(path: Path) -> Script:
 
 def lesson_path(folder: Path, number: int) -> Path:
     return folder / f"{number:02d}.txt"
+
+
+def clips_path(folder: Path, number: int) -> Path:
+    return folder / f"{number:02d}"
+
+
+def audio_path(folder: Path, number: int) -> Path:
+    return folder / f"{number:02d}.mp3"
 
 
 def lesson_files(folder: Path) -> dict[int, Path]:

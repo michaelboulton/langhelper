@@ -186,12 +186,15 @@ lesson, two actors have a short dialogue in the study language. Then a
 narrator teaches its words in English: the narrator asks for a phrase, a pause
 gives the learner time to say it aloud, and an actor says the answer. The
 script keeps a memory of the earlier lessons, so each lesson can be a little
-harder than the one before it, and it brings back their words.
+harder than the one before it, and it brings back their words. With
+`--voice`, the voice service reads each line, and ffmpeg joins the lines of a
+lesson into one mp3.
 
 The AI service is the one of `lessons.py` (see "Set-up" above), with
 `--backend claude` too. The script needs no extra dependency group. A lesson
 costs about 1 to 3 thousand input tokens (a later lesson has more memory) and
-about 1 thousand output tokens.
+about 1 thousand output tokens. `--voice` also needs ffmpeg on the machine
+that runs the script (see "Clips and the mp3" below).
 
 ### The course folder
 
@@ -199,6 +202,8 @@ about 1 thousand output tokens.
 audio/<course>/
   course.toml   # language, name, and the voice of each speaker
   01.txt        # the script of lesson 1
+  01/           # the clips of lesson 1, e.g. 1.05-3fa2c1.mp3
+  01.mp3        # lesson 1 as one file
   02.txt
 ```
 
@@ -263,7 +268,9 @@ Other options:
 - `--redo N`: write lesson N again, with the topic and the grammar step of
   its script. To change them, edit the `topic:` and `grammar:` lines first.
 - `--dry-run`: print the prompt of the first lesson to write, with a rough
-  count of its tokens, and write nothing.
+  count of its tokens, and write nothing. With `--voice`, it voices nothing.
+- `--voice`: after the scripts, make the clips and the mp3 of each lesson of
+  the course (see "Clips and the mp3" below).
 
 A script is written complete or not at all, so a run over many topics that
 dies loses at most the lesson it was on.
@@ -285,6 +292,63 @@ has:
 The answer starts at its first `# ` line, so a code fence or a sentence before
 the script does no harm. After an answer that is not a valid script, the
 script asks once more and then stops with the answer in the message.
+
+### Clips and the mp3
+
+With `--voice`, the voice service reads each spoken line of each lesson into
+one clip, and ffmpeg joins the clips of a lesson into `NN.mp3`. The voice
+service is the one of the app: `TLHELPER_VOICE_URL` and the other
+`TLHELPER_VOICE_*` variables of `tlhelper/speech/__init__.py`. Start it with
+`docker compose up voice` at the repository root. From `web/`:
+
+```bash
+TLHELPER_VOICE_URL=http://localhost:8002 uv run python -m scripts.audio_lessons \
+    --course ../.data/audio/it-course --voice
+```
+
+ffmpeg is a requirement of this script only, on the machine that runs it. No
+image needs it. Install it with `apt install ffmpeg` or `brew install ffmpeg`.
+Without ffmpeg or without `TLHELPER_VOICE_URL`, the run stops before its
+first request.
+
+The voice of each speaker:
+
+- The narrator reads English (`en`) in the default voice of English.
+- Actor 1 reads the study language in the default voice of that language.
+- Actor 2 reads the study language in the voice that `[voices]` in
+  `course.toml` names, such as `"actor 2" = "it-2"`. A voice is a named clip
+  of the service (`../tts/README.md`, "Voice"). `check_voices.py` (below)
+  writes a sample of it. Without that entry, both actors have the same voice,
+  and the run says so.
+
+`[voices]` can name a voice for each of the three speakers.
+
+The clips of lesson N are in the folder `NN/`. The name of a clip is
+`<lesson>.<line>-<hash>.mp3`, such as `1.05-3fa2c1.mp3`:
+
+- `<line>` is the number of the spoken line in the lesson. A pause has no
+  number. It has two digits, or more for a lesson with more than 99 spoken
+  lines, so the names sort by line.
+- `<hash>` comes from the language, the voice and the text. A changed line or
+  a changed voice gets a new name.
+
+A later run asks the voice service only for the new lines. A line with the
+hash of a clip in the folder, such as a line that moved or a line said twice,
+gets a copy of that clip. After a good run, the run deletes the clips that no
+line uses. An error of the service stops the run, and every clip stays. The
+hash does not change when a reference clip of the service changes: to read
+a lesson again in the new voice, delete its folder `NN/`.
+
+The mp3 of a lesson has:
+
+- the clips, in the order of the script;
+- each `pause: N` as N seconds of silence;
+- 0.5 seconds of silence between two spoken lines;
+- 64 kbit/s, 24 kHz, mono, as the clips of the voice service.
+
+ffmpeg writes `NN.mp3.tmp`, and the script then renames it, so `NN.mp3` is
+complete or not there. A run joins a lesson again only when `NN.mp3` is not
+newer than its script and each of its clips.
 
 ### Flashcards from the scripts
 
