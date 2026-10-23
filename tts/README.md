@@ -25,11 +25,11 @@ steps on the Radeon of a Strix Halo laptop. On the CPU it takes about 6 s at
 | `omnivoice_server/synth.py` | The models in memory, one lock for a load and a generation, the cache of the last mp3s, and the mp3 encoder (`lameenc`) |
 | `omnivoice_server/native.py` | `libomnivoice.so` through ctypes: the structs of `omnivoice.h`, the load, one `generate`, the log callback |
 | `omnivoice_server/languages.py` | The 646 language ids, generated (see "Notes") |
-| `omnivoice_server/voices/` | The reference clips, `<language>.wav` with the transcript in `<language>.txt`. Not in git (see "Voice") |
+| `omnivoice_server/voices/` | The reference clips, `<language>.wav` or `<language>.mp3` with the transcript in `<language>.txt`. Not in git (see "Voice") |
 | `omnivoice_server/settings.py` | The environment variables, read when they are used |
 | `tests/` | The routes with a fake model, and the encoder with a real signal. Run with `uv run pytest`; no library and no model needed |
 | `Dockerfile` | Its build context is the repository root. Two stages: a build of omnivoice.cpp at a pinned commit with the Vulkan and CPU backends, then `python:3.12-slim` plus the Mesa Vulkan drivers and `uv sync --frozen`, uid 1000, the Hugging Face cache at `/hf` |
-| `pyproject.toml` | Dependencies: fastapi, uvicorn, numpy, lameenc, huggingface-hub. The locked versions are in `../uv.lock`, which the uv workspace shares with `web/` |
+| `pyproject.toml` | Dependencies: fastapi, uvicorn, numpy, lameenc, miniaudio, huggingface-hub. The locked versions are in `../uv.lock`, which the uv workspace shares with `web/` |
 
 ## Routes
 
@@ -74,7 +74,7 @@ text has at most 4000 characters.
 ## Voice
 
 A request with no `instruct` clones a reference clip: `voices/<language>.wav`
-when the language has one, else `voices/default.wav`, else it gets
+(or `.mp3`) when the language has one, else `voices/default.wav`, else it gets
 `OMNIVOICE_INSTRUCT`. A request with an `instruct` never uses a clip.
 
 The clips are there because a description alone fails on short texts. The
@@ -97,9 +97,12 @@ and may clone a little worse.
 
 A clip is a 24 kHz mono 16-bit WAV of 3 to 10 seconds (longer ones slow down
 each request and, upstream says, clone worse), with its exact transcript in
-the `.txt` of the same name. The server encodes each clip once, when it loads
-a model, and a clip that is not such a WAV or has no transcript stops the
-start. To make one from a recording, cut one sentence and convert it:
+the `.txt` of the same name. A clip can also be an mp3 of any rate and
+channels: the server converts it to the samples of such a WAV in memory
+(`miniaudio`), and leaves the file as it is. The server encodes each clip
+once, when it loads a model. A clip that is not such a WAV or a readable mp3,
+has no transcript, or is there as both `.wav` and `.mp3` stops the start. To
+make one from a recording, cut one sentence and convert it:
 
 ```bash
 ffmpeg -i recording.m4a -ss 0.7 -to 11.45 -ac 1 -ar 24000 -sample_fmt s16 \
@@ -261,7 +264,8 @@ uv run pytest
   start free of the library, so the tests need no build. To regenerate it,
   install `omnivoice` in a scratch venv and write the sorted `LANG_IDS`.
 - The model returns float samples at 24 kHz, and `lameenc` encodes them to a
-  64 kbit/s mono mp3 in the process, so the image needs no ffmpeg.
+  64 kbit/s mono mp3 in the process. `miniaudio` decodes and resamples an mp3
+  clip in the process too, so the image needs no ffmpeg.
 - The port shares the duration rule of the Python model (one estimate from
   the letters of the text, scaled by the speed of the reference clip when
   there is one), so it sounds the same as torch did, the failures of short

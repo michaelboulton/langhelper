@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import lameenc
+import miniaudio
 import numpy as np
 
 from . import native, settings
@@ -53,15 +54,34 @@ def read_clip(path: Path) -> np.ndarray:
     return np.frombuffer(frames, "<i2").astype(np.float32) / 32768
 
 
+def read_mp3(path: Path) -> np.ndarray:
+    """The float samples of an mp3, converted to the 24 kHz mono 16-bit of a
+    clip WAV."""
+    try:
+        clip = miniaudio.decode_file(str(path), nchannels=1, sample_rate=CLIP_RATE)
+    except miniaudio.DecodeError as exc:
+        raise ValueError(
+            f'{path} is not an mp3 ({exc}): see README.md, "Voice"'
+        ) from exc
+    return np.asarray(clip.samples, dtype=np.float32) / 32768
+
+
+READERS = {".wav": read_clip, ".mp3": read_mp3}
+
+
 def read_voices(folder: Path | None) -> dict[str, tuple[np.ndarray, str]]:
-    """Each <name>.wav of the folder, with what it says from <name>.txt."""
+    """Each <name>.wav or <name>.mp3 of the folder, with what it says from
+    <name>.txt."""
     voices = {}
-    for path in sorted(folder.glob("*.wav")) if folder else []:
+    paths = [p for p in folder.glob("*") if p.suffix in READERS] if folder else []
+    for path in sorted(paths):
+        if path.stem in voices:
+            raise ValueError(f"{path.stem} has both a WAV and an mp3 in {folder}")
         script = path.with_suffix(".txt")
         text = script.read_text().strip() if script.is_file() else ""
         if not text:
             raise ValueError(f"{path} needs its transcript in {script.name}")
-        voices[path.stem] = (read_clip(path), text)
+        voices[path.stem] = (READERS[path.suffix](path), text)
     return voices
 
 
