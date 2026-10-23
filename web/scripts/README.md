@@ -110,7 +110,8 @@ The lemmas come from the tagger of the app (the light model of the language)
 run on the answers of the new cards and on the vocabulary that the model
 lists. The lesson text itself is not tagged: it mixes English with the study
 language, and the tagger would record the English words as lemmas of the
-study language.
+study language. An audio script is the exception: its lemmas are those of the
+lines of its actors (see "Flashcards from the scripts" below).
 
 The file is written after each lesson, complete or not at all, so a run over
 many lessons that dies loses at most the lesson it was on.
@@ -124,12 +125,14 @@ answer is JSON only, and that the lesson text is data. The user message has:
 2. the lemmas the learner has seen, by part of speech: all of the last 10
    lessons, then an even sample of the older ones with the verbs first, up to
    400 in all;
-3. `Lesson N: title` and the markdown of the lesson, cut at a paragraph after
+3. for an audio script only, the lemmas of this lesson, by part of speech;
+4. `Lesson N: title` and the markdown of the lesson, cut at a paragraph after
    20 000 characters;
-4. the task: 10 to 20 cards, each with a full English sentence (a bare word
+5. the task: 10 to 20 cards, each with a full English sentence (a bare word
    could make the app swap the sides of the card), an answer in the language
    with " / " between alternatives and no ";", the vocabulary of the lesson,
-   and the summary.
+   and the summary. Each sentence uses only the verbs and nouns of this
+   lesson and of the earlier lessons.
 
 The answer is parsed with the `Answer` model. After an answer that is not
 valid, the script asks once more with "Answer with JSON only" appended, and
@@ -389,6 +392,24 @@ lessons is:
 uv run python -m scripts.lessons --language it --name "Italian" \
     --course ../.data/decks/it-course ../.data/audio/it-course/*.txt
 ```
+
+A lesson file that ends in `.txt` is a script. A `.txt` that is not a valid
+script stops the run, with the file and the line of the error. For a script:
+
+- The lemmas of the lesson are those of the lines of its actors: the words
+  that the learner hears. The memory file keeps them, as for any lesson.
+- The prompt lists the lemmas of this lesson and the lemmas of the earlier
+  lessons, so the cards of lesson N use the verbs and nouns of scripts 1 to
+  N. The list does not depend on the cut of a long script.
+- After the answer, the run tags the answers of the cards. It prints each verb
+  and noun that is in no lesson, such as
+  `verbs and nouns in no lesson: vodu`. It keeps the cards: the tagger is not
+  exact, and the light model of a language can give a wrong lemma for a short
+  line. `--redo NN` writes the cards of lesson NN again.
+
+Give the scripts in the order of the course, as the glob `*.txt` does: the
+cards of a lesson can use only the words of the lessons before it in the
+memory file.
 
 ## transcribe.py: what a model hears in a voice clip
 

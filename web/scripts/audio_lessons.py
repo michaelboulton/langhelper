@@ -146,12 +146,7 @@ def memory(
     for number, lesson in scripts.items():
         if number >= before:
             continue
-        spoken = "\n".join(
-            line.text
-            for line in lesson.lines
-            if isinstance(line, script.Line) and line.speaker in script.ACTORS
-        )
-        lemmas = lessons.new_lemmas(earlier, lessons.lemmas_of(spoken, language))
+        lemmas = lessons.new_lemmas(earlier, lessons.actor_lemmas(lesson, language))
         earlier.append(Earlier(number, lesson, lemmas))
     return earlier
 

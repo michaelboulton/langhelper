@@ -413,3 +413,58 @@ def test_a_title_cannot_hold_a_deck_separator(course, scripted, fake_lemmas):
         "Croatian course",
         "001 A B",
     )
+
+
+SCRIPT_HEAD = "# {title}\nsummary: {title}.\ngrammar: the present tense\n\n"
+
+
+def test_the_cards_of_a_script_use_the_words_of_the_scripts(
+    course, scripted, fake_lemmas, capsys
+):
+    folder = course.parent
+    (folder / "01.txt").write_text(
+        SCRIPT_HEAD.format(title="Coffee")
+        + 'narrator: How do you say "I drink coffee"?\npause: 2\nactor 1: Pijem kavu.\n',
+        encoding="utf-8",
+    )
+    (folder / "02.txt").write_text(
+        SCRIPT_HEAD.format(title="Tea") + "actor 1: Pijem čaj.\nactor 2: Volim čaj.\n",
+        encoding="utf-8",
+    )
+    answer_1 = {
+        "summary": "Ordering a coffee.",
+        "vocabulary": ["kava"],
+        "cards": [
+            {"english": "I drink coffee.", "answer": "Pijem kavu."},
+            {"english": "I drink water.", "answer": "Pijem vodu."},
+        ],
+    }
+    answer_2 = {
+        "summary": "Tea.",
+        "cards": [{"english": "I like tea.", "answer": "Volim čaj."}],
+    }
+    backend = scripted(answer_1, answer_2)
+    first_run(course, str(folder / "01.txt"), str(folder / "02.txt"))
+
+    first, second = backend.prompts
+    this_lesson = "Words of Croatian of this lesson, in their dictionary form:\n"
+    assert this_lesson + "- nouns: kavu, pijem\n" in first
+    assert "the learner has seen" not in first
+    assert (
+        "the learner has seen, in their dictionary form:\n- nouns: kavu, pijem\n"
+        in second
+    )
+    assert this_lesson + "- nouns: pijem, volim, čaj\n" in second
+    # The lemmas are those of the actor lines, not of the cards or the narrator.
+    memory = lessons.load_course(course.with_suffix(".json"))
+    assert [lesson.lemmas for lesson in memory.lessons] == [
+        {"NOUN": ["kavu", "pijem"]},
+        {"NOUN": ["volim", "čaj"]},
+    ]
+    out = capsys.readouterr().out
+    assert out.count("verbs and nouns in no lesson") == 1
+    assert "verbs and nouns in no lesson: vodu\n" in out
+
+    (folder / "03.txt").write_text("hello\n", encoding="utf-8")
+    with pytest.raises(SystemExit, match=r"03\.txt:1: the first line"):
+        run(course, str(folder / "03.txt"))

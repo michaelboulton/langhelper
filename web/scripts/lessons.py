@@ -52,6 +52,7 @@ from urllib.parse import urlparse
 import click
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from tlhelper import explain, speech
+from tlhelper.audio_lessons import script
 from tlhelper.flashcards import make_deck, make_toml
 from tlhelper.languages import LANGUAGES
 
@@ -93,7 +94,8 @@ Write {min_cards} to {max_cards} flashcards for this lesson, as JSON of this sha
 {{"summary": "...", "vocabulary": ["...", "..."], "cards": [{{"english": "...", "answer": "..."}}, ...]}}
 - "english": a full English sentence that the learner translates. Never a bare word.
 - "answer": the sentence in {language}. If more than one form is right, give the forms with " / " between them. Never use ";".
-- Each card uses the grammar of this lesson. Where it fits, use a word from an earlier lesson, so the learner meets it again in the new grammar.
+- Each card uses the grammar of this lesson.
+- Build each sentence from the verbs and nouns of this lesson and of the earlier lessons. Where it fits, use a word from an earlier lesson, so the learner meets it again in the new grammar. A verb or a noun that the learner has not met is an error.
 - "vocabulary": the words and phrases of {language} that this lesson introduces, in their dictionary form.
 - "summary": one sentence on what the lesson teaches, for the memory of the later lessons.
 Answer with the JSON only."""
@@ -327,6 +329,28 @@ def lemmas_of(text: str, language: str) -> dict[str, list[str]]:
     return {upos: sorted(found[upos]) for upos in LEMMA_UPOS if upos in found}
 
 
+def actor_lemmas(lesson: script.Script, language: str) -> dict[str, list[str]]:
+    """The lemmas of the lines of the actors of an audio script: the words of
+    the study language that the learner hears."""
+    spoken = "\n".join(
+        line.text
+        for line in lesson.lines
+        if isinstance(line, script.Line) and line.speaker in script.ACTORS
+    )
+    return lemmas_of(spoken, language)
+
+
+def script_words(source: str, text: str, language: str) -> dict | None:
+    """The lemmas of a lesson that is an audio script (a .txt file), else
+    None."""
+    if is_url(source) or Path(source).suffix != ".txt":
+        return None
+    try:
+        return actor_lemmas(script.parse(text, source), language)
+    except script.ScriptError as exc:
+        raise LessonError(str(exc)) from exc
+
+
 class HasLemmas(Protocol):
     """A Lesson, or an Earlier of scripts.audio_lessons."""
 
@@ -346,6 +370,29 @@ def new_lemmas(earlier: Sequence[HasLemmas], lemmas: dict[str, list[str]]) -> di
         for upos, lemmas_ in lemmas.items()
     }
     return {upos: lemmas_ for upos, lemmas_ in kept.items() if lemmas_}
+
+
+def unknown_words(
+    cards: list[Card], words: dict, earlier: Sequence[HasLemmas], language: str
+) -> list[str]:
+    """The verbs and nouns of the answers that are in neither words nor an
+    earlier lesson. The part of speech is not compared: the tagger can tag
+    one word two ways."""
+    known = {
+        lemma
+        for lemmas in [words, *(lesson.lemmas for lesson in earlier)]
+        for lemmas_ in lemmas.values()
+        for lemma in lemmas_
+    }
+    used = lemmas_of("\n".join(card.answer for card in cards), language)
+    return sorted(
+        {
+            lemma
+            for upos in ("VERB", "NOUN")
+            for lemma in used.get(upos, [])
+            if lemma not in known
+        }
+    )
 
 
 def memory_lemmas(earlier: Sequence[HasLemmas]) -> dict[str, list[str]]:
@@ -384,23 +431,38 @@ def system_text(course: Course) -> str:
     return SYSTEM.format(language=LANGUAGES[course.language].info.name)
 
 
+def word_lines(heading: str, lemmas: dict[str, list[str]]) -> list[str]:
+    if not lemmas:
+        return []
+    lines = [heading]
+    for upos, lemmas_ in lemmas.items():
+        lines.append(f"- {LEMMA_UPOS[upos]}: {', '.join(lemmas_)}")
+    return [*lines, ""]
+
+
 def build_prompt(
-    course: Course, earlier: list[Lesson], number: int, title: str, text: str
+    course: Course,
+    earlier: list[Lesson],
+    number: int,
+    title: str,
+    text: str,
+    words: dict | None = None,
 ) -> str:
+    """words: the lemmas of this lesson, for an audio script."""
     language = LANGUAGES[course.language].info.name
     lines = []
     if earlier:
         lines.append("Earlier lessons:")
         lines += [f"{lesson.number}. {lesson.summary}" for lesson in earlier]
         lines.append("")
-        lemmas = memory_lemmas(earlier)
-        if lemmas:
-            lines.append(
-                f"Words of {language} the learner has seen, in their dictionary form:"
-            )
-            for upos, lemmas_ in lemmas.items():
-                lines.append(f"- {LEMMA_UPOS[upos]}: {', '.join(lemmas_)}")
-            lines.append("")
+        lines += word_lines(
+            f"Words of {language} the learner has seen, in their dictionary form:",
+            memory_lemmas(earlier),
+        )
+    if words:
+        lines += word_lines(
+            f"Words of {language} of this lesson, in their dictionary form:", words
+        )
     text, was_cut = cut(text)
     lines += [f"Lesson {number}: {title}", "", text]
     if was_cut:
@@ -620,13 +682,14 @@ def generate(args: SimpleNamespace, memory: Path, course: Course) -> bool:
             print(f"{key}: in the course already (--redo {key} makes its cards again)")
             continue
         title, text = read_lesson(source)
+        words = script_words(source, text, course.language)
         if key in args.titles:
             title = args.titles[key]
         elif existing:
             title = existing.title
         number = existing.number if existing else len(course.lessons) + 1
         earlier = [lesson for lesson in course.lessons if lesson.number < number]
-        prompt = build_prompt(course, earlier, number, title, text)
+        prompt = build_prompt(course, earlier, number, title, text, words)
         if args.dry_run:
             print(prompt)
             print(f"\n[about {len(prompt) // 4} tokens]")
@@ -635,9 +698,15 @@ def generate(args: SimpleNamespace, memory: Path, course: Course) -> bool:
             backend = backend_of(args.backend)
         print(f"lesson {number} ({key}): {title}: asking {backend.model()}")
         answer = ask(backend, system_text(course), prompt)
-        tagged = "\n".join(
-            [*(card.answer for card in answer.cards), *answer.vocabulary]
-        )
+        if words is None:
+            tagged = "\n".join(
+                [*(card.answer for card in answer.cards), *answer.vocabulary]
+            )
+            words = lemmas_of(tagged, course.language)
+        else:
+            unknown = unknown_words(answer.cards, words, earlier, course.language)
+            if unknown:
+                print(f"  verbs and nouns in no lesson: {', '.join(unknown)}")
         lesson = Lesson(
             key=key,
             number=number,
@@ -645,7 +714,7 @@ def generate(args: SimpleNamespace, memory: Path, course: Course) -> bool:
             title=title,
             model=backend.model(),
             summary=answer.summary,
-            lemmas=new_lemmas(earlier, lemmas_of(tagged, course.language)),
+            lemmas=new_lemmas(earlier, words),
             cards=answer.cards,
         )
         if existing:
