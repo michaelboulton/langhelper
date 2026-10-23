@@ -284,8 +284,8 @@ has:
 2. the lemmas of the actor lines of those lessons, as in the prompt of
    `lessons.py` (see "The prompt" above);
 3. the number, the topic and the grammar step of the lesson;
-4. the format, and the rules: about 500 lines, which is about 22 minutes at
-   the 22 lines a minute of a voiced lesson; only the grammar of this lesson
+4. the format, and the rules: about 500 lines, or 30 minutes;
+   only the grammar of this lesson
    and of the earlier lessons; about 10 to 15 new words, used again and again
    in new sentences; a short pause after an answer, for the learner to repeat
    it; requests put in the situation of the dialogue ("Ask her whether ...")
