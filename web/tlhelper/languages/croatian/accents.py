@@ -139,17 +139,15 @@ def glosses_for(text: str, lemma: str, upos: str) -> dict[str, int]:
     word of the first sense in Wiktionary, which is the main meaning. classla
     says that the lemma of "ona" is "on" (he), so this also reads the entry of
     the word itself (she)."""
-    keys = {entry_key(lemma, upos), entry_key(text, upos)}
+    keys = (entry_key(lemma, upos), entry_key(text, upos))
     with _lock:
         conn = connect()
         if conn is None:
             return {}
-        marks = ",".join("?" * len(keys))
         try:
             rows = conn.execute(
-                f"SELECT word, min(rank) FROM glosses WHERE key IN ({marks})"
-                " GROUP BY word",
-                tuple(keys),
+                "SELECT word, min(rank) FROM glosses WHERE key IN (?, ?) GROUP BY word",
+                keys,
             ).fetchall()
         except sqlite3.OperationalError:
             # An accents.db from before the glosses table.

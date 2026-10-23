@@ -132,7 +132,8 @@ def db() -> sqlite3.Connection:
             conn.execute(create)
             for old, columns in MIGRATIONS[table].items():
                 if old in tables:
-                    conn.execute(f"INSERT INTO {table} SELECT {columns} FROM {old}")
+                    # The names come from SCHEMA and MIGRATIONS, not from a user.
+                    conn.execute(f"INSERT INTO {table} SELECT {columns} FROM {old}")  # noqa: S608
         tables.add(table)
     return conn
 

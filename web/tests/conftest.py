@@ -120,7 +120,8 @@ def fluent_script(request):
     )
     if not cached.is_file():
         try:
-            with urllib.request.urlopen(url, timeout=10) as response:
+            # The regex above allows only an https URL of jsdelivr.
+            with urllib.request.urlopen(url, timeout=10) as response:  # noqa: S310
                 cached.write_bytes(response.read())
         except OSError:
             return None
