@@ -40,6 +40,7 @@ from tlhelper import explain, speech
 from tlhelper.audio_lessons import script
 from tlhelper.flashcards import make_toml
 from tlhelper.languages import LANGUAGES
+from tqdm import tqdm
 
 from scripts import lessons
 
@@ -269,14 +270,13 @@ def make_clips(
         match = CLIP_NAME.fullmatch(path.name)
         if match:
             known.setdefault(match.group(1), path)
-    for clip in clips_of(parts):
+    todo = [clip for clip in clips_of(parts) if not (folder / clip.name).exists()]
+    for clip in tqdm(todo, desc=folder.name, unit="clip", disable=not todo):
         path = folder / clip.name
-        if path.exists():
-            continue
         if clip.digest in known:
             data = known[clip.digest].read_bytes()
         else:
-            print(f"  {clip.name}: {clip.speaker}: {clip.text}")
+            tqdm.write(f"  {clip.name}: {clip.speaker}: {clip.text}")
             try:
                 data = synthesizer.synthesize(clip.text, clip.language, clip.voice)
             except speech.SpeechError as exc:

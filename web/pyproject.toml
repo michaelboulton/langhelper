@@ -22,6 +22,7 @@ dependencies = [
     "requests",
     "spacy",
     "torch",
+    "tqdm",
     "uvicorn",
     "zstandard>=0.25.0",
 ]
