@@ -181,7 +181,7 @@ markdown is not cached: `--redo` fetches the page again.
 
 ## audio_lessons.py: scripts of spoken lessons
 
-A language model writes the script of a spoken lesson of about 30 minutes for
+A language model writes the script of a spoken lesson of about 500 lines for
 each topic. In a lesson, two actors have a short dialogue in the study
 language. Then a narrator teaches its words in English: the narrator asks for
 a phrase, a pause gives the learner time to say it aloud, and an actor says
@@ -193,7 +193,7 @@ lesson into one mp3.
 The AI service is the one of `lessons.py` (see "Set-up" above), with
 `--backend claude` too. The script needs no extra dependency group. A lesson
 costs about 2 to 4 thousand input tokens (a later lesson has more memory) and
-about 8 thousand output tokens. `--voice` also needs ffmpeg on the machine
+about 6 thousand output tokens. `--voice` also needs ffmpeg on the machine
 that runs the script (see "Clips and the mp3" below).
 
 ### The course folder
@@ -284,7 +284,7 @@ has:
 2. the lemmas of the actor lines of those lessons, as in the prompt of
    `lessons.py` (see "The prompt" above);
 3. the number, the topic and the grammar step of the lesson;
-4. the format, and the rules: about 30 minutes, which is about 600-650 lines at
+4. the format, and the rules: about 500 lines, which is about 22 minutes at
    the 22 lines a minute of a voiced lesson; only the grammar of this lesson
    and of the earlier lessons; about 10 to 15 new words, used again and again
    in new sentences; a short pause after an answer, for the learner to repeat
