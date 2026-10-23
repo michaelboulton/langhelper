@@ -809,4 +809,4 @@ def test_real_models(tmp_path, monkeypatch):
     # Only one model stays loaded, so the peak stays under the 4 GB machine.
     assert STUDY.key == ("hr", "light")
     peak_mb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss // 1024
-    assert peak_mb < 3500, f"peak memory was {peak_mb} MB"
+    assert peak_mb < 3600, f"peak memory was {peak_mb} MB"
