@@ -1,5 +1,3 @@
-import sys
-
 import pytest
 import tomllib
 from tlhelper.flashcards import decks, make_toml, store
@@ -12,16 +10,15 @@ NOTES = [
 ]
 
 
-def run(monkeypatch, *args):
-    monkeypatch.setattr(sys, "argv", ["make_toml", *map(str, args)])
-    make_toml.main()
+def run(*args):
+    make_toml.main([*map(str, args)], standalone_mode=False)
 
 
-def test_the_result_imports(deck_dir, make_apkg, monkeypatch):
+def test_the_result_imports(deck_dir, make_apkg):
     package = make_apkg(
         deck_dir / "my-deck.apkg", NOTES, fields=("Word", "Meaning", "Audio")
     )
-    run(monkeypatch, package, "--language", "hr")
+    run(package, "--language", "hr")
 
     config = tomllib.loads((deck_dir / "my-deck.toml").read_text(encoding="utf-8"))
     assert config == {
@@ -39,18 +36,18 @@ def test_the_result_imports(deck_dir, make_apkg, monkeypatch):
     assert (deck["name"], deck["counts"]["total"]) == ("my deck", 3)
 
 
-def test_options_win_and_a_file_stays(deck_dir, make_apkg, monkeypatch):
+def test_options_win_and_a_file_stays(deck_dir, make_apkg):
     package = make_apkg(deck_dir / "basics.apkg")
-    run(monkeypatch, package, "--language", "hr", "--english-field", "Back")
+    run(package, "--language", "hr", "--english-field", "Back")
     with pytest.raises(SystemExit, match="--force"):
-        run(monkeypatch, package, "--language", "hr")
-    run(monkeypatch, package, "--language", "hr", "--reverse", "--force")
+        run(package, "--language", "hr")
+    run(package, "--language", "hr", "--reverse", "--force")
 
     config = tomllib.loads((deck_dir / "basics.toml").read_text(encoding="utf-8"))
     assert (config["english_field"], config["reverse"]) == ("Front", True)
 
 
-def test_the_options_for_subdecks(deck_dir, make_apkg, monkeypatch, capsys):
+def test_the_options_for_subdecks(deck_dir, make_apkg, capsys):
     notes = [
         ("guid-a", "I was.", "Bio sam.<br>Bila sam.", 11),
         ("guid-b", "Yes.", "Da.", 12),
@@ -59,7 +56,7 @@ def test_the_options_for_subdecks(deck_dir, make_apkg, monkeypatch, capsys):
         deck_dir / "basics.apkg", notes, anki_decks={11: "All::Read", 12: "All::Speak"}
     )
     options = ("--subdecks", "--to-english-notetype", "Basic", "--lines")
-    run(monkeypatch, package, "--language", "hr", "--english-field", "Front", *options)
+    run(package, "--language", "hr", "--english-field", "Front", *options)
     assert "1 All :: Read" in capsys.readouterr().out
     decks.import_decks()
     assert [deck["name"] for deck in store.decks("anyone")] == ["Read", "Speak"]

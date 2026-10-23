@@ -1,5 +1,6 @@
 """Make a deck package from a text file, for an admin with no Anki at hand:
 
+\b
     uv run python -m tlhelper.flashcards.make_deck decks/basics.tsv
 
 Each line of the text file is "English<TAB>answer". The result is
@@ -12,11 +13,12 @@ and wants an Anki deck for each group of them (scripts/lessons.py).
 import hashlib
 import json
 import sqlite3
-import sys
 import tempfile
 import zipfile
 from pathlib import Path
 from typing import NamedTuple
+
+import click
 
 MID = 1
 MODELS = {
@@ -105,7 +107,11 @@ def make_deck(source: Path) -> Path:
     return write_package(source.with_suffix(".apkg"), notes)
 
 
+@click.command(help=__doc__)
+@click.argument("source", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+def main(source: Path) -> None:
+    print(make_deck(source))
+
+
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        raise SystemExit(__doc__)
-    print(make_deck(Path(sys.argv[1])))
+    main()

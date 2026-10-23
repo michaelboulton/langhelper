@@ -8,6 +8,7 @@ import re
 import shutil
 import subprocess
 
+import click
 import pytest
 import tomllib
 from scripts import audio_lessons, lessons
@@ -134,7 +135,7 @@ def course(tmp_path):
 
 
 def run(course, *args):
-    audio_lessons.main(["--course", str(course), *args])
+    audio_lessons.main(["--course", str(course), *args], standalone_mode=False)
 
 
 def first_run(course, *args):
@@ -216,14 +217,13 @@ def test_a_topic_in_the_course_is_not_asked_again(
         run(course, "--topic", "the weather")
 
 
-def test_the_grammar_option(course, scripted, fake_lemmas, capsys):
+def test_the_grammar_option(course, scripted, fake_lemmas):
     backend = scripted(ANSWER_1)
     first_run(course, "--topic", "a dish with meat", "--grammar", "the verb essere")
     assert "The grammar step of this lesson: the verb essere" in backend.prompts[0]
     assert script.read_script(course / "01.txt").grammar == "the verb essere"
-    with pytest.raises(SystemExit):
+    with pytest.raises(click.UsageError, match="--grammar needs exactly one --topic"):
         run(course, "--topic", "b", "--topic", "c", "--grammar", "x")
-    assert "--grammar needs exactly one --topic" in capsys.readouterr().err
 
 
 def test_the_name_and_the_language_come_from_the_course_file(

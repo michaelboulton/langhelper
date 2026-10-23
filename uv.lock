@@ -676,6 +676,7 @@ source = { virtual = "web" }
 dependencies = [
     { name = "authlib" },
     { name = "classla" },
+    { name = "click" },
     { name = "de-core-news-md" },
     { name = "de-dep-news-trf" },
     { name = "en-core-web-sm" },
@@ -713,6 +714,7 @@ lessons = [
 requires-dist = [
     { name = "authlib" },
     { name = "classla" },
+    { name = "click" },
     { name = "de-core-news-md", url = "https://github.com/explosion/spacy-models/releases/download/de_core_news_md-3.8.0/de_core_news_md-3.8.0-py3-none-any.whl" },
     { name = "de-dep-news-trf", url = "https://github.com/explosion/spacy-models/releases/download/de_dep_news_trf-3.8.0/de_dep_news_trf-3.8.0-py3-none-any.whl" },
     { name = "en-core-web-sm", url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" },

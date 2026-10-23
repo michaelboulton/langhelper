@@ -265,7 +265,8 @@ def test_check_voices(openai, monkeypatch, tmp_path, capsys):
     calls = fake_service(monkeypatch, models=[{**OMNIVOICE, "voices": ["it", "it-2"]}])
     out = tmp_path / "out"
     check_voices.main(
-        ["--language", "it", "--voice", "it", "--voice", "it-2", "--out", str(out)]
+        ["--language", "it", "--voice", "it", "--voice", "it-2", "--out", str(out)],
+        standalone_mode=False,
     )
     assert (out / "it-it.mp3").read_bytes() == MP3
     assert (out / "it-it-2.mp3").read_bytes() == MP3
