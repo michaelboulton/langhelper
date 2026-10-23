@@ -1,8 +1,8 @@
 """The script of an audio lesson, and the course folder that holds it:
 
-    audio/<course>/
-      course.toml   # language, name, and the voice of each speaker
-      01.txt        # the script of lesson 1
+audio/<course>/
+  course.toml   # language, name, and the voice of each speaker
+  01.txt        # the script of lesson 1
 """
 
 import re

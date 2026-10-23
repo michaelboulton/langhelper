@@ -72,7 +72,9 @@ pause: <seconds>
 - Ask again for the words of the earlier lessons and the new words of this lesson at growing intervals: after a few lines, then after more lines, then near the end.
 - End with the dialogue again.
 Answer with the script only."""
-FIRST_STEP = "This is the first lesson of the course: choose a simple first grammar step."
+FIRST_STEP = (
+    "This is the first lesson of the course: choose a simple first grammar step."
+)
 NEXT_STEP = (
     "Choose the grammar step of this lesson: one small step harder than the"
     " steps of the earlier lessons."
