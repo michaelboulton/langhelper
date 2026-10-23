@@ -372,6 +372,25 @@ def test_voice_reads_each_line_into_a_clip(course, fake_voice, fake_join):
     )
 
 
+def test_the_voice_options_go_in_the_course(course, fake_voice, fake_join):
+    write_course(course)
+    run(course, "--voice", "--actor-1-voice", "it", "--actor-2-voice", "it-3")
+    config = tomllib.loads((course / "course.toml").read_text(encoding="utf-8"))
+    assert config == {
+        "language": "it",
+        "name": "Italian",
+        "voices": {"actor 1": "it", "actor 2": "it-3"},
+    }
+    assert {(language, voice) for _, language, voice in fake_voice.asked} == {
+        ("en", None),
+        ("it", "it"),
+        ("it", "it-3"),
+    }
+    # A dry run changes no file.
+    run(course, "--narrator-voice", "en-2", "--dry-run")
+    assert "narrator" not in script.read_course(course).voices
+
+
 def test_a_new_lesson_is_voiced_in_the_same_run(
     course, scripted, fake_lemmas, fake_voice, fake_join, capsys
 ):
