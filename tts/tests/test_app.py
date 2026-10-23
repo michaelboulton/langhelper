@@ -187,6 +187,62 @@ def test_an_mp3_clip_is_converted_to_the_rate_of_a_wav(tmp_path):
     assert 0.4 < np.abs(samples).max() < 0.6
 
 
+def test_a_named_voice(voices):
+    write_clip(voices / "hr-2.wav", 0.75, text="Bok.")
+    with TestClient(service.app) as client:
+        [model] = client.get("/v1/models").json()["data"]
+        assert model["voices"] == ["default", "hr", "hr-2"]
+
+        def speak(**more):
+            response = client.post(
+                "/v1/audio/speech", json={"input": "Dobar dan.", **more}
+            )
+            assert response.status_code == 200, response.text
+            return response.headers["cache-status"]
+
+        assert speak(language="hr", voice="hr-2") == MISS
+        # The clip of the language is another voice, so another entry.
+        assert speak(language="hr") == MISS
+        assert speak(language="hr", voice="hr-2") == HIT
+        # A clip reads any language, with its accent.
+        assert speak(language="it", voice="hr") == MISS
+    calls = service.synth.models[MODEL].calls
+    assert [(call["language"], call["reference"]) for call in calls] == [
+        ("hr", ("codes", RATE * 3 // 4, "Bok.")),
+        ("hr", ("codes", RATE // 2, "Dobar dan.")),
+        ("it", ("codes", RATE // 2, "Dobar dan.")),
+    ]
+    assert all(call["instruct"] is None for call in calls)
+
+
+@pytest.mark.parametrize(
+    "more, code",
+    [
+        ({"voice": "hr-3"}, "unknown-voice"),
+        ({"voice": ""}, "unknown-voice"),
+        ({"voice": "hr", "instruct": "male"}, "voice-and-instruct"),
+        ({"voice": "hr", "instruct": ""}, "voice-and-instruct"),
+    ],
+)
+def test_a_bad_voice(voices, more, code):
+    with TestClient(service.app) as client:
+        response = client.post(
+            "/v1/audio/speech", json={"input": "Bok", "language": "hr", **more}
+        )
+    assert response.status_code == 422
+    assert response.json()["code"] == code
+    assert service.synth.models == {}
+
+
+def test_no_clips_is_no_voices(client):
+    [model] = client.get("/v1/models").json()["data"]
+    assert model["voices"] == []
+    response = client.post(
+        "/v1/audio/speech", json={"input": "Hi", "language": "en", "voice": "en"}
+    )
+    assert response.json()["code"] == "unknown-voice"
+
+
 def not_a_wav(folder):
     (folder / "hr.wav").write_text("Not a WAV.\n")
     (folder / "hr.txt").write_text("Dobar dan.\n")

@@ -35,6 +35,7 @@ class Synthesizer(Protocol):
         when the service does not say, or does not answer: every language
         then counts, and synthesize() reports the failure."""
 
-    def synthesize(self, text: str, language: str) -> bytes:
+    def synthesize(self, text: str, language: str, voice: str | None = None) -> bytes:
         """One request to the service: an mp3 of the text, in the language
-        with this code of the app. Raises SpeechError on every failure."""
+        with this code of the app. voice names a voice of the service, and
+        None is its default. Raises SpeechError on every failure."""

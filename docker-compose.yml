@@ -143,12 +143,20 @@ services:
     environment:
       # Only the languages of the page. The model knows 600 more.
       OMNIVOICE_LANGUAGES: hr,de,fr,it,en
+    # Rootless docker maps container root to your own user, so the container
+    # can read the token and write the GGUFs in your cache (uid 1000 cannot).
+    user: "0:0"
     devices:
       - /dev/dri:/dev/dri
     volumes:
       - type: bind
         source: ${HOME}/.cache/huggingface
         target: /hf
+      # The reference clips, read at each start (tts/README.md, "Voice").
+      - type: bind
+        source: ./tts/omnivoice_server/voices
+        target: /app/omnivoice_server/voices
+        read_only: true
 
     healthcheck:
       test:

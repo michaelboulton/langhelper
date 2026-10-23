@@ -16,6 +16,9 @@
 !tts/pyproject.toml
 !tts/omnivoice_server
 !tts/omnivoice_server/**
+# The compose files mount the reference clips (tts/README.md, "Voice").
+tts/omnivoice_server/voices
+tts/omnivoice_server/voices/**
 # build_glosses.py only runs by hand, to make the accents.db and glosses.db
 # files of the language folders.
 web/tlhelper/build_glosses.py

@@ -178,6 +178,11 @@ services:
       - type: bind
         source: ${HOME}/.cache/huggingface
         target: /hf
+      # The reference clips, read at each start (tts/README.md, "Voice").
+      - type: bind
+        source: ./tts/omnivoice_server/voices
+        target: /app/omnivoice_server/voices
+        read_only: true
 
     healthcheck:
       test:

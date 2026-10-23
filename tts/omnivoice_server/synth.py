@@ -105,8 +105,9 @@ class Synth:
     runs one of them at a time, and a request that arrives during the load
     at the start waits for it.
 
-    A request with no instruct clones the reference clip of its language, or
-    the default clip, else it gets OMNIVOICE_INSTRUCT (README.md, "Voice").
+    A request with a voice clones the clip of that name. A request with no
+    voice and no instruct clones the reference clip of its language, or the
+    default clip, else it gets OMNIVOICE_INSTRUCT (README.md, "Voice").
     The clips are read once, and each model encodes them once, at its load.
 
     The last mp3s (settings.cache_size()) stay in memory, by model, text,
@@ -155,18 +156,24 @@ class Synth:
         return DEFAULT_CLIP if DEFAULT_CLIP in voices else None
 
     def speak(
-        self, text: str, language: str, instruct: str | None, model_id: str
+        self,
+        text: str,
+        language: str,
+        instruct: str | None,
+        model_id: str,
+        voice: str | None = None,
     ) -> tuple[bytes, bool]:
-        """The mp3, and whether it came from the cache. instruct None is the
-        default voice."""
+        """The mp3, and whether it came from the cache. voice is the name of a
+        clip, and the caller checks that it exists. voice and instruct None
+        is the default voice."""
         num_step = settings.num_step()
-        clip = self.clip(language) if instruct is None else None
+        clip = voice or (self.clip(language) if instruct is None else None)
         if instruct is None and clip is None:
             instruct = settings.instruct()
-        voice = f"clip:{clip}" if clip else instruct
-        key = (model_id, text, language, voice, num_step)
+        sound = f"clip:{clip}" if clip else instruct
+        key = (model_id, text, language, sound, num_step)
         # A hit does not wait for a generation that is under way.
-        if voice and key in self.cache:
+        if sound and key in self.cache:
             self.cache.move_to_end(key)
             return self.cache[key], True
         with self.lock:
@@ -180,7 +187,7 @@ class Synth:
             )
             rate = model.sampling_rate
         data = mp3(np.asarray(audio, dtype=np.float32), rate)
-        if voice:
+        if sound:
             self.cache[key] = data
             while len(self.cache) > settings.cache_size():
                 self.cache.popitem(last=False)

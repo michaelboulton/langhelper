@@ -25,7 +25,7 @@ steps on the Radeon of a Strix Halo laptop. On the CPU it takes about 6 s at
 | `omnivoice_server/synth.py` | The models in memory, one lock for a load and a generation, the cache of the last mp3s, and the mp3 encoder (`lameenc`) |
 | `omnivoice_server/native.py` | `libomnivoice.so` through ctypes: the structs of `omnivoice.h`, the load, one `generate`, the log callback |
 | `omnivoice_server/languages.py` | The 646 language ids, generated (see "Notes") |
-| `omnivoice_server/voices/` | The reference clips, `<language>.wav` or `<language>.mp3` with the transcript in `<language>.txt`. Not in git (see "Voice") |
+| `omnivoice_server/voices/` | The reference clips, `<language>.wav` or `<language>.mp3` with the transcript in `<language>.txt`, and named clips such as `it-2.mp3`. Not in git (see "Voice") |
 | `omnivoice_server/settings.py` | The environment variables, read when they are used |
 | `tests/` | The routes with a fake model, and the encoder with a real signal. Run with `uv run pytest`; no library and no model needed |
 | `Dockerfile` | Its build context is the repository root. Two stages: a build of omnivoice.cpp at a pinned commit with the Vulkan and CPU backends, then `python:3.12-slim` plus the Mesa Vulkan drivers and `uv sync --frozen`, uid 1000, the Hugging Face cache at `/hf` |
@@ -34,8 +34,9 @@ steps on the Radeon of a Strix Halo laptop. On the CPU it takes about 6 s at
 ## Routes
 
 `GET /v1/models` lists the models, each with the language codes that it
-reads. `languages` is not in the API of OpenAI; a client that does not know
-it ignores it.
+reads and the names of the reference clips (see "Voice"). `languages` and
+`voices` are not in the API of OpenAI; a client that does not know them
+ignores them.
 
 ```bash
 curl http://localhost:8002/v1/models
@@ -43,11 +44,12 @@ curl http://localhost:8002/v1/models
 
 ```json
 {"object": "list", "data": [{"id": "Serveurperso/OmniVoice-GGUF", "object": "model",
-  "owned_by": "Serveurperso", "languages": ["de", "en", "fr", "hr", "it"]}]}
+  "owned_by": "Serveurperso", "languages": ["de", "en", "fr", "hr", "it"],
+  "voices": ["hr", "it", "it-2"]}]}
 ```
 
-`POST /v1/audio/speech` returns the mp3 of a text. `model` and `instruct`
-are optional. `response_format` can only be `mp3`.
+`POST /v1/audio/speech` returns the mp3 of a text. `model`, `voice` and
+`instruct` are optional. `response_format` can only be `mp3`.
 
 ```bash
 curl http://localhost:8002/v1/audio/speech \
@@ -68,14 +70,28 @@ with a `GET` that the browser keeps (`../web/README.md`, "Listen").
 
 An error is JSON with `detail` and `code`: `unknown-model` (404),
 `unknown-language` (422), `empty-text` (422), `bad-instruct` (422, and
-`detail` names the instruct; the log of the server lists the valid items). A
-text has at most 4000 characters.
+`detail` names the instruct; the log of the server lists the valid items),
+`unknown-voice` (422) and `voice-and-instruct` (422). A text has at most 4000
+characters.
 
 ## Voice
 
 A request with no `instruct` clones a reference clip: `voices/<language>.wav`
 (or `.mp3`) when the language has one, else `voices/default.wav`, else it gets
 `OMNIVOICE_INSTRUCT`. A request with an `instruct` never uses a clip.
+
+A request with a `voice` clones the clip of that name: `"voice": "it-2"`
+clones `voices/it-2.wav` (or `.mp3`), so two speakers of one language get
+two voices.
+A name is the stem of any clip in the folder: the language code, a dash and a
+suffix for a second speaker of the language, or a language code for its usual
+voice. A clip reads any language, with its own accent. A name with no clip
+gets `unknown-voice`, and a request with both `voice` and `instruct` gets
+`voice-and-instruct`. The server reads the clips at the start, so a new clip
+needs a restart. The image has no clips: the compose files mount `voices/`
+into the container, so a new clip needs no new build.
+`../web/scripts/README.md`, section "check_voices.py", has a check by ear of
+the named clips.
 
 The clips are there because a description alone fails on short texts. The
 OmniVoice README says that voice design "is trained on Chinese and English
@@ -188,21 +204,24 @@ only accepts the codes from its list.
 
 With the web page: `docker compose up --build` at the repository root. The
 `voice` service there binds `~/.cache/huggingface` of the host to `/hf`, so
-the GGUFs download once and stay. The first build compiles omnivoice.cpp,
-which takes a few minutes.
+the GGUFs download once and stay, and it binds `omnivoice_server/voices/`
+for the clips. The first build compiles omnivoice.cpp, which takes a few
+minutes.
 
 The image alone, built from the repository root:
 
 ```bash
 docker build -f tts/Dockerfile -t omnivoice .
-docker run --rm -p 8002:8002 -v ~/.cache/huggingface:/hf --device /dev/dri omnivoice
+docker run --rm -p 8002:8002 -v ~/.cache/huggingface:/hf \
+  -v ./tts/omnivoice_server/voices:/app/omnivoice_server/voices:ro --device /dev/dri omnivoice
 ```
 
 The image also has the `omnivoice-tts` CLI of omnivoice.cpp, for a check
 without the server:
 
 ```bash
-docker run --rm -it -v ~/.cache/huggingface:/hf omnivoice bash
+docker run --rm -it -v ~/.cache/huggingface:/hf \
+  -v ./tts/omnivoice_server/voices:/app/omnivoice_server/voices:ro omnivoice bash
 echo "Dobar dan." | omnivoice-tts --model /hf/hub/models--Serveurperso--OmniVoice-GGUF/snapshots/*/omnivoice-base-Q8_0.gguf \
   --codec /hf/hub/models--Serveurperso--OmniVoice-GGUF/snapshots/*/omnivoice-tokenizer-Q8_0.gguf --lang hr -o /tmp/out.wav \
   --ref-wav omnivoice_server/voices/hr.wav --ref-text omnivoice_server/voices/hr.txt
