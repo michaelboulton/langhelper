@@ -90,6 +90,9 @@ class SpeechRequest(BaseModel):
     """The text to read."""
     language: str
     """A code from the `languages` of the model in /v1/models."""
+    voice: str | None = None
+    """The name of a reference clip from the `voices` of /v1/models, such as
+    "it-2". Default: the reference clip of the language."""
     instruct: str | None = None
     """A description of the voice, such as "female, low pitch, british
     accent". Default: the reference clip of the language, else
@@ -113,6 +116,7 @@ def models() -> dict:
                 "object": "model",
                 "owned_by": model_id.split("/")[0] if "/" in model_id else "",
                 "languages": languages,
+                "voices": sorted(synth.voices()),
             }
             for model_id in settings.models()
         ],
@@ -134,11 +138,24 @@ def speech(req: SpeechRequest) -> Response:
             "unknown-language",
             f"no language {req.language!r}: see the languages in /v1/models",
         )
+    if req.voice is not None:
+        if req.instruct is not None:
+            raise CodedHTTPException(
+                422, "voice-and-instruct", "give a voice or an instruct, not both"
+            )
+        if req.voice not in synth.voices():
+            raise CodedHTTPException(
+                422,
+                "unknown-voice",
+                f"no voice {req.voice!r}: see the voices in /v1/models",
+            )
     text = req.input.strip()
     if not text:
         raise CodedHTTPException(422, "empty-text", "the input is only spaces")
     try:
-        data, cached = synth.speak(text, req.language, req.instruct, model_id)
+        data, cached = synth.speak(
+            text, req.language, req.instruct, model_id, voice=req.voice
+        )
     except ValueError as exc:
         # The model refuses an instruct item outside its list, and says which.
         raise CodedHTTPException(422, "bad-instruct", str(exc)) from exc
