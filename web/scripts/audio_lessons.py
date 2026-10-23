@@ -44,10 +44,10 @@ from tqdm import tqdm
 
 from scripts import lessons
 
-TARGET_MINUTES = 30
+TARGET_LINES = 500
 # Measured on a voiced lesson: 109 lines in 286 seconds.
 LINES_PER_MINUTE = 22
-# For one request: a script of TARGET_MINUTES, and the time a model needs for
+# For one request: a script of TARGET_LINES, and the time a model needs for
 # it.
 MAX_TOKENS = 16000
 TIMEOUT = 600
@@ -183,8 +183,8 @@ def build_prompt(
         TASK.format(
             number=number,
             language=language,
-            minutes=TARGET_MINUTES,
-            lines=TARGET_MINUTES * LINES_PER_MINUTE,
+            minutes=TARGET_LINES // LINES_PER_MINUTE,
+            lines=TARGET_LINES,
             topic=topic,
             grammar=step,
         )
