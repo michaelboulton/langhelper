@@ -145,6 +145,16 @@ def audio_path(folder: Path, number: int) -> Path:
     return folder / f"{number:02d}.mp3"
 
 
+def stale(path: Path, sources: list[Path]) -> bool:
+    """path is not there, or is not newer than each of its sources. A tie
+    counts as older: with a coarse clock, a join too many and never one too
+    few."""
+    if not path.exists():
+        return True
+    made = path.stat().st_mtime_ns
+    return any(source.stat().st_mtime_ns >= made for source in sources)
+
+
 def lesson_files(folder: Path) -> dict[int, Path]:
     """{number: path} of the scripts in a course folder, in order."""
     found = {

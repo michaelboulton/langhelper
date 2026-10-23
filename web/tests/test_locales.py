@@ -11,6 +11,7 @@ from fluent.syntax import FluentParser, ast
 from fluent.syntax.visitor import Visitor
 from tlhelper import app as service
 from tlhelper import locales
+from tlhelper.audio_lessons.script import SPEAKERS
 
 ROOT = Path(__file__).parents[1]
 CODES = list(locales.catalogs())
@@ -87,6 +88,13 @@ def test_the_code_names_messages_that_exist():
     named |= set(re.findall(r'\bt(?:Or)?\(\s*"([A-Za-z0-9_-]+[A-Za-z0-9_])"', page))
     named |= set(re.findall(r'data-l10n-[a-z]+="([A-Za-z0-9_-]+)"', page))
     assert named - english == set()
+
+
+@pytest.mark.parametrize("code", CODES)
+def test_the_ids_that_audio_lessons_js_builds(code):
+    built = {"audio-state-none", "audio-state-stale"}
+    built |= {"audio-speaker-" + speaker.replace(" ", "-") for speaker in SPEAKERS}
+    assert built - set(messages(code)) == set()
 
 
 def test_the_api_of_the_locales():

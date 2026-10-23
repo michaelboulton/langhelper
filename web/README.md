@@ -25,6 +25,7 @@ login. The API refuses texts over `MAX_TEXT_CHARS`.
 | `tlhelper/translators/` | The machine translators: the `Translator` interface and DeepL. Its docstring says how to add one |
 | `tlhelper/explain/` | The "explain with AI" buttons: the `Backend` interface, the OpenAI SDK backend, the Claude Code CLI backend, the questions as prompt templates, and the routes. Its docstring says how to add a backend or a question |
 | `tlhelper/speech/` | The "Listen" buttons: the `Synthesizer` interface, the OpenAI-shaped speech API backend (the `tts/` service of this repo), and the routes. Its docstring says how to add a synthesizer |
+| `tlhelper/audio_lessons/` | The audio lessons. `script.py` reads and writes the scripts of a course, and `routes.py` serves the courses in `DATA_ROOT/audio/` to the tab |
 | `tlhelper/auth.py` | The OIDC login with Authlib. Only active on a fly.dev hostname        |
 | `tlhelper/settings.py` | `DATA_ROOT` and `MAX_TEXT_CHARS`, which more than one module reads |
 | `tlhelper/schemas.py` | The shapes of the API responses, for the OpenAPI schema |
@@ -52,6 +53,7 @@ login. The API refuses texts over `MAX_TEXT_CHARS`.
 | `static/js/explain.js` | The script of the "explain with AI" buttons on the two tabs. It uses the functions of `breakdown.js` and `flashcards.js` |
 | `static/js/listen.js` | The script of the "Listen" buttons on the breakdown tab. It uses the functions of `breakdown.js` and `flashcards.js` |
 | `static/js/progress.js` | The script of the progress tab: the numbers and the bar charts of a user. It uses the functions of `breakdown.js` and `flashcards.js` |
+| `static/js/audio_lessons.js` | The script of the audio lessons tab: the courses, the player and the script of a lesson. It uses the functions of `breakdown.js` and `flashcards.js` |
 | `static/css/breakdown.css` | The style sheet of the page. Served under `/static`           |
 | `static/manifest.json`, `static/icon*.svg`, `static/icon*.png` | The web app manifest and the icons, for the install on a phone. See "Install on Android" |
 | `pyproject.toml` | Dependencies. Pins `torch` to the CPU-only wheel index of the root `pyproject.toml` |
@@ -156,6 +158,8 @@ The volume at `/data` holds these things:
 - `decks/`, the flashcard decks that the admin adds after the deploy.
 - `flashcards.db`, a SQLite file with the imported cards and the flashcard
   progress of each user. The section "Flashcards" describes both.
+- `audio/`, the courses of the audio lessons tab. The section "Audio lessons"
+  describes them.
 
 The two sets of models take 1.1 GB on disk:
 
@@ -722,6 +726,54 @@ read every language of the page.
 The errors are 503 for no service, 422 with the code `voice-language` for a
 language that the service does not read, and 502 for a failure of the
 service.
+
+## Audio lessons
+
+The tab "Audio lessons" plays spoken courses. A course is a list of lessons.
+In each lesson, two actors have a short dialogue, and a narrator then asks
+for its phrases, with a pause to say each one aloud. The tab shows the
+courses and their lessons. A click on a lesson shows a player for its mp3 and
+the script under it. The tab only plays the lessons.
+`scripts/audio_lessons.py` writes the scripts and the mp3s
+(`scripts/README.md`, "audio_lessons.py").
+
+The courses are the folders of `DATA_ROOT/audio/`, one folder for each
+course, in the layout of `scripts/README.md`, "The course folder". The app
+reads `course.toml`, the scripts `NN.txt` and the mp3s `NN.mp3`. It does not
+need the clip folders `NN/`. A course with no `course.toml` is not listed.
+A course or a lesson that does not parse is not listed, and the log has the
+error.
+
+A lesson with no mp3 has no player. If the script is newer than the mp3, the
+tab says that the sound can differ from the text. Run the script with
+`--voice` again to make the mp3 new.
+
+For a local run, `DATA_ROOT` is `.data/` at the repository root, so a course
+in `../.data/audio/it-course` shows with no copy. To add a course to Fly,
+pack it without the clip folders, copy the file to the volume, and unpack it
+there:
+
+```bash
+tar -czf it-course.tgz --exclude='it-course/[0-9][0-9]' -C ../.data/audio it-course
+fly ssh sftp shell
+put it-course.tgz /data/it-course.tgz
+fly ssh console -C "sh -c 'mkdir -p /data/audio && tar -xzf /data/it-course.tgz -C /data/audio && rm /data/it-course.tgz'"
+```
+
+The app reads the folder on each request, so a new or changed course needs
+no restart.
+
+### Audio lessons API
+
+| Route | Purpose |
+| ----- | ------- |
+| `GET /api/v1/audio-lessons` | The courses, with the number, the title and the audio state of each lesson: `ready`, `stale` (the script is newer than the mp3) or `none` |
+| `GET /api/v1/audio-lessons/{course}/{lesson}` | The parsed script: the title, the summary, the grammar step and the lines. A pause is a line with the speaker `pause` |
+| `GET /api/v1/audio-lessons/{course}/{lesson}.mp3` | The mp3 as `audio/mpeg`. It answers a `Range` request, so the player can jump |
+
+`{course}` is the name of the folder, and `{lesson}` is the number of the
+lesson. A course name that leads out of `DATA_ROOT/audio/`, such as `..`,
+gets 404. The routes need the login, as the other routes.
 
 ## Languages
 

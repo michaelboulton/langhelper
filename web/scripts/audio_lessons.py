@@ -377,16 +377,6 @@ def voice_service() -> speech.Synthesizer:
     return synthesizer
 
 
-def stale(path: Path, sources: list[Path]) -> bool:
-    """path is not there, or is not newer than each of its sources. A tie
-    counts as older: with a coarse clock, a join too many and never one too
-    few."""
-    if not path.exists():
-        return True
-    made = path.stat().st_mtime_ns
-    return any(source.stat().st_mtime_ns >= made for source in sources)
-
-
 def voice_course(
     folder: Path,
     course: script.Course,
@@ -405,7 +395,7 @@ def voice_course(
         make_clips(clips, parts, synthesizer)
         audio = script.audio_path(folder, number)
         sources = [path, *(clips / clip.name for clip in clips_of(parts))]
-        if stale(audio, sources):
+        if script.stale(audio, sources):
             join(ffmpeg, clips, parts, audio)
             print(f"{audio}: {len(clips_of(parts))} lines")
     for number, (_, parts) in plans.items():

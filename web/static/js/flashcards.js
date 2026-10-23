@@ -31,6 +31,7 @@ function showTab(name) {
   if (name === "cards" && !deck) loadDecks();
   // Each time: the numbers change with each answer in the other tab.
   if (name === "progress") loadProgress();
+  if (name === "audio") loadAudioCourses();
 }
 // The list of decks has no words, so it has no accent note.
 function showDeckAccents() {
@@ -39,7 +40,7 @@ function showDeckAccents() {
 }
 function tabOfAddress() {
   const name = location.hash.slice(1);
-  return name === "cards" || name === "progress" ? name : "breakdown";
+  return ["cards", "progress", "audio"].includes(name) ? name : "breakdown";
 }
 for (const button of document.querySelectorAll("#tabs button")) {
   button.addEventListener("click", () => {

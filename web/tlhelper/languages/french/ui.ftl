@@ -25,6 +25,7 @@ language-it-tag-name = Étiquette ISDT
 tab-breakdown = Analyse
 tab-cards = Cartes
 tab-progress = Progrès
+tab-audio = Leçons audio
 locale-label = Langue de la page
 
 ## The breakdown tab
@@ -303,3 +304,16 @@ progress-day-answers = { $date } : { $answers ->
 }, dont { $passed } pas « { rating-1 } »
 progress-day-rate = { $date } : { $rate }
 progress-day-none = { $date } : aucune réponse
+
+## The audio lessons tab
+
+audio-title = Leçons audio
+audio-intro = Deux personnes ont une courte conversation. Puis le narrateur demande ses phrases : dites chacune à voix haute pendant la pause, avant d'entendre la réponse.
+audio-no-courses = Pas encore de leçons audio.
+audio-all-lessons = Toutes les leçons
+audio-state-none = Cette leçon n'a pas encore de son.
+audio-state-stale = Le script a changé après l'enregistrement du son, donc le son peut différer du texte.
+audio-pause = (pause, { $seconds } s)
+audio-speaker-narrator = Narrateur :
+audio-speaker-actor-1 = Vous :
+audio-speaker-actor-2 = L'autre personne :

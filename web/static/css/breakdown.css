@@ -108,8 +108,9 @@ svg.links path.guess { stroke-dasharray: 5 4; }
 svg.links path.selected { stroke-width: 3; opacity: 0.9; }
 #legend { display: flex; flex-wrap: wrap; gap: 6px; font-size: 0.8rem; }
 #legend span { padding: 2px 8px; border-radius: 6px; color: var(--chip-fg); }
-/* The progress tab has no words, so it needs no legend. */
-body[data-tab="progress"] #legend, body[data-tab="progress"] #accents { display: none; }
+/* The progress and audio tabs have no tagged words, so they need no legend. */
+body[data-tab="progress"] #legend, body[data-tab="progress"] #accents,
+body[data-tab="audio"] #legend, body[data-tab="audio"] #accents { display: none; }
 
 /* The tabs and the flashcards (flashcards.js). */
 #tabs { display: flex; gap: 4px; margin: 0 0 20px; border-bottom: 1px solid var(--line); }
@@ -175,6 +176,12 @@ button.deck span { color: var(--muted); }
 .listen audio[hidden] { display: none; }
 .listen .error { color: #c0392b; }
 #next-due { color: var(--muted); font-size: 0.9rem; }
+/* The audio lessons tab (audio_lessons.js). */
+#audio-courses ol { padding-left: 1.5em; }
+#audio-player { display: block; width: 100%; max-width: 30em; margin: 8px 0; }
+#audio-player[hidden] { display: none; }
+#audio-script p { margin: 4px 0; }
+#audio-script .pause { color: var(--muted); }
 /* The progress tab (progress.js). */
 #progress-user { font: inherit; padding: 4px 8px; }
 #stats .days { display: flex; align-items: flex-end; gap: 1px; height: 80px; border-bottom: 1px solid var(--line); }

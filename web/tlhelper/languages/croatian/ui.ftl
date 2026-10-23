@@ -25,6 +25,7 @@ language-it-tag-name = Oznaka ISDT
 tab-breakdown = Raščlamba
 tab-cards = Kartice
 tab-progress = Napredak
+tab-audio = Audio lekcije
 locale-label = Jezik stranice
 
 ## The breakdown tab
@@ -306,3 +307,16 @@ progress-day-answers = { $date }: { $answers ->
 }, od toga { $passed } nije „{ rating-1 }”
 progress-day-rate = { $date }: { $rate }
 progress-day-none = { $date }: nema odgovora
+
+## The audio lessons tab
+
+audio-title = Audio lekcije
+audio-intro = Dvije osobe kratko razgovaraju. Zatim pripovjedač traži njihove izraze: izgovorite svaki naglas u stanci, prije nego što čujete odgovor.
+audio-no-courses = Još nema audio lekcija.
+audio-all-lessons = Sve lekcije
+audio-state-none = Ova lekcija još nema zvuk.
+audio-state-stale = Skripta se promijenila nakon snimanja zvuka, pa se zvuk može razlikovati od teksta.
+audio-pause = (stanka, { $seconds } s)
+audio-speaker-narrator = Pripovjedač:
+audio-speaker-actor-1 = Vi:
+audio-speaker-actor-2 = Druga osoba:
