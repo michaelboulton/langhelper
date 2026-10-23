@@ -7,7 +7,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-import lameenc
+# A compiled module with no stubs, so ty cannot find it.
+import lameenc  # ty: ignore[unresolved-import]
 import miniaudio
 import numpy as np
 
@@ -97,7 +98,7 @@ def mp3(audio: np.ndarray, rate: int) -> bytes:
     return bytes(encoder.encode(pcm.tobytes())) + bytes(encoder.flush())
 
 
-Key = tuple[str, str, str, str, int]
+Key = tuple[str, str, str, str | None, int]
 
 
 class Synth:

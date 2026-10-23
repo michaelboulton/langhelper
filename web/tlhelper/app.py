@@ -38,7 +38,7 @@ import unicodedata
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
@@ -363,7 +363,7 @@ def healthz() -> PlainTextResponse:
 
 
 # A response is the dict of the code: no key that the code did not set.
-API = {"tags": ["breakdown"], "response_model_exclude_unset": True}
+API: dict[str, Any] = {"tags": ["breakdown"], "response_model_exclude_unset": True}
 
 
 @app.get("/api/v1/languages", response_model=schemas.LanguagesResponse, **API)

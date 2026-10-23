@@ -24,3 +24,15 @@ extend-select = ["S"]
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = ["S101"]
+
+# accent_for returns None for an unknown word, and these tests subscript the
+# result for a known one.
+[[tool.ty.overrides]]
+include = ["web/tests/languages/test_croatian_accents.py"]
+rules = { not-subscriptable = "ignore" }
+
+[dependency-groups]
+dev = [
+    "ty>=0.0.91",
+    "ruff"
+]

@@ -7,10 +7,10 @@ import os
 import re
 import shutil
 import subprocess
+import tomllib
 
 import click
 import pytest
-import tomllib
 from scripts import audio_lessons, lessons
 from tlhelper import speech
 from tlhelper.audio_lessons import script
@@ -241,8 +241,13 @@ def test_the_name_and_the_language_come_from_the_course_file(
 
 @pytest.mark.parametrize(
     "answer",
-    ["I cannot help with that.", ANSWER_1.replace("actor 2", "actor 3"), HEAD],
-    ids=["text", "speaker", "no lines"],
+    [
+        "I cannot help with that.",
+        ANSWER_1.replace("actor 2", "actor 3"),
+        HEAD,
+        ANSWER_1 + "actor 2: e\n",
+    ],
+    ids=["text", "speaker", "no lines", "one letter"],
 )
 def test_a_bad_answer_is_asked_again_and_then_stops(
     course, scripted, fake_lemmas, answer
@@ -473,7 +478,7 @@ def test_the_names_sort_by_line():
 
 
 def probe(path):
-    output = subprocess.run(  # noqa: S603
+    output = subprocess.run(  # noqa: S603  # ty: ignore[no-matching-overload]
         [
             shutil.which("ffprobe"),
             "-v",

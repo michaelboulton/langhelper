@@ -40,9 +40,8 @@ DATA_ROOT (the volume). For the same stem, the volume wins.
 
 import logging
 import re
-from pathlib import Path
-
 import tomllib
+from pathlib import Path
 
 from ..languages import LANGUAGES
 from ..languages.base import DATA_FILES

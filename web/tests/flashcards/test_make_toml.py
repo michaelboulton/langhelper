@@ -1,5 +1,6 @@
-import pytest
 import tomllib
+
+import pytest
 from tlhelper.flashcards import decks, make_toml, store
 from tlhelper.flashcards.apkg import Note
 

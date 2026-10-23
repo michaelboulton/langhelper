@@ -1,6 +1,6 @@
 """The routes of the "Listen" buttons. The package docstring has the design."""
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Query
 from fastapi.responses import Response
@@ -12,7 +12,7 @@ from ..messages import CodedHTTPException, coded_http
 from ..settings import MAX_TEXT_CHARS
 
 router = APIRouter(prefix="/api/v1", tags=["speech"])
-UNSET = {"response_model_exclude_unset": True}
+UNSET: dict[str, Any] = {"response_model_exclude_unset": True}
 
 # The languages of the app that a service can read: the study languages and
 # English, which is the other side of each breakdown.

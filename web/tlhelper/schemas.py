@@ -6,7 +6,7 @@ is not always there is optional here, and a route leaves out the unset keys
 (response_model_exclude_unset), so a response is the dict as the code made it.
 """
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
@@ -436,11 +436,14 @@ class ErrorResponse(Model):
     detail: str
 
 
-NOT_FOUND = {404: {"model": ErrorResponse, "description": "No such item"}}
-MODELS_MISSING = {
+# The type of the `responses` argument of a FastAPI route.
+Responses = dict[int | str, dict[str, Any]]
+
+NOT_FOUND: Responses = {404: {"model": ErrorResponse, "description": "No such item"}}
+MODELS_MISSING: Responses = {
     503: {"model": ErrorResponse, "description": "The models are not on the disk"}
 }
-EXPLAIN_ERRORS = {
+EXPLAIN_ERRORS: Responses = {
     429: {"model": ErrorResponse, "description": "The limit of the user for a day"},
     502: {"model": ErrorResponse, "description": "The AI service failed"},
     503: {
@@ -448,7 +451,7 @@ EXPLAIN_ERRORS = {
         "description": "No key for an AI service, or the models are not on the disk",
     },
 }
-SPEECH_ERRORS = {
+SPEECH_ERRORS: Responses = {
     502: {"model": ErrorResponse, "description": "The voice service failed"},
     503: {"model": ErrorResponse, "description": "No voice service is set up"},
 }

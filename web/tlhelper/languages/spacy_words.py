@@ -7,7 +7,7 @@ base.STUDY.
 """
 
 import threading
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
 
 import spacy
@@ -50,7 +50,7 @@ class SpacyTagger:
             ) from exc
 
     @contextmanager
-    def nlp(self) -> Iterator:
+    def nlp(self) -> Generator:
         if self.slot_key:
             with STUDY.use(self.slot_key, self.load) as nlp:
                 yield nlp

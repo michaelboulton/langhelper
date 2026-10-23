@@ -219,7 +219,7 @@ def test_voice_puts_a_clip_of_each_answer_in_the_deck(
     def broken(text, language):
         raise speech.SpeechError("the voice service is down")
 
-    voice.synthesize = broken
+    voice.synthesize = broken  # ty: ignore[invalid-assignment]
     with pytest.raises(SystemExit, match="the voice service is down"):
         run(course, "--build-only", "--voice")
 

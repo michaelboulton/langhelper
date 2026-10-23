@@ -11,7 +11,7 @@ GET  /api/v1/flashcards/users     the users whose numbers the user can see
 GET  /api/v1/decks/{id}/media/{name}  an image or a sound clip of a card
 """
 
-from typing import Annotated
+from typing import Annotated, Any
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
@@ -27,7 +27,7 @@ LOCAL_USER = "local"
 
 router = APIRouter(prefix="/api/v1", tags=["flashcards"])
 # A response is the dict of the code: no key that the code did not set.
-UNSET = {"response_model_exclude_unset": True}
+UNSET: dict[str, Any] = {"response_model_exclude_unset": True}
 HEAVY = "Use the heavy models of the study language for the breakdown."
 
 
