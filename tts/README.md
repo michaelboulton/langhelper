@@ -88,7 +88,8 @@ suffix for a second speaker of the language, or a language code for its usual
 voice. A clip reads any language, with its own accent. A name with no clip
 gets `unknown-voice`, and a request with both `voice` and `instruct` gets
 `voice-and-instruct`. The server reads the clips at the start, so a new clip
-needs a restart (and a new build of the image, which copies the folder).
+needs a restart. The image has no clips: the compose files mount `voices/`
+into the container, so a new clip needs no new build.
 `../web/scripts/README.md`, section "check_voices.py", has a check by ear of
 the named clips.
 
@@ -203,21 +204,24 @@ only accepts the codes from its list.
 
 With the web page: `docker compose up --build` at the repository root. The
 `voice` service there binds `~/.cache/huggingface` of the host to `/hf`, so
-the GGUFs download once and stay. The first build compiles omnivoice.cpp,
-which takes a few minutes.
+the GGUFs download once and stay, and it binds `omnivoice_server/voices/`
+for the clips. The first build compiles omnivoice.cpp, which takes a few
+minutes.
 
 The image alone, built from the repository root:
 
 ```bash
 docker build -f tts/Dockerfile -t omnivoice .
-docker run --rm -p 8002:8002 -v ~/.cache/huggingface:/hf --device /dev/dri omnivoice
+docker run --rm -p 8002:8002 -v ~/.cache/huggingface:/hf \
+  -v ./tts/omnivoice_server/voices:/app/omnivoice_server/voices:ro --device /dev/dri omnivoice
 ```
 
 The image also has the `omnivoice-tts` CLI of omnivoice.cpp, for a check
 without the server:
 
 ```bash
-docker run --rm -it -v ~/.cache/huggingface:/hf omnivoice bash
+docker run --rm -it -v ~/.cache/huggingface:/hf \
+  -v ./tts/omnivoice_server/voices:/app/omnivoice_server/voices:ro omnivoice bash
 echo "Dobar dan." | omnivoice-tts --model /hf/hub/models--Serveurperso--OmniVoice-GGUF/snapshots/*/omnivoice-base-Q8_0.gguf \
   --codec /hf/hub/models--Serveurperso--OmniVoice-GGUF/snapshots/*/omnivoice-tokenizer-Q8_0.gguf --lang hr -o /tmp/out.wav \
   --ref-wav omnivoice_server/voices/hr.wav --ref-text omnivoice_server/voices/hr.txt
