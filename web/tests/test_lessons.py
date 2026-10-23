@@ -37,58 +37,6 @@ ANSWER_2 = {
 }
 
 
-class ScriptedBackend:
-    """Gives its answers in order, and keeps what it was asked."""
-
-    name = "scripted"
-
-    def __init__(self, answers):
-        self.answers = list(answers)
-        self.prompts = []
-        self.systems = []
-        self.kwargs = []
-
-    def available(self):
-        return True
-
-    def model(self):
-        return "scripted-model"
-
-    def complete(self, system, prompt, **kwargs):
-        self.systems.append(system)
-        self.prompts.append(prompt)
-        self.kwargs.append(kwargs)
-        assert self.answers, "one request too many"
-        answer = self.answers.pop(0)
-        if isinstance(answer, Exception):
-            raise answer
-        return answer if isinstance(answer, str) else json.dumps(answer)
-
-
-@pytest.fixture
-def scripted(monkeypatch):
-    """scripted(*answers): the AI service of the next run."""
-
-    def use(*answers):
-        backend = ScriptedBackend(answers)
-        monkeypatch.setitem(explain.BACKENDS, "scripted", backend)
-        monkeypatch.setenv("TLHELPER_AI_BACKEND", "scripted")
-        return backend
-
-    return use
-
-
-@pytest.fixture
-def fake_lemmas(monkeypatch):
-    """Each word of the tagged text is a noun: no model load."""
-
-    def lemmas_of(text, language):
-        words = sorted({word.strip(".").lower() for word in text.split()})
-        return {"NOUN": words} if words else {}
-
-    monkeypatch.setattr(lessons, "lemmas_of", lemmas_of)
-
-
 @pytest.fixture
 def course(deck_dir):
     """The stem of a course in the deck folder, with two lesson files next
