@@ -15,18 +15,28 @@ model picks the next small step after the earlier lessons:
     uv run python -m scripts.audio_lessons --course ../.data/audio/it-course \\
         --topic "buying a train ticket" --grammar "the future tense"
 
+With --voice, the voice service of TLHELPER_VOICE_URL reads each line of each
+lesson into a clip in NN/, and ffmpeg joins the clips into NN.mp3. A later run
+asks only for the new lines:
+
+    TLHELPER_VOICE_URL=http://localhost:8002 uv run python -m scripts.audio_lessons \\
+        --course ../.data/audio/it-course --voice
+
 The AI service is the one of scripts.lessons: the TLHELPER_AI_* variables, or
 --backend claude. Run it from the folder of the project, as a module.
 """
 
 import argparse
+import hashlib
 import itertools
 import re
+import shutil
+import subprocess
 from dataclasses import dataclass, replace
 from pathlib import Path
 
 from pydantic import ValidationError
-from tlhelper import explain
+from tlhelper import explain, speech
 from tlhelper.audio_lessons import script
 from tlhelper.flashcards import make_toml
 from tlhelper.languages import LANGUAGES
@@ -81,6 +91,16 @@ NEXT_STEP = (
 )
 GIVEN_STEP = "The grammar step of this lesson: {grammar}"
 SCRIPT_ONLY = "\n\nAnswer with the script only, in the format of the task."
+
+NARRATOR_LANGUAGE = "en"
+# The silence between two spoken lines, in seconds.
+GAP = 0.5
+# The format of the clips of the voice service (../tts/omnivoice_server/synth.py).
+SAMPLE_RATE = 24000
+BIT_RATE = "64k"
+DIGEST_LENGTH = 6
+CLIP_NAME = re.compile(r"\d+\.\d+-([0-9a-f]+)\.mp3")
+MAX_STDERR = 500
 
 
 @dataclass
@@ -191,6 +211,198 @@ def save(path: Path, lesson: script.Script) -> None:
     partial.replace(path)
 
 
+# The clips and the join
+
+
+@dataclass(frozen=True)
+class Clip:
+    name: str
+    # Of the language, the voice and the text: a line that moves keeps it.
+    digest: str
+    speaker: str
+    text: str
+    language: str
+    # A named clip of the voice service, or None for its default.
+    voice: str | None
+
+
+def parts_of(
+    course: script.Course, number: int, lesson: script.Script
+) -> list[Clip | float]:
+    """What NN.mp3 holds, in order: a Clip for each spoken line, and the
+    seconds of silence of each pause and between two lines."""
+    spoken = sum(isinstance(line, script.Line) for line in lesson.lines)
+    # Wide enough that the names sort by line.
+    width = max(2, len(str(spoken)))
+    parts: list[Clip | float] = []
+    index = 0
+    for line in lesson.lines:
+        if isinstance(line, script.Pause):
+            parts.append(line.seconds)
+            continue
+        if parts and isinstance(parts[-1], Clip):
+            parts.append(GAP)
+        index += 1
+        language = NARRATOR_LANGUAGE if line.speaker == "narrator" else course.language
+        voice = course.voices.get(line.speaker)
+        digest = hashlib.sha1(
+            f"{language}\t{voice or ''}\t{line.text}".encode(), usedforsecurity=False
+        ).hexdigest()[:DIGEST_LENGTH]
+        name = f"{number}.{index:0{width}d}-{digest}.mp3"
+        parts.append(Clip(name, digest, line.speaker, line.text, language, voice))
+    return parts
+
+
+def clips_of(parts: list[Clip | float]) -> list[Clip]:
+    return [part for part in parts if isinstance(part, Clip)]
+
+
+def make_clips(
+    folder: Path, parts: list[Clip | float], synthesizer: speech.Synthesizer
+) -> None:
+    """The clip of each line that has none in folder. A line with the digest
+    of a clip in folder, such as a line that moved or a line said twice, gets
+    a copy: only a new line goes to the voice service."""
+    folder.mkdir(exist_ok=True)
+    known: dict[str, Path] = {}
+    for path in sorted(folder.glob("*.mp3")):
+        match = CLIP_NAME.fullmatch(path.name)
+        if match:
+            known.setdefault(match.group(1), path)
+    for clip in clips_of(parts):
+        path = folder / clip.name
+        if path.exists():
+            continue
+        if clip.digest in known:
+            data = known[clip.digest].read_bytes()
+        else:
+            print(f"  {clip.name}: {clip.speaker}: {clip.text}")
+            try:
+                data = synthesizer.synthesize(clip.text, clip.language, clip.voice)
+            except speech.SpeechError as exc:
+                voice = clip.voice or f"the default voice of {clip.language}"
+                raise lessons.LessonError(
+                    f"no clip for {clip.text!r} ({clip.speaker}, {voice}): {exc}"
+                ) from exc
+        # The file is complete or not there, as a script.
+        partial = path.with_suffix(".tmp")
+        partial.write_bytes(data)
+        partial.replace(path)
+        known[clip.digest] = path
+
+
+def find_ffmpeg() -> str:
+    path = shutil.which("ffmpeg")
+    if path is None:
+        raise lessons.LessonError(
+            "--voice needs ffmpeg, to join the clips of a lesson, and it is not"
+            " on the PATH: install it, such as with `apt install ffmpeg` or"
+            " `brew install ffmpeg`"
+        )
+    return path
+
+
+def join(ffmpeg: str, folder: Path, parts: list[Clip | float], path: Path) -> None:
+    """One mp3 of the clips in folder and the silences, in the order of
+    parts. The file is complete or not there."""
+    command = [ffmpeg, "-nostdin", "-loglevel", "error"]
+    labels, silences = [], []
+    inputs = 0
+    for part in parts:
+        if isinstance(part, Clip):
+            # "file:", so that a ":" in the path is not a protocol of ffmpeg.
+            command += ["-i", f"file:{folder / part.name}"]
+            labels.append(f"[{inputs}:a]")
+            inputs += 1
+        else:
+            labels.append(f"[s{len(silences)}]")
+            silences.append(
+                f"anullsrc=r={SAMPLE_RATE}:cl=mono,atrim=duration={part:.3f}{labels[-1]}"
+            )
+    graph = ";".join(
+        [*silences, f"{''.join(labels)}concat=n={len(labels)}:v=0:a=1[out]"]
+    )
+    partial = path.with_name(path.name + ".tmp")
+    command += [
+        "-filter_complex",
+        graph,
+        "-map",
+        "[out]",
+        "-ac",
+        "1",
+        "-ar",
+        str(SAMPLE_RATE),
+        "-b:a",
+        BIT_RATE,
+        "-f",
+        "mp3",
+        "-y",
+        f"file:{partial}",
+    ]
+    # A list with no shell.
+    result = subprocess.run(  # noqa: S603
+        command, capture_output=True, text=True, check=False
+    )
+    if result.returncode:
+        partial.unlink(missing_ok=True)
+        detail = script.one_line(result.stderr)[-MAX_STDERR:] or "no error output"
+        raise lessons.LessonError(
+            f"{path}: ffmpeg failed ({result.returncode}): {detail}"
+        )
+    partial.replace(path)
+
+
+def voice_service() -> speech.Synthesizer:
+    try:
+        synthesizer = speech.current()
+    except speech.SpeechError as exc:
+        raise lessons.LessonError(str(exc)) from exc
+    if not synthesizer.available():
+        raise lessons.LessonError(
+            "--voice needs the voice service: set TLHELPER_VOICE_URL, such as"
+            " http://localhost:8002"
+        )
+    return synthesizer
+
+
+def stale(path: Path, sources: list[Path]) -> bool:
+    """path is not there, or is not newer than each of its sources. A tie
+    counts as older: with a coarse clock, a join too many and never one too
+    few."""
+    if not path.exists():
+        return True
+    made = path.stat().st_mtime_ns
+    return any(source.stat().st_mtime_ns >= made for source in sources)
+
+
+def voice_course(
+    folder: Path,
+    course: script.Course,
+    synthesizer: speech.Synthesizer,
+    ffmpeg: str,
+) -> None:
+    """The clips NN/ and the mp3 NN.mp3 of each lesson. An mp3 that is newer
+    than its script and its clips stays. After a good run, the clips that no
+    line uses go."""
+    plans = {
+        number: (path, parts_of(course, number, script.read_script(path)))
+        for number, path in script.lesson_files(folder).items()
+    }
+    for number, (path, parts) in plans.items():
+        clips = script.clips_path(folder, number)
+        make_clips(clips, parts, synthesizer)
+        audio = script.audio_path(folder, number)
+        sources = [path, *(clips / clip.name for clip in clips_of(parts))]
+        if stale(audio, sources):
+            join(ffmpeg, clips, parts, audio)
+            print(f"{audio}: {len(clips_of(parts))} lines")
+    for number, (_, parts) in plans.items():
+        used = {clip.name for clip in clips_of(parts)}
+        for path in script.clips_path(folder, number).iterdir():
+            if path.suffix in (".mp3", ".tmp") and path.name not in used:
+                path.unlink()
+
+
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=__doc__.split("\n\n")[0],
@@ -237,6 +449,13 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         action="store_true",
         help="print the prompt of the first lesson to write and write nothing",
     )
+    parser.add_argument(
+        "--voice",
+        action="store_true",
+        help="read each line into a clip, with the voice service of"
+        " TLHELPER_VOICE_URL, and join the clips of each lesson into NN.mp3"
+        " with ffmpeg",
+    )
     args = parser.parse_args(argv)
     if args.grammar is not None and len(args.topic) != 1:
         parser.error("--grammar needs exactly one --topic")
@@ -275,7 +494,16 @@ def open_course(args: argparse.Namespace) -> script.Course:
 
 
 def run(args: argparse.Namespace) -> None:
+    voicing = args.voice and not args.dry_run
+    if voicing:
+        # Before the AI requests: a run that cannot voice stops at once.
+        ffmpeg, synthesizer = find_ffmpeg(), voice_service()
     course = open_course(args)
+    if voicing and "actor 2" not in course.voices:
+        print(
+            f"{args.course / script.COURSE_FILE} has no voice for actor 2 in"
+            " [voices]: both actors have the same voice"
+        )
     scripts = {
         number: script.read_script(path)
         for number, path in script.lesson_files(args.course).items()
@@ -313,6 +541,8 @@ def run(args: argparse.Namespace) -> None:
         save(script.lesson_path(args.course, number), lesson)
         scripts = dict(sorted((scripts | {number: lesson}).items()))
         print(f"  {lesson.title}, {len(lesson.lines)} lines: {lesson.summary}")
+    if voicing:
+        voice_course(args.course, course, synthesizer, ffmpeg)
 
 
 def main(argv: list[str] | None = None) -> None:
