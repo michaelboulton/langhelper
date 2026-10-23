@@ -236,8 +236,21 @@ app.include_router(flashcard_routes.router)
 app.include_router(explain_routes.router)
 app.include_router(speech_routes.router)
 app.include_router(audio_lesson_routes.router)
+
+
+class RevalidatedFiles(StaticFiles):
+    """Each file with Cache-Control: no-cache. Without it, a browser keeps a
+    script of an older release for hours, and the scripts of the page must be
+    of one release."""
+
+    def file_response(self, *args, **kwargs) -> Response:
+        response = super().file_response(*args, **kwargs)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+
 # static/js and static/css. The login gate below covers these files too.
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.mount("/static", RevalidatedFiles(directory=STATIC_DIR), name="static")
 
 
 # On a fly.dev hostname, every route but /healthz and /auth/* needs a session
@@ -341,7 +354,7 @@ class ClassifyRequest(schemas.Model):
 
 @app.get("/", include_in_schema=False)
 def index() -> FileResponse:
-    return FileResponse(INDEX_HTML)
+    return FileResponse(INDEX_HTML, headers={"Cache-Control": "no-cache"})
 
 
 @app.get("/healthz", include_in_schema=False)

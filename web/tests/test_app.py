@@ -135,6 +135,17 @@ def test_healthz_and_index(client):
     assert ("image/png", "maskable") in purposes
 
 
+def test_the_browser_asks_again_for_the_page_and_its_scripts(client):
+    assert client.get("/").headers["cache-control"] == "no-cache"
+    script = client.get("/static/js/flashcards.js")
+    assert script.headers["cache-control"] == "no-cache"
+    again = client.get(
+        "/static/js/flashcards.js", headers={"if-none-match": script.headers["etag"]}
+    )
+    assert again.status_code == 304
+    assert again.headers["cache-control"] == "no-cache"
+
+
 def test_classify_shape(client):
     result = classify(client)
     assert (result["type"], result["language"]) == ("heavy", "hr")
