@@ -1,10 +1,11 @@
 """scripts/lessons.py: flashcards from lessons, with a fake AI service."""
 
 import json
+import sqlite3
 
 import pytest
 from scripts import lessons
-from tlhelper import explain
+from tlhelper import explain, speech
 from tlhelper.flashcards import apkg, decks, store
 
 LESSON_1 = """\
@@ -222,6 +223,57 @@ def test_build_only_writes_the_deck_from_the_memory_file(course, scripted, fake_
     memory.write_text(edited.replace('"summary"', '"sumary"'), encoding="utf-8")
     with pytest.raises(SystemExit, match="sumary"):
         run(course, "--build-only")
+
+
+class FakeVoice:
+    name = "fake"
+
+    def __init__(self):
+        self.texts = []
+
+    def synthesize(self, text, language):
+        self.texts.append((text, language))
+        return f"mp3 of {text}".encode()
+
+
+def test_voice_puts_a_clip_of_each_answer_in_the_deck(
+    course, scripted, fake_lemmas, monkeypatch
+):
+    scripted(ANSWER_1, ANSWER_2)
+    first_run(course, str(course.parent / "01.md"), str(course.parent / "02.md"))
+    voice = FakeVoice()
+    monkeypatch.setattr(speech, "current", lambda: voice)
+    run(course, "--build-only", "--voice")
+    # The first form of each answer.
+    assert ("Lutali smo.", "hr") in voice.texts
+    assert len(voice.texts) == 5
+    package = course.with_suffix(".apkg")
+    notes = apkg.read_notes(package)
+    assert notes[2].fields["Back"] == "Lutali smo. / Lutale smo."
+    [clip] = notes[2].media["Back"]
+    assert apkg.read_media(package, clip) == b"mp3 of Lutali smo."
+    toml = course.with_suffix(".toml").read_text(encoding="utf-8")
+    assert "listen = true" in toml
+    assert "dictation = true" in toml
+    decks.import_decks()
+    conn = sqlite3.connect(store.DB_PATH)
+    counts = dict(conn.execute("SELECT direction, COUNT(*) FROM card GROUP BY 1"))
+    conn.close()
+    assert counts == {"to_study": 5, "listen": 5, "dictation": 5}
+
+    # The clips are in the folder: a second build asks for none.
+    voice.texts.clear()
+    run(course, "--build-only", "--voice")
+    assert voice.texts == []
+    # A failure of the service stops the run.
+    (course.with_suffix(".clips") / clip).unlink()
+
+    def broken(text, language):
+        raise speech.SpeechError("the voice service is down")
+
+    voice.synthesize = broken
+    with pytest.raises(SystemExit, match="the voice service is down"):
+        run(course, "--build-only", "--voice")
 
 
 @pytest.mark.parametrize(

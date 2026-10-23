@@ -93,6 +93,8 @@ Other options:
   its tokens, and write nothing.
 - `--build-only`: write the package and the toml from the memory file, with no
   AI call. For after a hand edit of the memory file.
+- `--voice`: put a sound clip of each answer in the package, and add listen
+  and dictation cards (see "Clips" below). It also builds the package again.
 - `--new-per-day`, `--reviews-per-day`: the limits in the toml (10 and 100).
 
 ### The memory file
@@ -140,6 +142,33 @@ The package has the fields `Front` and `Back` and the Anki deck
 `<name>::<NNN> <title>` for each lesson, with three digits so that lesson 100
 sorts after lesson 99. The toml sets `subdecks = true` and splits an answer on
 " / " only. `tlhelper/flashcards/make_deck.py` has the writer.
+
+### Clips
+
+With `--voice`, the voice service reads the first form of each answer (the
+text before the first " / "). The service is the one of the app:
+`TLHELPER_VOICE_URL` and the other `TLHELPER_VOICE_*` variables of
+`tlhelper/speech/__init__.py`. Start it with `docker compose up voice`, or run
+the whole stack. The answer field gets a `[sound:...]` tag, the package holds
+the mp3 files, and the toml sets `listen = true` and `dictation = true`. The
+app then shows two more cards for each note: one plays the clip and asks for
+the English, and one plays the clip and asks for the answer.
+
+The clips stay in the folder `<course>.clips/` next to the memory file. The
+name of a clip comes from the language and the text, so a later run asks the
+service only for a new or a changed answer. An error of the service stops the
+run, and the clips that are in the folder stay.
+
+To add clips to a course that has none, build it again:
+
+```bash
+TLHELPER_VOICE_URL=http://localhost:8002 uv run --group lessons \
+    python -m scripts.lessons --course decks/croatian-course --build-only --voice
+```
+
+A run without `--voice` that builds the package again writes it with no clips,
+and the toml with no listen or dictation cards. Give `--voice` on each run of a
+course with clips.
 
 ### A web page
 

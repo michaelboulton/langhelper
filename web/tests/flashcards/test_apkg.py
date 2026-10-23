@@ -44,6 +44,16 @@ def test_write_package_gives_each_note_its_anki_deck(tmp_path):
     ]
 
 
+def test_write_package_with_a_clip(tmp_path):
+    notes = [make_deck.PackageNote("g1", "house", "kuća [sound:a1.mp3]", "Course")]
+    package = make_deck.write_package(
+        tmp_path / "course.apkg", notes, {"a1.mp3": b"a clip"}
+    )
+    [note] = apkg.read_notes(package)
+    assert (note.fields["Back"], note.media) == ("kuća", {"Back": ["a1.mp3"]})
+    assert apkg.read_media(package, "a1.mp3") == b"a clip"
+
+
 def test_a_field_loses_its_html_and_its_sound():
     field = '<div>Dobar&nbsp;dan</div><div><b>gospodine</b></div>[sound:dan.mp3]<img src="a.png">'
     # A line of the card stays a line: it can be one of several answers.

@@ -254,14 +254,16 @@ class Media(Model):
     url: str
 
 
-Direction = Literal["to_study", "to_english"]
+Direction = Literal["to_study", "to_english", "listen", "dictation"]
 
 
 class NextCard(Model):
     card_id: int
     direction: Direction
     """ "to_study": the prompt is English, and the user enters the study
-    language. "to_english" is the other way round."""
+    language. "to_english" is the other way round. "listen" and "dictation":
+    the prompt is a sound clip with no text, and the user enters the English
+    or the study language. The answer gives the text of a "listen" card."""
     language: str
     prompt: str
     media: list[Media]
@@ -296,6 +298,10 @@ class AnswerResponse(Model):
     """All the accepted answers."""
     media: list[Media]
     """The images and the sound clips of the answer."""
+    prompt: str
+    """The text of the prompt. A "listen" card has it only here."""
+    prompt_sentences: list[Sentence]
+    """The breakdown of the prompt."""
     typed: LinkedAnswer
     """The typed answer, with the checks and the links to the prompt."""
     correct: LinkedAnswer

@@ -36,9 +36,13 @@ class PackageNote(NamedTuple):
     deck: str
 
 
-def write_package(target: Path, notes: list[PackageNote]) -> Path:
+def write_package(
+    target: Path, notes: list[PackageNote], media: dict[str, bytes] | None = None
+) -> Path:
     """The notes go in the package in this order, one card each. Each distinct
-    deck name is one Anki deck."""
+    deck name is one Anki deck. media: {file name: bytes}, for the [sound:]
+    and <img> references of the fields."""
+    media = media or {}
     deck_ids = {
         name: did
         for did, name in enumerate(dict.fromkeys(n.deck for n in notes), start=1)
@@ -70,7 +74,10 @@ def write_package(target: Path, notes: list[PackageNote]) -> Path:
         conn.close()
         with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as package:
             package.write(collection, collection.name)
-            package.writestr("media", "{}")
+            # The old layout: {"0": name}, and each file under its number.
+            package.writestr("media", json.dumps(dict(enumerate(media))))
+            for number, data in enumerate(media.values()):
+                package.writestr(str(number), data)
     return target
 
 

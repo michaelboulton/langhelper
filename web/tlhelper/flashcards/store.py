@@ -22,6 +22,11 @@ DAY = 86400
 STATS_DAYS = 90
 
 TO_STUDY, TO_ENGLISH = "to_study", "to_english"
+# The user hears the clip of the answer field, and types the English or the
+# study text.
+LISTEN, DICTATION = "listen", "dictation"
+# The directions whose answers are in the study language.
+STUDY_ANSWERS = (TO_STUDY, DICTATION)
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS deck (
