@@ -8,7 +8,7 @@ PLAIN = {"text", "name", "language", "id", "lemma", "upos", "count", "detail"}
 PLAIN |= {"sentences", "words", "decks", "counts", "source", "kind", "url"}
 PLAIN |= {"card_id", "prompt", "rating", "next_due", "me", "admin", "date", "reviews"}
 PLAIN |= {"has_accents", "streak_days", "done", "loc", "msg", "type", "input", "ctx"}
-PLAIN |= {"available"}
+PLAIN |= {"available", "courses", "number", "title", "summary"}
 
 
 def operations():
@@ -18,14 +18,14 @@ def operations():
 
 
 def test_each_route_has_a_description_and_a_response_shape():
-    assert len(list(operations())) == 18
+    assert len(list(operations())) == 21
     for name, operation in operations():
         assert operation.get("description"), name
         assert operation.get("tags"), name
         content = operation["responses"]["200"]["content"]
         shape = content.get("application/json", {}).get("schema")
-        # A picture of a card, the Fluent file of a locale, and a text read
-        # aloud.
+        # A picture of a card, the Fluent file of a locale, and a text or a
+        # lesson read aloud.
         plain = {"image/*", "text/plain", "audio/mpeg"}
         assert shape or plain & set(content), name
         for parameter in operation.get("parameters", []):

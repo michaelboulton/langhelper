@@ -18,6 +18,8 @@ GET  /api/v1/decks ...  the flashcards (flashcards/routes.py)
 POST /api/v1/explain    the "explain with AI" buttons (explain/routes.py)
 GET  /api/v1/speech ... the "Listen" buttons: an mp3 of a text from the voice
                         service (speech/routes.py)
+GET  /api/v1/audio-lessons ... the audio lessons tab: the courses in
+                        DATA_ROOT/audio/ (audio_lessons/routes.py)
 GET  /auth/...          the OIDC login (auth.py), only used on a fly.dev hostname
 
 Everything that must survive a restart lives under DATA_ROOT (a Fly volume):
@@ -45,6 +47,7 @@ from pydantic import Field, field_validator
 from starlette.middleware.sessions import SessionMiddleware
 
 from . import align, auth, languages, locales, schemas, translators
+from .audio_lessons import routes as audio_lesson_routes
 from .explain import routes as explain_routes
 from .flashcards import decks
 from .flashcards import routes as flashcard_routes
@@ -224,6 +227,7 @@ app = FastAPI(
         {"name": "breakdown", "description": "The breakdown of a text."},
         {"name": "flashcards", "description": "The decks and the cards of a user."},
         {"name": "speech", "description": "A text read aloud by the voice service."},
+        {"name": "audio lessons", "description": "The spoken courses of the admin."},
     ],
     lifespan=lifespan,
 )
@@ -231,6 +235,7 @@ app.include_router(auth.router)
 app.include_router(flashcard_routes.router)
 app.include_router(explain_routes.router)
 app.include_router(speech_routes.router)
+app.include_router(audio_lesson_routes.router)
 # static/js and static/css. The login gate below covers these files too.
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 

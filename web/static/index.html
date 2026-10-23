@@ -20,6 +20,7 @@
   <button type="button" data-tab="breakdown" data-l10n-id="tab-breakdown">Breakdown</button>
   <button type="button" data-tab="cards" data-l10n-id="tab-cards">Flashcards</button>
   <button type="button" data-tab="progress" data-l10n-id="tab-progress">Progress</button>
+  <button type="button" data-tab="audio" data-l10n-id="tab-audio">Audio lessons</button>
   <!-- The options come from /api/v1/locales. -->
   <label class="locale" hidden><span data-l10n-id="locale-label">Language of the page</span>
     <select id="locale"></select></label>
@@ -150,6 +151,26 @@
 </div>
 </section>
 
+<!-- audio_lessons.js. From /api/v1/audio-lessons: the courses in DATA_ROOT/audio/. -->
+<section class="tab" id="tab-audio" hidden>
+<h1 data-l10n-id="audio-title">Audio lessons</h1>
+<p class="sub" data-l10n-id="audio-intro">Two people have a short conversation. Then the narrator asks for its phrases:
+  say each one aloud in the pause, before you hear the answer.</p>
+<div id="audio-status"></div>
+<div id="audio-courses"></div>
+<div id="audio-lesson" hidden>
+  <div class="row card-head">
+    <strong id="audio-lesson-title"></strong>
+    <button type="button" id="audio-back" class="plain" data-l10n-id="audio-all-lessons">All lessons</button>
+  </div>
+  <p class="sub" id="audio-lesson-grammar"></p>
+  <audio id="audio-player" controls preload="metadata"></audio>
+  <!-- Only for a lesson whose mp3 is missing or older than its script. -->
+  <p class="sub" id="audio-note" hidden></p>
+  <div id="audio-script"></div>
+</div>
+</section>
+
 <!-- Under each tab that shows words. The CSS hides both on the progress tab. -->
 <div id="legend"></div>
 <!-- Only for a language with accent data. breakdown.js makes each accent
@@ -172,5 +193,6 @@
 <script src="/static/js/explain.js"></script>
 <script src="/static/js/listen.js"></script>
 <script src="/static/js/progress.js"></script>
+<script src="/static/js/audio_lessons.js"></script>
 </body>
 </html>

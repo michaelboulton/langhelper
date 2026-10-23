@@ -32,6 +32,7 @@ language-it-tag-name = ISDT tag
 tab-breakdown = Breakdown
 tab-cards = Flashcards
 tab-progress = Progress
+tab-audio = Audio lessons
 locale-label = Language of the page
 
 ## The breakdown tab
@@ -345,3 +346,16 @@ progress-day-answers = { $date }: { $answers ->
 # $rate: a percentage from the browser, for example "80%".
 progress-day-rate = { $date }: { $rate }
 progress-day-none = { $date }: no answers
+
+## The audio lessons tab
+
+audio-title = Audio lessons
+audio-intro = Two people have a short conversation. Then the narrator asks for its phrases: say each one aloud in the pause, before you hear the answer.
+audio-no-courses = No audio lessons yet.
+audio-all-lessons = All lessons
+audio-state-none = This lesson has no sound yet.
+audio-state-stale = The script changed after the sound was made, so the sound can differ from the text.
+audio-pause = (pause, { $seconds } s)
+audio-speaker-narrator = Narrator:
+audio-speaker-actor-1 = You:
+audio-speaker-actor-2 = Other person:

@@ -390,11 +390,53 @@ class SpeechInfoResponse(Model):
     languages, and "en"."""
 
 
+# The audio lessons tab
+
+
+class AudioLesson(Model):
+    number: int
+    title: str
+    audio: Literal["ready", "stale", "none"]
+    """ "ready": the mp3 is newer than the script. "stale": the script changed
+    after the mp3 was made. "none": the lesson has no mp3."""
+
+
+class AudioCourse(Model):
+    id: str
+    """The name of the folder in DATA_ROOT/audio/, for the other routes."""
+    name: str
+    language: str
+    lessons: list[AudioLesson]
+    """In order. A lesson whose script does not parse is not here."""
+
+
+class AudioCoursesResponse(Model):
+    courses: list[AudioCourse]
+
+
+class AudioLine(Model):
+    speaker: Literal["narrator", "actor 1", "actor 2", "pause"]
+    """The narrator speaks English. The actors speak the study language."""
+    text: str
+    """Empty for a pause."""
+    seconds: float
+    """The length of a pause. 0 for a spoken line."""
+
+
+class AudioLessonResponse(Model):
+    title: str
+    summary: str
+    grammar: str
+    """The grammar step of the lesson."""
+    lines: list[AudioLine]
+    """In the order of the mp3."""
+
+
 class ErrorResponse(Model):
     detail: str
 
 
-NOT_FOUND = {404: {"model": ErrorResponse, "description": "No such deck or card"}}
+NOT_FOUND = {404: {"model": ErrorResponse, "description": "No such item"}}
 MODELS_MISSING = {
     503: {"model": ErrorResponse, "description": "The models are not on the disk"}
 }
