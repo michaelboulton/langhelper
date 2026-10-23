@@ -241,8 +241,13 @@ def test_the_name_and_the_language_come_from_the_course_file(
 
 @pytest.mark.parametrize(
     "answer",
-    ["I cannot help with that.", ANSWER_1.replace("actor 2", "actor 3"), HEAD],
-    ids=["text", "speaker", "no lines"],
+    [
+        "I cannot help with that.",
+        ANSWER_1.replace("actor 2", "actor 3"),
+        HEAD,
+        ANSWER_1 + "actor 2: e\n",
+    ],
+    ids=["text", "speaker", "no lines", "one letter"],
 )
 def test_a_bad_answer_is_asked_again_and_then_stops(
     course, scripted, fake_lemmas, answer

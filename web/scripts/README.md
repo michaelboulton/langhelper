@@ -295,7 +295,8 @@ has:
    more often than "Say ..."; a long word built up from its end; old and new
    words asked again at growing intervals; for a new word with a sound that an
    English speaker hears as another, such as č and ć in Croatian, a reminder
-   to listen to it and to say it as a native speaker does;
+   to listen to it and to say it as a native speaker does; at least two
+   letters in each spoken line, because the voice service fails on one;
 5. the parts of the lesson, in order: a dialogue; each new phrase taught with
    a prompt, a pause and the answer, then new sentences of old and new words;
    the learner's lines of the dialogue; the dialogue again.
@@ -306,7 +307,8 @@ Models often write less than the prompt asks: `--redo N` writes a short lesson
 again.
 
 The answer starts at its first `# ` line, so a code fence or a sentence before
-the script does no harm. After an answer that is not a valid script, the
+the script does no harm. An answer with a spoken line of fewer than two
+letters is not a valid script. After an answer that is not a valid script, the
 script asks once more and then stops with the answer in the message.
 
 ### Clips and the mp3
