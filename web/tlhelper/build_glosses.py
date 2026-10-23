@@ -2,21 +2,25 @@
 
 Croatian, with the accents and the glosses (languages/croatian/accents.db):
 
+\b
     curl -LO https://kaikki.org/dictionary/Serbo-Croatian/kaikki.org-dictionary-SerboCroatian.jsonl
     uv run python -m tlhelper.build_glosses kaikki.org-dictionary-SerboCroatian.jsonl
 
 German, with the glosses only (languages/german/glosses.db):
 
+\b
     curl -LO https://kaikki.org/dictionary/German/kaikki.org-dictionary-German.jsonl
     uv run python -m tlhelper.build_glosses --language de kaikki.org-dictionary-German.jsonl
 
 French, with the glosses only (languages/french/glosses.db):
 
+\b
     curl -LO https://kaikki.org/dictionary/French/kaikki.org-dictionary-French.jsonl
     uv run python -m tlhelper.build_glosses --language fr kaikki.org-dictionary-French.jsonl
 
 Italian, with the glosses only (languages/italian/glosses.db):
 
+\b
     curl -LO https://kaikki.org/dictionary/Italian/kaikki.org-dictionary-Italian.jsonl
     uv run python -m tlhelper.build_glosses --language it kaikki.org-dictionary-Italian.jsonl
 
@@ -26,12 +30,13 @@ when you want newer data, then commit the file. See languages/glosses.py and
 languages/croatian/accents.py for the tables.
 """
 
-import argparse
 import json
 import re
 import sqlite3
 import unicodedata
 from pathlib import Path
+
+import click
 
 from .languages.croatian.accents import ACCENTS_PATH, SCHEMA
 from .languages.french import GLOSSES_PATH as FRENCH_GLOSSES_PATH
@@ -201,14 +206,19 @@ def build(source: Path, target: Path, language: str = "hr") -> tuple[int, int, i
     return counts
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("source", type=Path, help="the kaikki.org JSONL file")
-    parser.add_argument("--language", choices=sorted(LANGUAGES), default="hr")
-    args = parser.parse_args()
-    path = LANGUAGES[args.language][1]
-    lemmas, forms, glosses = build(args.source, path, args.language)
+@click.command(help=__doc__)
+@click.argument("source", type=click.Path(exists=True, dir_okay=False, path_type=Path))
+@click.option(
+    "--language", type=click.Choice(sorted(LANGUAGES)), default="hr", show_default=True
+)
+def main(source: Path, language: str) -> None:
+    path = LANGUAGES[language][1]
+    lemmas, forms, glosses = build(source, path, language)
     size = path.stat().st_size / 1e6
     print(
         f"{path.name}: {lemmas} lemmas, {forms} forms, {glosses} glosses, {size:.1f} MB"
     )
+
+
+if __name__ == "__main__":
+    main()

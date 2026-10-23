@@ -5,6 +5,7 @@ memory and the prompt are in scripts/README.md.
 The first run makes the course folder and its course.toml. Each topic becomes
 the next lesson, NN.txt, and a run skips a topic that is in the course:
 
+\b
     uv run python -m scripts.audio_lessons --course ../.data/audio/it-course \\
         --language it --name "Italian" \\
         --topic "asking whether a dish has meat in it" --topic "the local football team"
@@ -12,6 +13,7 @@ the next lesson, NN.txt, and a run skips a topic that is in the course:
 --grammar sets the grammar step of the one topic of a run. Without it, the
 model picks the next small step after the earlier lessons:
 
+\b
     uv run python -m scripts.audio_lessons --course ../.data/audio/it-course \\
         --topic "buying a train ticket" --grammar "the future tense"
 
@@ -21,6 +23,7 @@ asks only for the new lines. --narrator-voice, --actor-1-voice and
 --actor-2-voice name a voice of the service, as in scripts.check_voices, and
 keep it in course.toml:
 
+\b
     TLHELPER_VOICE_URL=http://localhost:8002 uv run python -m scripts.audio_lessons \\
         --course ../.data/audio/it-course --voice --actor-1-voice it --actor-2-voice it-2
 
@@ -28,16 +31,18 @@ The AI service is the one of scripts.lessons: the TLHELPER_AI_* variables, or
 --backend claude. Run it from the folder of the project, as a module.
 """
 
-import argparse
 import hashlib
 import itertools
 import json
 import re
 import shutil
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from pathlib import Path
+from types import SimpleNamespace
 
+import click
 from pydantic import ValidationError
 from tlhelper import explain, speech
 from tlhelper.audio_lessons import script
@@ -408,73 +413,17 @@ def voice_course(
                 path.unlink()
 
 
-def parse_args(argv: list[str] | None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description=__doc__.split("\n\n")[0],
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__.split("\n\n", 1)[1],
-    )
-    parser.add_argument(
-        "--course", type=Path, required=True, help="the folder of the course"
-    )
-    parser.add_argument(
-        "--language",
-        choices=sorted(LANGUAGES),
-        help="the study language. Needed for the first run",
-    )
-    parser.add_argument(
-        "--name", help="the name of the course. Needed for the first run"
-    )
-    parser.add_argument(
-        "--topic",
-        action="append",
-        default=[],
-        help="the topic of the next lesson. Can repeat",
-    )
-    parser.add_argument(
-        "--grammar",
-        help="the grammar step of the lesson. Only with exactly one --topic",
-    )
-    parser.add_argument(
-        "--redo",
-        action="append",
-        default=[],
-        type=int,
-        metavar="N",
-        help="write lesson N again, with its topic and grammar step. Can repeat",
-    )
-    parser.add_argument(
-        "--backend",
-        choices=sorted(explain.BACKENDS),
-        help="the AI service, in place of TLHELPER_AI_BACKEND: claude is"
-        " `claude -p` of Claude Code",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="print the prompt of the first lesson to write and write nothing",
-    )
-    parser.add_argument(
-        "--voice",
-        action="store_true",
-        help="read each line into a clip, with the voice service of"
-        " TLHELPER_VOICE_URL, and join the clips of each lesson into NN.mp3"
-        " with ffmpeg",
-    )
-    for speaker in script.SPEAKERS:
-        parser.add_argument(
+def speaker_voices(command: Callable) -> Callable:
+    """A --<speaker>-voice option, such as --actor-2-voice, for each speaker.
+    Its value is the parameter actor_2_voice."""
+    for speaker in reversed(script.SPEAKERS):
+        command = click.option(
             f"--{speaker.replace(' ', '-')}-voice",
-            dest=f"voice of {speaker}",
             metavar="NAME",
             help=f"the voice of the service for the {speaker}, such as it-2."
             " It goes in [voices] of course.toml",
-        )
-    args = parser.parse_args(argv)
-    if args.grammar is not None and len(args.topic) != 1:
-        parser.error("--grammar needs exactly one --topic")
-    if not all(script.one_line(topic) for topic in args.topic):
-        parser.error("a --topic is empty")
-    return args
+        )(command)
+    return command
 
 
 def render_course(course: script.Course) -> str:
@@ -487,14 +436,14 @@ def render_course(course: script.Course) -> str:
     return text
 
 
-def open_course(args: argparse.Namespace) -> script.Course:
+def open_course(args: SimpleNamespace) -> script.Course:
     """course.toml, made on the first run. A --<speaker>-voice option sets
     the voice of that speaker in it."""
     path = args.course / script.COURSE_FILE
     voices = {
         speaker: voice
         for speaker in script.SPEAKERS
-        if (voice := getattr(args, f"voice of {speaker}"))
+        if (voice := getattr(args, f"{speaker.replace(' ', '_')}_voice"))
     }
     if path.exists():
         old = script.read_course(args.course)
@@ -525,7 +474,7 @@ def open_course(args: argparse.Namespace) -> script.Course:
     return course
 
 
-def run(args: argparse.Namespace) -> None:
+def run(args: SimpleNamespace) -> None:
     voicing = args.voice and not args.dry_run
     if voicing:
         # Before the AI requests: a run that cannot voice stops at once.
@@ -580,8 +529,56 @@ def run(args: argparse.Namespace) -> None:
         voice_course(args.course, course, synthesizer, ffmpeg)
 
 
-def main(argv: list[str] | None = None) -> None:
-    args = parse_args(argv)
+@click.command(help=__doc__)
+@click.option(
+    "--course",
+    type=click.Path(file_okay=False, path_type=Path),
+    required=True,
+    help="the folder of the course",
+)
+@click.option(
+    "--language",
+    type=click.Choice(sorted(LANGUAGES)),
+    help="the study language. Needed for the first run",
+)
+@click.option("--name", help="the name of the course. Needed for the first run")
+@click.option("--topic", multiple=True, help="the topic of the next lesson. Can repeat")
+@click.option(
+    "--grammar",
+    help="the grammar step of the lesson. Only with exactly one --topic",
+)
+@click.option(
+    "--redo",
+    multiple=True,
+    type=int,
+    metavar="N",
+    help="write lesson N again, with its topic and grammar step. Can repeat",
+)
+@click.option(
+    "--backend",
+    type=click.Choice(sorted(explain.BACKENDS)),
+    help="the AI service, in place of TLHELPER_AI_BACKEND: claude is"
+    " `claude -p` of Claude Code",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="print the prompt of the first lesson to write and write nothing",
+)
+@click.option(
+    "--voice",
+    is_flag=True,
+    help="read each line into a clip, with the voice service of"
+    " TLHELPER_VOICE_URL, and join the clips of each lesson into NN.mp3"
+    " with ffmpeg",
+)
+@speaker_voices
+def main(**options) -> None:
+    args = SimpleNamespace(**options)
+    if args.grammar is not None and len(args.topic) != 1:
+        raise click.UsageError("--grammar needs exactly one --topic")
+    if not all(script.one_line(topic) for topic in args.topic):
+        raise click.UsageError("a --topic is empty")
     try:
         run(args)
     except (lessons.LessonError, script.ScriptError) as exc:

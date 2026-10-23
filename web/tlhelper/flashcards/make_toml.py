@@ -1,5 +1,6 @@
 """Write the .toml file of a deck package, from a look at its notes:
 
+\b
     uv run python -m tlhelper.flashcards.make_toml decks/basics.apkg --language hr
 
 The result is decks/basics.toml. The guesses are the two fields with the most
@@ -8,10 +9,11 @@ the note types that have both fields. Read the result, and correct it by hand
 or with the options.
 """
 
-import argparse
 import json
 from collections import Counter
 from pathlib import Path
+
+import click
 
 from ..languages import LANGUAGES
 from . import apkg, decks
@@ -67,70 +69,81 @@ def render(config: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("package", type=Path)
-    parser.add_argument("--language", required=True, choices=sorted(LANGUAGES))
-    parser.add_argument("--name", help="the default is the file name")
-    parser.add_argument("--english-field")
-    parser.add_argument("--answer-field")
-    parser.add_argument("--notetype", action="append", help="can repeat")
-    parser.add_argument("--reverse", action="store_true")
-    parser.add_argument(
-        "--subdecks", action="store_true", help="one deck for each Anki deck"
-    )
-    parser.add_argument(
-        "--to-english-notetype",
-        action="append",
-        help="a note type that only asks for the English. Can repeat",
-    )
-    parser.add_argument(
-        "--lines", action="store_true", help="each line of a field is one answer"
-    )
-    parser.add_argument("--new-per-day", type=int, default=10)
-    parser.add_argument("--reviews-per-day", type=int, default=100)
-    parser.add_argument("--force", action="store_true", help="replace the file")
-    args = parser.parse_args()
-
-    target = args.package.with_suffix(".toml")
-    if target.exists() and not args.force:
+@click.command(help=__doc__)
+@click.argument("package", type=click.Path(dir_okay=False, path_type=Path))
+@click.option("--language", required=True, type=click.Choice(sorted(LANGUAGES)))
+@click.option("--name", help="the default is the file name")
+@click.option("--english-field")
+@click.option("--answer-field")
+@click.option("--notetype", multiple=True, help="can repeat")
+@click.option("--reverse", is_flag=True)
+@click.option("--subdecks", is_flag=True, help="one deck for each Anki deck")
+@click.option(
+    "--to-english-notetype",
+    multiple=True,
+    help="a note type that only asks for the English. Can repeat",
+)
+@click.option("--lines", is_flag=True, help="each line of a field is one answer")
+@click.option("--new-per-day", type=int, default=10, show_default=True)
+@click.option("--reviews-per-day", type=int, default=100, show_default=True)
+@click.option("--force", is_flag=True, help="replace the file")
+def main(
+    package: Path,
+    language: str,
+    name: str | None,
+    english_field: str | None,
+    answer_field: str | None,
+    notetype: tuple[str, ...],
+    reverse: bool,
+    subdecks: bool,
+    to_english_notetype: tuple[str, ...],
+    lines: bool,
+    new_per_day: int,
+    reviews_per_day: int,
+    force: bool,
+) -> None:
+    target = package.with_suffix(".toml")
+    if target.exists() and not force:
         raise SystemExit(f"{target} is there already (--force replaces it)")
     try:
-        notes = apkg.read_notes(args.package)
+        notes = apkg.read_notes(package)
     except apkg.BadDeck as exc:
         raise SystemExit(str(exc)) from exc
     if not notes:
-        raise SystemExit(f"{args.package} has no notes")
+        raise SystemExit(f"{package} has no notes")
 
     config = {
-        "name": args.name or args.package.stem.replace("-", " ").replace("_", " "),
-        "language": args.language,
+        "name": name or package.stem.replace("-", " ").replace("_", " "),
+        "language": language,
         **guess(notes),
-        "reverse": args.reverse,
-        "new_per_day": args.new_per_day,
-        "reviews_per_day": args.reviews_per_day,
+        "reverse": reverse,
+        "new_per_day": new_per_day,
+        "reviews_per_day": reviews_per_day,
     }
-    for key in ("english_field", "answer_field", "notetype"):
-        if getattr(args, key):
-            config[key] = getattr(args, key)
-    if args.subdecks:
+    given = {
+        "english_field": english_field,
+        "answer_field": answer_field,
+        "notetype": list(notetype),
+    }
+    config |= {key: value for key, value in given.items() if value}
+    if subdecks:
         config["subdecks"] = True
-    if args.to_english_notetype:
-        config["to_english_notetypes"] = args.to_english_notetype
-    if args.lines:
+    if to_english_notetype:
+        config["to_english_notetypes"] = list(to_english_notetype)
+    if lines:
         config["separators"] = ["\n"]
     target.write_text(render(config), encoding="utf-8")
 
     sizes = Counter(note.notetype for note in notes)
     print(f"{len(notes)} notes:")
-    for notetype, size in sizes.most_common():
-        fields = next(list(n.fields) for n in notes if n.notetype == notetype)
-        print(f"  {size:6} {notetype!r}: {', '.join(fields)}")
+    for kind, size in sizes.most_common():
+        fields = next(list(n.fields) for n in notes if n.notetype == kind)
+        print(f"  {size:6} {kind!r}: {', '.join(fields)}")
     anki_decks = Counter(note.deck for note in notes if note.deck)
     if len(anki_decks) > 1:
         print("Anki decks (--subdecks makes one deck of each):")
-        for name, size in sorted(anki_decks.items()):
-            print(f"  {size:6} {' :: '.join(name)}")
+        for deck, size in sorted(anki_decks.items()):
+            print(f"  {size:6} {' :: '.join(deck)}")
     cards = decks.cards_of(notes, decks.read_config(target))
     with_media = sum(bool(c["prompt_media"] or c["answer_media"]) for c in cards)
     print(f"{target}: {len(cards)} cards, {with_media} with media, for example")

@@ -2,15 +2,16 @@
 in each voice that --voice names, one mp3 for each. The set-up is in
 scripts/README.md.
 
+\b
     TLHELPER_VOICE_URL=http://localhost:8002 uv run python -m scripts.check_voices \\
         --language it --voice it --voice it-2
 
 Run it from the folder of the project, as a module.
 """
 
-import argparse
 from pathlib import Path
 
+import click
 from tlhelper import speech
 from tlhelper.speech.openai import OpenAISpeech
 
@@ -24,35 +25,29 @@ SAMPLES = {
 }
 
 
-def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(
-        description=__doc__.split("\n\n")[0],
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__.split("\n\n", 1)[1],
-    )
-    parser.add_argument(
-        "--voice",
-        action="append",
-        required=True,
-        metavar="NAME",
-        help="a voice of the service, such as it-2. Can repeat",
-    )
-    parser.add_argument(
-        "--language", required=True, help="the code of the language, such as it"
-    )
-    parser.add_argument(
-        "--text", help="the text to read. Default: a sample sentence of the language"
-    )
-    parser.add_argument(
-        "--out",
-        type=Path,
-        default=Path("voice-check"),
-        help="the folder of the mp3s. Default: voice-check",
-    )
-    args = parser.parse_args(argv)
-    text = args.text or SAMPLES.get(args.language)
+@click.command(help=__doc__)
+@click.option(
+    "--voice",
+    "voices",
+    multiple=True,
+    required=True,
+    metavar="NAME",
+    help="a voice of the service, such as it-2. Can repeat",
+)
+@click.option("--language", required=True, help="the code of the language, such as it")
+@click.option(
+    "--text", help="the text to read. Default: a sample sentence of the language"
+)
+@click.option(
+    "--out",
+    type=click.Path(file_okay=False, path_type=Path),
+    default=Path("voice-check"),
+    help="the folder of the mp3s. Default: voice-check",
+)
+def main(voices: tuple[str, ...], language: str, text: str | None, out: Path) -> None:
+    text = text or SAMPLES.get(language)
     if not text:
-        parser.error(f"no sample sentence for {args.language!r}: give --text")
+        raise click.UsageError(f"no sample sentence for {language!r}: give --text")
     service = OpenAISpeech()
     if not service.available():
         raise SystemExit("set TLHELPER_VOICE_URL, such as http://localhost:8002")
@@ -60,7 +55,7 @@ def main(argv: list[str] | None = None) -> None:
     if entry is None:
         raise SystemExit("the voice service gave no model list: is it up?")
     known = entry.get("voices") or []
-    missing = [voice for voice in args.voice if voice not in known]
+    missing = [voice for voice in voices if voice not in known]
     if missing:
         raise SystemExit(
             f"the service has no voice {', '.join(missing)}, only:"
@@ -68,13 +63,13 @@ def main(argv: list[str] | None = None) -> None:
             " and <name>.txt, in tts/omnivoice_server/voices/"
             ' (../tts/README.md, "Voice")'
         )
-    args.out.mkdir(parents=True, exist_ok=True)
-    for voice in args.voice:
+    out.mkdir(parents=True, exist_ok=True)
+    for voice in voices:
         try:
-            data = service.synthesize(text, args.language, voice)
+            data = service.synthesize(text, language, voice)
         except speech.SpeechError as exc:
             raise SystemExit(f"{voice}: {exc}") from exc
-        path = args.out / f"{args.language}-{voice}.mp3"
+        path = out / f"{language}-{voice}.mp3"
         path.write_bytes(data)
         print(path)
     print(f"Each file says {text!r}, and each in another voice.")

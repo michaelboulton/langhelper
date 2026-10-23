@@ -9,9 +9,11 @@ omnivoice. The set-up is in scripts/README.md.
 With no TLHELPER_AI_* variables set, it asks the llamacpp service at
 http://localhost:9931/v1. Each variable that is set replaces its default.
 
+\b
     # One clip, with the llamacpp service up
     uv run python -m scripts.transcribe hr.wav
 
+\b
     # Several clips, each heard 3 times, with the language named in the prompt
     uv run python -m scripts.transcribe --language Croatian --tries 3 out/*.mp3
 
@@ -19,11 +21,12 @@ A clip is a .wav or an .mp3. Run it from the folder of the project, as a
 module.
 """
 
-import argparse
 import base64
 import os
 import sys
 from pathlib import Path
+
+import click
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -83,34 +86,30 @@ def transcribe(client, model: str, path: Path, language: str) -> str:
     return (response.choices[0].message.content or "").strip()
 
 
-def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(
-        prog="python -m scripts.transcribe",
-        description="The transcript of each voice clip, from a model that hears audio.",
-    )
-    parser.add_argument("clips", nargs="+", type=Path, help=".wav or .mp3 files")
-    parser.add_argument(
-        "--language",
-        default="",
-        help="the name of the language in English, for the prompt (default: none, "
-        "so the model is not led to hear that language)",
-    )
-    parser.add_argument(
-        "--tries", type=int, default=1, help="how many times to ask for each clip"
-    )
-    args = parser.parse_args(argv)
-
-    missing = [str(clip) for clip in args.clips if not clip.is_file()]
-    if missing:
-        raise SystemExit(f"no such file: {', '.join(missing)}")
-
+@click.command(help=__doc__)
+@click.argument(
+    "clips",
+    nargs=-1,
+    required=True,
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+)
+@click.option(
+    "--language",
+    default="",
+    help="the name of the language in English, for the prompt (default: none, "
+    "so the model is not led to hear that language)",
+)
+@click.option(
+    "--tries", type=int, default=1, help="how many times to ask for each clip"
+)
+def main(clips: tuple[Path, ...], language: str, tries: int) -> None:
     client = service.OpenAICompatible().client()
-    for clip in args.clips:
-        for attempt in range(1, args.tries + 1):
-            label = f"{clip} #{attempt}" if args.tries > 1 else str(clip)
-            text = transcribe(client, service.MODEL, clip, args.language)
+    for clip in clips:
+        for attempt in range(1, tries + 1):
+            label = f"{clip} #{attempt}" if tries > 1 else str(clip)
+            text = transcribe(client, service.MODEL, clip, language)
             print(f"== {label}\n{text or '(empty answer)'}\n", flush=True)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()

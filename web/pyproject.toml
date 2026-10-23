@@ -6,6 +6,7 @@ requires-python = ">=3.12,<3.13"
 dependencies = [
     "authlib",
     "classla",
+    "click",
     "de-core-news-md",
     "de-dep-news-trf",
     "en-core-web-sm",

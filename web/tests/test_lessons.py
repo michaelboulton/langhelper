@@ -47,7 +47,7 @@ def course(deck_dir):
 
 
 def run(course, *args):
-    lessons.main(["--course", str(course), *args])
+    lessons.main(["--course", str(course), *args], standalone_mode=False)
 
 
 def first_run(course, *args):

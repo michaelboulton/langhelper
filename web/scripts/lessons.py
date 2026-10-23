@@ -7,11 +7,13 @@ A course grows one run at a time. The first run makes the scaffolding: the
 memory file <course>.json, the package <course>.apkg and its <course>.toml.
 Each later run appends the lessons it gets and builds the deck again:
 
+\b
     # Lesson 1: creates decks/croatian-course.json, .apkg and .toml
     uv run --group lessons python -m scripts.lessons \\
         --language hr --name "Croatian course" --course decks/croatian-course \\
         lessons/01.md
 
+\b
     # Lesson 2, later: appends it and rebuilds the deck. The cards of lesson 1
     # keep their guids, so the progress of every user stays.
     uv run --group lessons python -m scripts.lessons \\
@@ -22,6 +24,7 @@ service comes from the same TLHELPER_AI_* variables as the app (README.md,
 "Set up the AI service"). With --backend claude, each request is one
 `claude -p` process of Claude Code instead, with its login and no key:
 
+\b
     uv run --group lessons python -m scripts.lessons --backend claude \\
         --course decks/croatian-course lessons/03.md
 
@@ -30,19 +33,21 @@ the deck gets listen and dictation cards. The clips stay in <course>.clips/,
 so a later run asks only for the new answers. --build-only --voice adds the
 clips to a course that has none:
 
+\b
     TLHELPER_VOICE_URL=http://localhost:8002 uv run --group lessons \\
         python -m scripts.lessons --course decks/croatian-course --build-only --voice
 
 Run it from the folder of the project, as a module.
 """
 
-import argparse
 import hashlib
 import re
 import time
 from pathlib import Path
+from types import SimpleNamespace
 from urllib.parse import urlparse
 
+import click
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from tlhelper import explain, speech
 from tlhelper.flashcards import make_deck, make_toml
@@ -549,78 +554,7 @@ def build_deck(
 # The runs
 
 
-def parse_args(argv: list[str] | None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description=__doc__.split("\n\n")[0],
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__.split("\n\n", 1)[1],
-    )
-    parser.add_argument(
-        "--course",
-        type=Path,
-        required=True,
-        help="the stem of the memory file, the package and the toml",
-    )
-    parser.add_argument(
-        "--language",
-        choices=sorted(LANGUAGES),
-        help="the study language. Needed for the first run",
-    )
-    parser.add_argument("--name", help="the name of the deck. Needed for the first run")
-    parser.add_argument(
-        "--backend",
-        choices=sorted(explain.BACKENDS),
-        help="the AI service, in place of TLHELPER_AI_BACKEND: claude is"
-        " `claude -p` of Claude Code",
-    )
-    parser.add_argument(
-        "lessons",
-        nargs="*",
-        help="markdown files or web pages, in the order of the course",
-    )
-    parser.add_argument(
-        "--title",
-        action="append",
-        default=[],
-        metavar="KEY=TITLE",
-        help="the title of a lesson, for its subdeck. Can repeat",
-    )
-    parser.add_argument(
-        "--redo",
-        action="append",
-        default=[],
-        metavar="KEY",
-        help="make the cards of a lesson that is in the course again. Can repeat",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="print the prompt of the first new lesson and write nothing",
-    )
-    parser.add_argument(
-        "--build-only",
-        action="store_true",
-        help="write the package and the toml from the memory file, with no AI call",
-    )
-    parser.add_argument(
-        "--voice",
-        action="store_true",
-        help="put a clip of each answer in the package, from the voice service"
-        " of TLHELPER_VOICE_URL, and add listen and dictation cards",
-    )
-    parser.add_argument("--new-per-day", type=int, default=10)
-    parser.add_argument("--reviews-per-day", type=int, default=100)
-    args = parser.parse_args(argv)
-    args.titles = {}
-    for item in args.title:
-        key, equals, title = item.partition("=")
-        if not equals or not clean_name(title):
-            parser.error(f"--title needs KEY=TITLE, not {item!r}")
-        args.titles[key] = clean_name(title)
-    return args
-
-
-def open_course(args: argparse.Namespace, memory: Path) -> Course:
+def open_course(args: SimpleNamespace, memory: Path) -> Course:
     if memory.exists():
         course = load_course(memory)
         for option in ("language", "name"):
@@ -638,7 +572,7 @@ def open_course(args: argparse.Namespace, memory: Path) -> Course:
     return Course(language=args.language, name=clean_name(args.name))
 
 
-def run(args: argparse.Namespace) -> None:
+def run(args: SimpleNamespace) -> None:
     memory = args.course.with_suffix(".json")
     course = open_course(args, memory)
     changed = False
@@ -665,7 +599,7 @@ def run(args: argparse.Namespace) -> None:
         print(f"{package}: {len(course.lessons)} lessons, {cards} cards")
 
 
-def generate(args: argparse.Namespace, memory: Path, course: Course) -> bool:
+def generate(args: SimpleNamespace, memory: Path, course: Course) -> bool:
     """The lessons of the command line that are new, or in --redo. True if
     the memory file changed."""
     changed = False
@@ -715,8 +649,63 @@ def generate(args: argparse.Namespace, memory: Path, course: Course) -> bool:
     return changed
 
 
-def main(argv: list[str] | None = None) -> None:
-    args = parse_args(argv)
+@click.command(help=__doc__)
+@click.option(
+    "--course",
+    type=click.Path(path_type=Path),
+    required=True,
+    help="the stem of the memory file, the package and the toml",
+)
+@click.option(
+    "--language",
+    type=click.Choice(sorted(LANGUAGES)),
+    help="the study language. Needed for the first run",
+)
+@click.option("--name", help="the name of the deck. Needed for the first run")
+@click.option(
+    "--backend",
+    type=click.Choice(sorted(explain.BACKENDS)),
+    help="the AI service, in place of TLHELPER_AI_BACKEND: claude is"
+    " `claude -p` of Claude Code",
+)
+@click.argument("lessons", nargs=-1)
+@click.option(
+    "--title",
+    multiple=True,
+    metavar="KEY=TITLE",
+    help="the title of a lesson, for its subdeck. Can repeat",
+)
+@click.option(
+    "--redo",
+    multiple=True,
+    metavar="KEY",
+    help="make the cards of a lesson that is in the course again. Can repeat",
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="print the prompt of the first new lesson and write nothing",
+)
+@click.option(
+    "--build-only",
+    is_flag=True,
+    help="write the package and the toml from the memory file, with no AI call",
+)
+@click.option(
+    "--voice",
+    is_flag=True,
+    help="put a clip of each answer in the package, from the voice service"
+    " of TLHELPER_VOICE_URL, and add listen and dictation cards",
+)
+@click.option("--new-per-day", type=int, default=10, show_default=True)
+@click.option("--reviews-per-day", type=int, default=100, show_default=True)
+def main(**options) -> None:
+    args = SimpleNamespace(**options, titles={})
+    for item in args.title:
+        key, equals, title = item.partition("=")
+        if not equals or not clean_name(title):
+            raise click.UsageError(f"--title needs KEY=TITLE, not {item!r}")
+        args.titles[key] = clean_name(title)
     try:
         run(args)
     except LessonError as exc:
