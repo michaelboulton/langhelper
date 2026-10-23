@@ -67,7 +67,7 @@ Tests that need resources skip when the resources are missing:
 - The heavy German tests need `de_dep_news_trf`.
 - `test_the_clips_of_the_repo` needs the voice clips in `tts/omnivoice_server/voices/`.
 
-CI (`.github/workflows/tests.yml`) runs prek, then the tests of both members, without the heavy German model.
+CI (`.github/workflows/tests.yml`) runs prek, then the tests of both members. It installs the heavy German model and caches the classla models in `.data/`, so `test_real_models` runs.
 
 ## web architecture
 
