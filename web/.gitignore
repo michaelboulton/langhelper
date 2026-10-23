@@ -5,3 +5,4 @@ __pycache__/
 decks/
 # Your own copy of example.fly.toml. See README.md.
 /fly.toml
+/voice-check/
