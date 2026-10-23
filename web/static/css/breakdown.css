@@ -114,14 +114,21 @@ body[data-tab="audio"] #legend, body[data-tab="audio"] #accents { display: none;
 
 /* The tabs and the flashcards (flashcards.js). */
 #tabs { display: flex; gap: 4px; margin: 0 0 20px; border-bottom: 1px solid var(--line); }
+#tabs .tab-buttons { display: flex; gap: 4px; min-width: 0; overflow-x: auto; scrollbar-width: thin; }
 #tabs button {
   border: 0; border-bottom: 3px solid transparent; border-radius: 0;
-  background: none; color: var(--muted);
+  background: none; color: var(--muted); white-space: nowrap;
 }
 #tabs button.current { color: var(--fg); border-bottom-color: var(--fg); }
 /* The language of the page (i18n.js), at the end of the row of the tabs. */
 #tabs .locale { margin-inline-start: auto; align-self: center; font-size: 0.85rem; color: var(--muted); }
 #tabs .locale[hidden] { display: none; }
+/* A phone: the language of the page on its own row above the tabs. */
+@media (max-width: 640px) {
+  #tabs { flex-wrap: wrap; }
+  #tabs .locale { order: -1; flex-basis: 100%; text-align: end; }
+  #tabs button { padding: 8px 12px; }
+}
 #locale {
   font: inherit; color: var(--fg); background: var(--card);
   border: 1px solid var(--line); border-radius: 6px; padding: 2px 4px;

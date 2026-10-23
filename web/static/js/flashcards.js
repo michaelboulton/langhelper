@@ -23,6 +23,8 @@ function showTab(name) {
   }
   for (const button of document.querySelectorAll("#tabs button")) {
     button.classList.toggle("current", button.dataset.tab === name);
+    // On a narrow screen the row scrolls, so bring the current tab into view.
+    if (button.dataset.tab === name) button.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
   // The accent note is for the language of the words on the tab.
   if (name === "breakdown") showSource(); else showDeckAccents();

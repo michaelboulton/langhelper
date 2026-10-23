@@ -63,7 +63,7 @@ fly deploy . --config web/fly.toml --dockerfile web/Dockerfile --ha=false   # de
 Tests that need resources skip when the resources are missing:
 
 - `test_real_models` needs the classla models in `.data/` at the repository root.
-- The browser tests need the Playwright Chromium.
+- The browser tests need the Playwright Chromium. A Claude Code cloud container has a Chromium in `/opt/pw-browsers`, but it can be an older build than the version that `uv.lock` pins. Then each browser test skips with `Executable doesn't exist at /opt/pw-browsers/chromium_headless_shell-<N>`. Do not run `playwright install`. Instead, link the build that is there under the name that Playwright wants, in a folder of your own, and set `PLAYWRIGHT_BROWSERS_PATH` to that folder. For example: `ln -s /opt/pw-browsers/chromium_headless_shell-1243 <dir>/chromium_headless_shell-1248`, then `PLAYWRIGHT_BROWSERS_PATH=<dir> uv run pytest ...`.
 - DeepL and the AI service are fakes in the tests, so the tests need no key.
 - The `tts/` tests use a fake model and need no build of `libomnivoice.so`.
 - The heavy German tests need `de_dep_news_trf`.
