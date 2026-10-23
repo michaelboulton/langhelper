@@ -179,6 +179,124 @@ aside, scripts and styles, and without each element whose id or class has
 bold, italic, lists and tables, and without the links and the images. The
 markdown is not cached: `--redo` fetches the page again.
 
+## audio_lessons.py: scripts of spoken lessons
+
+A language model writes the script of a spoken lesson for each topic. In a
+lesson, two actors have a short dialogue in the study language. Then a
+narrator teaches its words in English: the narrator asks for a phrase, a pause
+gives the learner time to say it aloud, and an actor says the answer. The
+script keeps a memory of the earlier lessons, so each lesson can be a little
+harder than the one before it, and it brings back their words.
+
+The AI service is the one of `lessons.py` (see "Set-up" above), with
+`--backend claude` too. The script needs no extra dependency group. A lesson
+costs about 1 to 3 thousand input tokens (a later lesson has more memory) and
+about 1 thousand output tokens.
+
+### The course folder
+
+```
+audio/<course>/
+  course.toml   # language, name, and the voice of each speaker
+  01.txt        # the script of lesson 1
+  02.txt
+```
+
+`course.toml` has `language` and `name`. The first run writes it. An optional
+table `[voices]` gives a speaker a named clip of the voice service
+(`../tts/README.md`, "Voice"), such as `"actor 2" = "it-2"`.
+`tlhelper/audio_lessons/script.py` reads both kinds of file.
+
+### The script format
+
+One line for each thing that the learner hears:
+
+```
+# Is there meat in this dish?
+topic: asking whether a dish has meat in it
+summary: Asking a waiter whether a dish has meat in it.
+grammar: "there is / there isn't" (c'è, non c'è); yes/no questions.
+
+narrator: You are in a restaurant in Rome. Listen to the conversation.
+actor 1: Scusi, c'è carne in questo piatto?
+actor 2: No, non c'è carne.
+narrator: How do you say "is there"?
+pause: 3
+actor 1: c'è
+```
+
+- The first line is `# <title>`.
+- `summary:` and `grammar:` are required, before the first spoken line. They
+  are the memory of the later lessons. `topic:` is the `--topic` that made the
+  lesson, and a script by hand can leave it out.
+- The speakers are `narrator` (English), `actor 1` (the role of the learner)
+  and `actor 2` (the other person). Both actors speak the study language.
+- `pause: N` is N seconds of silence, up to 30.
+- Blank lines are ignored. The case of a speaker is ignored, and spaces are
+  joined.
+
+An error names the file and the line, such as `01.txt:7: 'actor 3' is not
+one of narrator, actor 1, actor 2 or pause`.
+
+### A course, one run at a time
+
+From `web/`:
+
+```bash
+uv run python -m scripts.audio_lessons --course ../.data/audio/it-course \
+    --language it --name "Italian" \
+    --topic "asking whether a dish has meat in it" --topic "the local football team"
+```
+
+Each topic becomes the next lesson, in the order given. The number of a new
+lesson is the lowest number with no script, so a deleted lesson gets its place
+back. A topic that a script has already (the same words, in any case) is
+skipped, so a run can repeat the whole list. A later run needs no
+`--language` or `--name`.
+
+Other options:
+
+- `--grammar "..."`: the grammar step of the lesson. It is allowed only with
+  exactly one `--topic`. With no `--grammar`, the model picks one small step
+  harder than the steps of the earlier lessons, and writes it in the
+  `grammar:` line.
+- `--redo N`: write lesson N again, with the topic and the grammar step of
+  its script. To change them, edit the `topic:` and `grammar:` lines first.
+- `--dry-run`: print the prompt of the first lesson to write, with a rough
+  count of its tokens, and write nothing.
+
+A script is written complete or not at all, so a run over many topics that
+dies loses at most the lesson it was on.
+
+### The memory and the prompt
+
+The memory is in the scripts, with no other file. For lesson N, the prompt
+has:
+
+1. the summary and the grammar step of each lesson before N;
+2. the lemmas of the actor lines of those lessons, as in the prompt of
+   `lessons.py` (see "The prompt" above);
+3. the number, the topic and the grammar step of the lesson;
+4. the format, and the rules: about 80 lines; only the grammar of this lesson
+   and of the earlier lessons; a dialogue first; each new phrase taught with a
+   prompt, a pause and the answer; a long word built up from its end; old and
+   new words asked again at growing intervals; the dialogue again at the end.
+
+The answer starts at its first `# ` line, so a code fence or a sentence before
+the script does no harm. After an answer that is not a valid script, the
+script asks once more and then stops with the answer in the message.
+
+### Flashcards from the scripts
+
+`lessons.py` reads a script as a lesson: the key is the number of the file,
+and the title is the first line. So a course of flashcards with the same
+lessons is:
+
+```bash
+uv run python -m scripts.lessons --language it --name "Italian" \
+    --course ../.data/decks/it-course ../.data/audio/it-course/*.txt
+```
+
 ## transcribe.py: what a model hears in a voice clip
 
 A quick check that a clip is speech: the mp3 of the voice service

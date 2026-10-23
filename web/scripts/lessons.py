@@ -420,11 +420,17 @@ def parse_answer(text: str) -> Answer:
     return Answer.model_validate_json(text[start : end + 1])
 
 
-def complete(backend: explain.Backend, system: str, prompt: str) -> str:
+def complete(
+    backend: explain.Backend,
+    system: str,
+    prompt: str,
+    max_tokens: int = MAX_TOKENS,
+    timeout: int = TIMEOUT,
+) -> str:
     for attempt in range(1, TRIES + 1):
         try:
             return backend.complete(
-                system, prompt, max_tokens=MAX_TOKENS, timeout=TIMEOUT
+                system, prompt, max_tokens=max_tokens, timeout=timeout
             )
         except explain.ExplainError as exc:
             if exc.code != "ai-busy" or attempt == TRIES:
