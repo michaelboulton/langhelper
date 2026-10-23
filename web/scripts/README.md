@@ -271,6 +271,9 @@ Other options:
   count of its tokens, and write nothing. With `--voice`, it voices nothing.
 - `--voice`: after the scripts, make the clips and the mp3 of each lesson of
   the course (see "Clips and the mp3" below).
+- `--narrator-voice NAME`, `--actor-1-voice NAME`, `--actor-2-voice NAME`:
+  the voice of that speaker, kept in `course.toml` (see "Clips and the mp3"
+  below).
 
 A script is written complete or not at all, so a run over many topics that
 dies loses at most the lesson it was on.
@@ -334,7 +337,18 @@ The voice of each speaker:
   writes a sample of it. Without that entry, both actors have the same voice,
   and the run says so.
 
-`[voices]` can name a voice for each of the three speakers.
+`[voices]` can name a voice for each of the three speakers. The options
+`--narrator-voice`, `--actor-1-voice` and `--actor-2-voice` set the voice of
+that speaker in `course.toml`, on any run, so later runs keep it. The names
+are the ones that `check_voices.py --voice` takes:
+
+```bash
+TLHELPER_VOICE_URL=http://localhost:8002 uv run python -m scripts.audio_lessons \
+    --course ../.data/audio/it-course --voice --actor-1-voice it --actor-2-voice it-2
+```
+
+A new voice changes the hash of each line of that speaker, so the next
+`--voice` run reads those lines again.
 
 The clips of lesson N are in the folder `NN/`. The name of a clip is
 `<lesson>.<line>-<hash>.mp3`, such as `1.05-3fa2c1.mp3`:

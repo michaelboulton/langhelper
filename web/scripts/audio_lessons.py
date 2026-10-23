@@ -17,10 +17,12 @@ model picks the next small step after the earlier lessons:
 
 With --voice, the voice service of TLHELPER_VOICE_URL reads each line of each
 lesson into a clip in NN/, and ffmpeg joins the clips into NN.mp3. A later run
-asks only for the new lines:
+asks only for the new lines. --narrator-voice, --actor-1-voice and
+--actor-2-voice name a voice of the service, as in scripts.check_voices, and
+keep it in course.toml:
 
     TLHELPER_VOICE_URL=http://localhost:8002 uv run python -m scripts.audio_lessons \\
-        --course ../.data/audio/it-course --voice
+        --course ../.data/audio/it-course --voice --actor-1-voice it --actor-2-voice it-2
 
 The AI service is the one of scripts.lessons: the TLHELPER_AI_* variables, or
 --backend claude. Run it from the folder of the project, as a module.
@@ -29,6 +31,7 @@ The AI service is the one of scripts.lessons: the TLHELPER_AI_* variables, or
 import argparse
 import hashlib
 import itertools
+import json
 import re
 import shutil
 import subprocess
@@ -458,6 +461,14 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         " TLHELPER_VOICE_URL, and join the clips of each lesson into NN.mp3"
         " with ffmpeg",
     )
+    for speaker in script.SPEAKERS:
+        parser.add_argument(
+            f"--{speaker.replace(' ', '-')}-voice",
+            dest=f"voice of {speaker}",
+            metavar="NAME",
+            help=f"the voice of the service for the {speaker}, such as it-2."
+            " It goes in [voices] of course.toml",
+        )
     args = parser.parse_args(argv)
     if args.grammar is not None and len(args.topic) != 1:
         parser.error("--grammar needs exactly one --topic")
@@ -466,32 +477,51 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     return args
 
 
+def render_course(course: script.Course) -> str:
+    text = make_toml.render(course.model_dump(exclude={"voices"}))
+    if course.voices:
+        # A JSON string is a TOML key too: "actor 2" = "it-2".
+        text += "[voices]\n" + make_toml.render(
+            {json.dumps(speaker): voice for speaker, voice in course.voices.items()}
+        )
+    return text
+
+
 def open_course(args: argparse.Namespace) -> script.Course:
+    """course.toml, made on the first run. A --<speaker>-voice option sets
+    the voice of that speaker in it."""
     path = args.course / script.COURSE_FILE
+    voices = {
+        speaker: voice
+        for speaker in script.SPEAKERS
+        if (voice := getattr(args, f"voice of {speaker}"))
+    }
     if path.exists():
-        course = script.read_course(args.course)
+        old = script.read_course(args.course)
         for option in ("language", "name"):
             given = getattr(args, option)
-            if given and given != getattr(course, option):
+            if given and given != getattr(old, option):
                 raise lessons.LessonError(
-                    f"{path} has {option} {getattr(course, option)!r}: --{option}"
+                    f"{path} has {option} {getattr(old, option)!r}: --{option}"
                     f" cannot change it"
                 )
-        return course
-    if not (args.language and args.name):
+        course = old.model_copy(update={"voices": old.voices | voices})
+        if course == old:
+            return course
+    elif not (args.language and args.name):
         raise lessons.LessonError(
             f"{path} is not there yet: the first run needs --language and --name"
         )
-    try:
-        course = script.Course(language=args.language, name=args.name)
-    except ValidationError as exc:
-        raise lessons.LessonError(str(exc)) from exc
+    else:
+        try:
+            course = script.Course(
+                language=args.language, name=args.name, voices=voices
+            )
+        except ValidationError as exc:
+            raise lessons.LessonError(str(exc)) from exc
     if not args.dry_run:
         args.course.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            make_toml.render(course.model_dump(exclude_defaults=True)),
-            encoding="utf-8",
-        )
+        path.write_text(render_course(course), encoding="utf-8")
     return course
 
 
