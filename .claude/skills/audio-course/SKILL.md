@@ -90,8 +90,16 @@ uv run python -m scripts.lessons --language <code> --name "<name>" \
 - The scripts are `01.txt`, `02.txt` and so on, so the glob `*.txt` gives
   them to `scripts.lessons` in the order of the course. Each audio lesson
   gets a flashcard subdeck with the same number and title.
+- The cards of a lesson use the verbs and nouns of its script and of the
+  earlier scripts. So the `scripts.lessons` command comes after every
+  `--topic` command, and it gets all the scripts.
 - Leave out the `scripts.lessons` command, and the `mkdir` before it, when
   the user wants no flashcards.
+- When the course has its scripts already and the user wants only the
+  flashcards, the plan has no `scripts.audio_lessons` command and no
+  `TLHELPER_VOICE_URL` check, unless the user wants clips of the answers. Keep
+  the `mkdir` and the `scripts.lessons` command. Leave out `--voice` when
+  the voice service is not wanted.
 - When the user has no `TLHELPER_AI_*` variables and uses Claude Code, add
   `--backend claude` to each `scripts.audio_lessons --topic` command and to
   the `scripts.lessons` command.
@@ -105,3 +113,8 @@ Do not run `plan.sh`. Tell the user where it is, and tell them to read it, to
 edit it if needed, and then to run `bash .data/audio/<course>/plan.sh`. Say
 that it needs the voice service (`docker compose up voice` at the repository
 root) and ffmpeg.
+
+When the plan makes flashcards, also tell the user that the run prints
+`verbs and nouns in no lesson: ...` for a card that uses a word of no script,
+and that `--redo NN` on the `scripts.lessons` command writes the cards of
+lesson NN again.
