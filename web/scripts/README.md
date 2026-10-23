@@ -181,19 +181,19 @@ markdown is not cached: `--redo` fetches the page again.
 
 ## audio_lessons.py: scripts of spoken lessons
 
-A language model writes the script of a spoken lesson for each topic. In a
-lesson, two actors have a short dialogue in the study language. Then a
-narrator teaches its words in English: the narrator asks for a phrase, a pause
-gives the learner time to say it aloud, and an actor says the answer. The
-script keeps a memory of the earlier lessons, so each lesson can be a little
+A language model writes the script of a spoken lesson of about 30 minutes for
+each topic. In a lesson, two actors have a short dialogue in the study
+language. Then a narrator teaches its words in English: the narrator asks for
+a phrase, a pause gives the learner time to say it aloud, and an actor says
+the answer. The script keeps a memory of the earlier lessons, so each lesson can be a little
 harder than the one before it, and it brings back their words. With
 `--voice`, the voice service reads each line, and ffmpeg joins the lines of a
 lesson into one mp3.
 
 The AI service is the one of `lessons.py` (see "Set-up" above), with
 `--backend claude` too. The script needs no extra dependency group. A lesson
-costs about 1 to 3 thousand input tokens (a later lesson has more memory) and
-about 1 thousand output tokens. `--voice` also needs ffmpeg on the machine
+costs about 2 to 4 thousand input tokens (a later lesson has more memory) and
+about 8 thousand output tokens. `--voice` also needs ffmpeg on the machine
 that runs the script (see "Clips and the mp3" below).
 
 ### The course folder
@@ -284,10 +284,23 @@ has:
 2. the lemmas of the actor lines of those lessons, as in the prompt of
    `lessons.py` (see "The prompt" above);
 3. the number, the topic and the grammar step of the lesson;
-4. the format, and the rules: about 80 lines; only the grammar of this lesson
-   and of the earlier lessons; a dialogue first; each new phrase taught with a
-   prompt, a pause and the answer; a long word built up from its end; old and
-   new words asked again at growing intervals; the dialogue again at the end.
+4. the format, and the rules: about 30 minutes, which is about 600-650 lines at
+   the 22 lines a minute of a voiced lesson; only the grammar of this lesson
+   and of the earlier lessons; about 10 to 15 new words, used again and again
+   in new sentences; a short pause after an answer, for the learner to repeat
+   it; requests put in the situation of the dialogue ("Ask her whether ...")
+   more often than "Say ..."; a long word built up from its end; old and new
+   words asked again at growing intervals; for a new word with a sound that an
+   English speaker hears as another, such as č and ć in Croatian, a reminder
+   to listen to it and to say it as a native speaker does;
+5. the parts of the lesson, in order: a dialogue; each new phrase taught with
+   a prompt, a pause and the answer, then new sentences of old and new words;
+   the learner's lines of the dialogue; the dialogue again.
+
+The run prints the
+number of lines of each lesson and its length in minutes at 22 lines a minute.
+Models often write less than the prompt asks: `--redo N` writes a short lesson
+again.
 
 The answer starts at its first `# ` line, so a code fence or a sentence before
 the script does no harm. After an answer that is not a valid script, the

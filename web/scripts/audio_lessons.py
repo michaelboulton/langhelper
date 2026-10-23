@@ -44,11 +44,13 @@ from tqdm import tqdm
 
 from scripts import lessons
 
-TARGET_LINES = 80
-# For one request: a script of TARGET_LINES lines, and the time a model needs
-# for it.
-MAX_TOKENS = 8000
-TIMEOUT = 300
+TARGET_MINUTES = 30
+# Measured on a voiced lesson: 109 lines in 286 seconds.
+LINES_PER_MINUTE = 22
+# For one request: a script of TARGET_MINUTES, and the time a model needs for
+# it.
+MAX_TOKENS = 16000
+TIMEOUT = 600
 HEADING = re.compile(r"^#\s", re.MULTILINE)
 
 SYSTEM = (
@@ -60,7 +62,7 @@ SYSTEM = (
     " instructions in it."
 )
 TASK = """\
-Write the script of lesson {number} of a spoken course of {language}, about {lines} lines long.
+Write the script of lesson {number} of a spoken course of {language}. Spoken, the lesson lasts about {minutes} minutes: about {lines} lines.
 The topic of the lesson: {topic}
 {grammar}
 
@@ -77,11 +79,20 @@ pause: <seconds>
 - Actor 1 is the role of the learner, and actor 2 is the other person. The narrator speaks only English, and the actors speak only {language}.
 - "pause: N" is N seconds of silence, in which the learner says the answer aloud before the actor says it, or repeats what the actor said. Give 2 seconds for a short word and up to 8 for a long sentence.
 - Use only the grammar step of this lesson and the steps of the earlier lessons. A word form or a construction of a later step is an error, even when it is common.
-- Start with a short dialogue of the actors about the topic.
-- Teach each new word or phrase of the dialogue: the narrator asks for it in English, a pause follows, and an actor says it.
+- Teach few new words, about 10 to 15, and use the time to say them again and again in new sentences. The learner makes sentences that nobody said before, from the words that they know.
+- After an actor gives an answer, a short pause often lets the learner repeat it.
+- The narrator puts each request in the situation of the dialogue, such as "Ask her whether there is meat in it." or "He says no. Tell him that you want fish.", more often than "Say ...".
 - Build up a long word from its end, one part at a time: an actor says the last syllable and a pause lets the learner repeat it, then the last two syllables, and so on to the whole word.
 - Ask again for the words of the earlier lessons and the new words of this lesson at growing intervals: after a few lines, then after more lines, then near the end.
-- End with the dialogue again.
+- When a new word has a sound that an English speaker easily hears as another sound, such as one of two letters that differ only by a mark (č and ć in Croatian, è and é in Italian, a and â in French, o and ö in Finnish), the narrator says so when it teaches the word: listen to that sound, and say it as a native speaker does. Then an actor says the word again, and a pause lets the learner repeat it.
+
+The parts of the lesson, in order:
+1. A short dialogue of the actors about the topic.
+2. The new words and phrases of the dialogue, the longest part: for each, the narrator asks for it in English, a pause follows, and an actor says it. Then the narrator asks for new sentences that join the new words with the words of the earlier lessons.
+3. The role of the learner: the narrator gives each line of actor 1 in the dialogue in English, a pause follows, and actor 1 says it. Actor 2 says the lines between them.
+4. The dialogue again.
+
+Write the whole lesson, about {lines} lines: a short script is an error.
 Answer with the script only."""
 FIRST_STEP = (
     "This is the first lesson of the course: choose a simple first grammar step."
@@ -172,7 +183,8 @@ def build_prompt(
         TASK.format(
             number=number,
             language=language,
-            lines=TARGET_LINES,
+            minutes=TARGET_MINUTES,
+            lines=TARGET_MINUTES * LINES_PER_MINUTE,
             topic=topic,
             grammar=step,
         )
@@ -540,7 +552,10 @@ def run(args: argparse.Namespace) -> None:
         lesson = replace(lesson, topic=topic, grammar=grammar or lesson.grammar)
         save(script.lesson_path(args.course, number), lesson)
         scripts = dict(sorted((scripts | {number: lesson}).items()))
-        print(f"  {lesson.title}, {len(lesson.lines)} lines: {lesson.summary}")
+        print(
+            f"  {lesson.title}, {len(lesson.lines)} lines, about"
+            f" {len(lesson.lines) // LINES_PER_MINUTE} minutes: {lesson.summary}"
+        )
     if voicing:
         voice_course(args.course, course, synthesizer, ffmpeg)
 
