@@ -17,10 +17,13 @@
      tlhelper/languages/*/ui.ftl. -->
 <!-- flashcards.js shows one .tab at a time. The address keeps the choice: #cards. -->
 <nav id="tabs">
-  <button type="button" data-tab="breakdown" data-l10n-id="tab-breakdown">Breakdown</button>
-  <button type="button" data-tab="cards" data-l10n-id="tab-cards">Flashcards</button>
-  <button type="button" data-tab="progress" data-l10n-id="tab-progress">Progress</button>
-  <button type="button" data-tab="audio" data-l10n-id="tab-audio">Audio lessons</button>
+  <!-- Scrolls sideways on a narrow screen. -->
+  <div class="tab-buttons">
+    <button type="button" data-tab="breakdown" data-l10n-id="tab-breakdown">Breakdown</button>
+    <button type="button" data-tab="cards" data-l10n-id="tab-cards">Flashcards</button>
+    <button type="button" data-tab="progress" data-l10n-id="tab-progress">Progress</button>
+    <button type="button" data-tab="audio" data-l10n-id="tab-audio">Audio lessons</button>
+  </div>
   <!-- The options come from /api/v1/locales. -->
   <label class="locale" hidden><span data-l10n-id="locale-label">Language of the page</span>
     <select id="locale"></select></label>
