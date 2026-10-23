@@ -7,10 +7,10 @@ import os
 import re
 import shutil
 import subprocess
+import tomllib
 
 import click
 import pytest
-import tomllib
 from scripts import audio_lessons, lessons
 from tlhelper import speech
 from tlhelper.audio_lessons import script
@@ -478,7 +478,7 @@ def test_the_names_sort_by_line():
 
 
 def probe(path):
-    output = subprocess.run(  # noqa: S603
+    output = subprocess.run(  # noqa: S603  # ty: ignore[no-matching-overload]
         [
             shutil.which("ffprobe"),
             "-v",

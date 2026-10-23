@@ -453,7 +453,7 @@ def change_rating(user: str, review_id: int, rating: int) -> str:
         when = datetime.fromtimestamp(review["reviewed_at"], UTC)
         card = schedule(conn, user, review["card_id"], before, rating, when)
         conn.execute("UPDATE review SET rating = ? WHERE id = ?", (rating, review_id))
-        return iso(card.due.timestamp())
+        return card.due.astimezone(UTC).isoformat(timespec="seconds")
 
 
 def get_review(user: str, review_id: int) -> dict:

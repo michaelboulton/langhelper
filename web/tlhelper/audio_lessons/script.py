@@ -8,10 +8,10 @@ audio/<course>/
 """
 
 import re
+import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import tomllib
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 
 from ..languages import LANGUAGES

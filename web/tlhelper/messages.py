@@ -50,7 +50,6 @@ class CodedHTTPException(HTTPException):
 
 def coded_http(status_code: int, error: Exception) -> HTTPException:
     """The HTTP error for an exception: with the code of a CodedError."""
-    code = getattr(error, "code", "")
-    if not code:
+    if not isinstance(error, CodedError) or not error.code:
         return HTTPException(status_code=status_code, detail=str(error))
-    return CodedHTTPException(status_code, code, str(error), **error.params)
+    return CodedHTTPException(status_code, error.code, str(error), **error.params)

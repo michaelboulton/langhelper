@@ -43,8 +43,10 @@ Run it from the folder of the project, as a module.
 import hashlib
 import re
 import time
+from collections.abc import Sequence
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Protocol
 from urllib.parse import urlparse
 
 import click
@@ -325,7 +327,14 @@ def lemmas_of(text: str, language: str) -> dict[str, list[str]]:
     return {upos: sorted(found[upos]) for upos in LEMMA_UPOS if upos in found}
 
 
-def new_lemmas(earlier: list[Lesson], lemmas: dict[str, list[str]]) -> dict:
+class HasLemmas(Protocol):
+    """A Lesson, or an Earlier of scripts.audio_lessons."""
+
+    @property
+    def lemmas(self) -> dict[str, list[str]]: ...
+
+
+def new_lemmas(earlier: Sequence[HasLemmas], lemmas: dict[str, list[str]]) -> dict:
     seen = {
         (upos, lemma)
         for lesson in earlier
@@ -339,7 +348,7 @@ def new_lemmas(earlier: list[Lesson], lemmas: dict[str, list[str]]) -> dict:
     return {upos: lemmas_ for upos, lemmas_ in kept.items() if lemmas_}
 
 
-def memory_lemmas(earlier: list[Lesson]) -> dict[str, list[str]]:
+def memory_lemmas(earlier: Sequence[HasLemmas]) -> dict[str, list[str]]:
     """{UPOS: sorted lemmas} for the prompt: all the lemmas of the last
     RECENT_LESSONS lessons, and up to MAX_MEMORY_LEMMAS in all. The rest of
     the room goes to an even sample of the older lessons, verbs first, since

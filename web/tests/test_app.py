@@ -74,7 +74,7 @@ def client(tmp_path, monkeypatch):
     )
     # No `with`: the lifespan (and so the model warm-up) does not run.
     client = TestClient(service.app)
-    client.requested = requested
+    client.requested = requested  # ty: ignore[unresolved-attribute]
     return client
 
 
