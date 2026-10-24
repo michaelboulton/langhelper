@@ -28,6 +28,18 @@ from tlhelper.flashcards import decks, store
 # flutter build web --wasm --no-web-resources-cdn --base-href /static/
 APP_BUILD = service.STATIC_DIR
 
+# A click on the placeholder of Flutter turns on the semantics tree, as for a
+# screen reader. The app leaves it off (README.md, "The browser tests").
+SEMANTICS_ON = """
+new MutationObserver((_, observer) => {
+  const placeholder = document.querySelector("flt-semantics-placeholder");
+  if (placeholder) {
+    observer.disconnect();
+    placeholder.click();
+  }
+}).observe(document, { childList: true, subtree: true });
+"""
+
 
 def pytest_addoption(parser):
     parser.addoption(
@@ -197,6 +209,7 @@ def new_context(
         lambda url: not url.startswith(f"{server}/"), lambda route: route.abort()
     )
     context.route("**/static/flutter_bootstrap.js", _single_threaded)
+    context.add_init_script(SEMANTICS_ON)
     return context
 
 

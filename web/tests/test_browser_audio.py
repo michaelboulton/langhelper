@@ -60,13 +60,23 @@ def test_the_courses_and_a_lesson(new_page, note, screenshot, width):
         page.get_by_role("button", name="Is there meat in this dish?").click()
     assert page.url.endswith("/#/audio/it-course/1")
     page.get_by_role("heading", name="Is there meat in this dish?").wait_for()
-    # The lines of the script in order, each with its speaker.
+    # The lines of the script in order, each with its speaker. The script is
+    # HTML, so the browser finds a text in it, as with Ctrl+F.
     lines = [r"Narrator:\s+How do you say", r"\(pause, 3 s\)", r"You:\s+c'è", "Other"]
-    tops = [note(page, re.compile("^" + each)) for each in lines]
+    script = page.locator(".lesson-script p")
+    tops = [script.filter(has_text=re.compile("^" + each)) for each in lines]
     for each in tops:
         each.wait_for()
     boxes = [each.bounding_box()["y"] for each in tops]
     assert boxes == sorted(boxes)
+    assert page.evaluate("text => window.find(text)", "non c'è carne")
+    expect(script.last.locator("span")).to_have_attribute("lang", "it")
+    # Space plays, also after a click in the script.
+    tops[0].click()
+    page.keyboard.press("Space")
+    player_button(page, "Pause").wait_for()
+    page.keyboard.press("Space")
+    player_button(page, "Play").wait_for()
     # Each button of the player has its name, also while its tooltip shows.
     for name in ("Back 10 s", "Play", "Forward 10 s"):
         player_button(page, name).hover()
@@ -94,6 +104,21 @@ def test_a_lesson_with_an_old_sound(new_page, audio_root, note):
     page.get_by_role("button", name="Is there milk in this dish?").click()
     note(page, re.compile("^The script changed after the sound was made")).wait_for()
     expect(player_button(page, "Play")).to_be_visible()
+
+
+def test_the_browser_scrolls_a_long_script(new_page, audio_root):
+    long = LESSON.replace("meat", "rice") + "actor 1: c'è\n" * 200
+    (audio_root / "03.txt").write_text(long, encoding="utf-8")
+    page = open_tab(new_page, 1280)
+    page.get_by_role("button", name="Is there rice in this dish?").click()
+    script = page.locator(".lesson-script")
+    script.locator("p").first.hover()
+    page.mouse.wheel(0, 1000)
+    # The wheel scrolls the HTML of the script, not Flutter.
+    page.wait_for_function(
+        "() => document.querySelector('.lesson-script').scrollTop > 0"
+    )
+    assert script.evaluate("element => element.scrollHeight > element.clientHeight")
 
 
 def is_save(request):

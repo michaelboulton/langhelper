@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -21,27 +23,45 @@ class AudioTitle extends StatelessWidget {
   }
 }
 
+/// The side margin of the tab in a window [width] wide: a column of at most
+/// 860 px in the middle, with margins of 16 px. index.html has the same
+/// column for the script of a lesson in a browser.
+double pageSide(double width) => max(0.0, (width - 860) / 2) + 16;
+
 /// The width and the margins of the tab, as on the other tabs.
 class AudioPage extends StatelessWidget {
-  const AudioPage({super.key, required this.children});
+  const AudioPage({super.key, required this.children, this.sliver});
 
   final List<Widget> children;
 
+  /// After the [children]. A long list goes here, so that only the part on
+  /// the screen is built.
+  final Widget? sliver;
+
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 860),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 64),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: children,
+    return LayoutBuilder(
+      builder: (context, box) {
+        final side = pageSide(box.maxWidth);
+        return CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(side, 16, side, 64),
+              sliver: SliverMainAxisGroup(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: children,
+                    ),
+                  ),
+                  ?sliver,
+                ],
+              ),
             ),
-          ),
-        ),
-      ),
+          ],
+        );
+      },
     );
   }
 }

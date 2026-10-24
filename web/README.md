@@ -1402,8 +1402,11 @@ page. The `tests` job of CI runs them all against the build of the `dart`
 job.
 
 Flutter draws on a canvas, so the tests cannot use CSS selectors or
-`get_by_text` on the page. `main.dart` turns on the semantics tree, and
-Flutter mirrors it into `flt-semantics` nodes with roles and labels. The tests
+`get_by_text` on the page. The browser context of the tests clicks the
+`flt-semantics-placeholder` of Flutter. This click turns on the semantics
+tree, as for a screen reader, and Flutter mirrors the tree into
+`flt-semantics` nodes with roles and labels. The app does not turn on the
+tree itself: an update of the tree on each frame makes a scroll slow. The tests
 find the widgets with `get_by_role` and `get_by_label`, as a screen reader
 does. The `note` fixture finds a text of the tree: a node of its own, or a
 part of the label of a group. A key widget has a label of its own: a chip is
@@ -1758,7 +1761,8 @@ a lesson is `/#/audio/<course>/<lesson>`, so a lesson has a link of its own.
 | ---- | ----------- |
 | `state.dart` | The list of courses with the progress of the user, the saves of a position, and the script of a lesson, with `flutter_riverpod`. |
 | `courses.dart` | The title, the intro, and the courses with their lessons in order, the progress of each lesson and the Continue button. |
-| `lesson_view.dart` | The title and the grammar step of a lesson, the note of its audio state, the player and the script. |
+| `lesson_view.dart` | The title and the grammar step of a lesson, the note of its audio state, the player and the lines of the script. |
+| `script.dart`, `script_web.dart` | The page of a lesson: the header, then the script. `script.dart` is the version for a native app and for `flutter test`: a lazy list of Flutter widgets. `script_web.dart` is the version for a browser: HTML, with the style `.lesson-script` of `app/web/index.html`. |
 | `lesson_player.dart` | The buttons and the seek bar of the player, the start at the saved position, and the saves. |
 
 - The app reads the list of courses one time. An error shows at once, with
@@ -1777,6 +1781,12 @@ a lesson is `/#/audio/<course>/<lesson>`, so a lesson has a link of its own.
 - The script has the name of each speaker and a line for each pause. The
   lines of the narrator have the locale of English, and the lines of the
   actors have the locale and the direction of the study language.
+- In a browser, the script is HTML under the header, in an
+  `HtmlElementView`. Flutter draws on a canvas, and the browser cannot
+  scroll, select or find (Ctrl+F) a text on a canvas. The header stays above
+  the script. The HTML changes only when the lines change, so a save of the
+  position keeps the selection. The browser tests find the lines with the CSS
+  selector `.lesson-script p`.
 - The player stops when the user goes back to the list or opens another
   lesson. It keeps playing when the user opens another tab.
 

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -17,9 +16,6 @@ import 'providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // The browser tests find the widgets through the semantics tree
-  // (web/README.md, "The browser tests").
-  SemanticsBinding.instance.ensureSemantics();
   final api = Api();
   final i18n = await startI18n(api);
   runApp(

@@ -14,6 +14,27 @@
 <style>
   body { margin: 0; background: #fafaf7; }
   @media (prefers-color-scheme: dark) { body { background: #161615; } }
+
+  /* The script of an audio lesson is HTML (lib/audio_lessons/script_web.dart),
+     in the fonts of the app. The paths are those of the assets in the build. */
+  @font-face { font-family: NotoSans; src: url(assets/assets/fonts/NotoSans-Regular.ttf); }
+  @font-face { font-family: NotoSans; font-style: italic; src: url(assets/assets/fonts/NotoSans-Italic.ttf); }
+  @font-face { font-family: NotoSans; font-weight: 700; src: url(assets/assets/fonts/NotoSans-Bold.ttf); }
+  @font-face { font-family: NotoSans; font-weight: 700; font-style: italic; src: url(assets/assets/fonts/NotoSans-BoldItalic.ttf); }
+  @font-face { font-family: NotoSansArabic; src: url(assets/assets/fonts/NotoSansArabic-Regular.ttf); }
+  @font-face { font-family: NotoSansArabic; font-weight: 700; src: url(assets/assets/fonts/NotoSansArabic-Bold.ttf); }
+  @font-face { font-family: NotoSansHebrew; src: url(assets/assets/fonts/NotoSansHebrew-Regular.ttf); }
+  @font-face { font-family: NotoSansHebrew; font-weight: 700; src: url(assets/assets/fonts/NotoSansHebrew-Bold.ttf); }
+  /* The colours come from the theme of the app, as --text and --muted. */
+  .lesson-script {
+    box-sizing: border-box; width: 100%; height: 100%; overflow-y: auto;
+    color: var(--text); font: 14px/1.43 NotoSans, NotoSansArabic, NotoSansHebrew, sans-serif;
+    letter-spacing: 0.25px;
+  }
+  /* The same column as pageSide() in lib/audio_lessons/courses.dart. */
+  .lesson-script > div { max-width: 828px; margin: 0 auto; padding: 0 16px 64px; }
+  .lesson-script p { display: flex; gap: 6px; align-items: baseline; margin: 0; padding: 4px 0; }
+  .lesson-script .pause { color: var(--muted); font-style: italic; }
 </style>
 </head>
 <body>

@@ -120,6 +120,10 @@ The app migrates rows from older table names at startup and leaves the old table
 
 The UI text is in a Fluent file `ui.ftl` in each language folder. `english/ui.ftl` is the complete catalog. `app/assets/i18n/ui.ftl` is a copy of the English catalog for the app, and `app/test/i18n/catalogs_test.dart` checks that it is equal. The app formats only the value of a message, so the catalogs must not use Fluent attributes. `tests/test_locales.py` checks this.
 
+### A slow page
+
+Find the cause in a profile, not in the code. Record a Performance trace in Chrome DevTools, in a window with no extensions: a password manager scans the whole DOM after each change. Query the trace with SQL in Perfetto's `trace_processor_shell`. The release build strips the names of the wasm functions, so a profile shows only `wasm-function[N]`. Always build with names and a source map, into a folder of your own: `flutter build web --wasm --no-web-resources-cdn --base-href /static/ --source-maps --no-strip-wasm -o <dir>`. Serve that folder with `STATIC_DIR=<dir>` and record again, and DevTools shows the Dart names. The code of the wasm is the same as in the stripped build, so `main.dart.wasm.map` also resolves an old profile: the `columnNumber` of a wasm frame is its byte offset. Look for `UpdateLayoutTree` and `Layout` events with a JS stack. They are layouts that a read such as `scrollTop` forces. The app leaves the semantics tree off, because an update of the tree on each frame makes a scroll slow (`web/README.md`, "The browser tests").
+
 ## tts architecture
 
 `native.py` mirrors the structs of `omnivoice.h` at the commit that `tts/Dockerfile` pins (`OMNIVOICE_CPP_COMMIT`). When you change that commit, compare the structs and update `ABI_VERSION`. The reference clips in `omnivoice_server/voices/` are not in git. Without clips, each language gets the voice of `OMNIVOICE_INSTRUCT`. `languages.py` is generated and is not for manual edits.
