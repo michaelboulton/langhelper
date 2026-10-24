@@ -42,9 +42,7 @@ def audio_root(tmp_path, monkeypatch):
     )
     (course / "01.txt").write_text(LESSON, encoding="utf-8")
     (course / "01.mp3").write_bytes(SILENT_MP3)
-    (course / "02.txt").write_text(
-        LESSON.replace("meat", "fish"), encoding="utf-8"
-    )
+    (course / "02.txt").write_text(LESSON.replace("meat", "fish"), encoding="utf-8")
     monkeypatch.setattr(routes, "AUDIO_ROOT", tmp_path / "audio")
 
 
