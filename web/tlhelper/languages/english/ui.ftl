@@ -3,6 +3,8 @@
 #
 # The format is Fluent (https://projectfluent.org/fluent/guide/). The page
 # gets this file from /api/v1/locales/en/ui.ftl (static/js/i18n.js).
+# app/assets/i18n/ui.ftl is a copy for the Flutter app: copy this file there
+# after each change (README.md, "The text of the app").
 # Rules for this file: no attributes and no functions, because the page has a
 # small formatter of its own for when the Fluent script does not load.
 #
