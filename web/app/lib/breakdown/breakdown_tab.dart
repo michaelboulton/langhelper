@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../api/client.dart';
 import '../i18n/i18n.dart';
+import '../listen/listen_panel.dart';
 import 'form.dart';
 import 'result.dart';
 import 'state.dart';
@@ -16,9 +16,6 @@ String modelName(I18n i18n, Languages? languages, String code, String variant) {
     'variant': variant,
   });
 }
-
-String errorText(I18n i18n, Object error) =>
-    error is ApiException ? error.message(i18n.message) : '$error';
 
 /// The title of the tab, with the name of the study language. It is also
 /// the title of the browser tab.
@@ -91,6 +88,7 @@ class BreakdownTab extends ConsumerWidget {
                     children: [BreakdownResult(), WordDetail()],
                   ),
                 ),
+                const BreakdownListen(),
                 const SizedBox(height: 16),
                 const UposLegend(),
                 if (info?.hasAccents ?? false) const AccentsLegend(),
@@ -99,6 +97,31 @@ class BreakdownTab extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The Listen panel of the breakdown: the text that the user entered, and
+/// its translation.
+class BreakdownListen extends ConsumerWidget {
+  const BreakdownListen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final data = ref.watch(breakdownProvider.select((state) => state.result));
+    final languages = ref.watch(
+      breakdownProvider.select((state) => state.languages),
+    );
+    if (data == null || languages == null) return const SizedBox.shrink();
+    final translation = data.translation;
+    // data.text is always the study language, and translation.text English.
+    return ListenPanel(
+      targets: [
+        if (languages.study[data.language] case final study?)
+          (text: data.text, info: study),
+        if (translation != null && translation.error.isEmpty)
+          (text: translation.text, info: languages.english),
+      ],
     );
   }
 }
@@ -180,9 +203,9 @@ class StatusLine extends ConsumerWidget {
         i18n.t('status-timeout', {'seconds': seconds}),
         true,
       ),
-      Failed(error: final failure) => (errorText(i18n, failure), true),
+      Failed(error: final failure) => (i18n.errorText(failure), true),
       NoLanguages(error: final failure) => (
-        '${i18n.t('error-no-languages')} ${errorText(i18n, failure)}',
+        '${i18n.t('error-no-languages')} ${i18n.errorText(failure)}',
         true,
       ),
     };

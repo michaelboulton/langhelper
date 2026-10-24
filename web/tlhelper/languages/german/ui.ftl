@@ -285,6 +285,8 @@ listen-label = Anhören:
 listen-working = Der Sprachdienst liest den Text vor.
 listen-timeout = Kein Ton nach { $seconds } s. Versuchen Sie es noch einmal.
 listen-made-by = { $model } hat das vorgelesen.
+listen-play = Abspielen
+listen-pause = Pause
 
 ## The progress tab
 

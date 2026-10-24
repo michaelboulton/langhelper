@@ -287,6 +287,8 @@ listen-label = Poslušaj:
 listen-working = Usluga za glas čita tekst.
 listen-timeout = Nema zvuka nakon { $seconds } s. Pokušajte ponovno.
 listen-made-by = Ovo je pročitao model { $model }.
+listen-play = Reproduciraj
+listen-pause = Pauziraj
 
 ## The progress tab
 

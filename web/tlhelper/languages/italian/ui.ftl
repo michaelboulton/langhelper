@@ -285,6 +285,8 @@ listen-label = Ascolta:
 listen-working = Il servizio vocale legge il testo.
 listen-timeout = Nessun audio dopo { $seconds } s. Riprova.
 listen-made-by = { $model } ha letto questo.
+listen-play = Riproduci
+listen-pause = Pausa
 
 ## The progress tab
 

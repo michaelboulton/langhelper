@@ -328,6 +328,8 @@ listen-working = The voice service reads the text.
 listen-timeout = No sound after { $seconds } s. Try again.
 # $model: the name of the voice model.
 listen-made-by = { $model } read this.
+listen-play = Play
+listen-pause = Pause
 
 ## The progress tab
 
