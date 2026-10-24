@@ -151,6 +151,8 @@ test skips.
 
 ### 3. API client and models
 
+Done (#28). README, "The API client and the models", has the commands.
+
 Port the response shapes from `tlhelper/schemas.py` (`Word` at 42-98,
 `LanguageInfo` at 142-166, the audio lesson models at 396-433) and the request
 bodies from `app.py:327-352` (`ClassifyRequest`), `flashcards/routes.py`,

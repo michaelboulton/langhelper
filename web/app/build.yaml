@@ -1,0 +1,9 @@
+targets:
+  $default:
+    builders:
+      json_serializable:
+        options:
+          field_rename: snake
+          explicit_to_json: true
+          # The field maps are for test/api/openapi_test.dart.
+          create_field_map: true
