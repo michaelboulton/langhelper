@@ -17,17 +17,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
-import pytest  # noqa: E402
-from conftest import (  # noqa: E402
+import pytest
+from conftest import (
     APP_BUILD,
     _type_into,
     new_context,
     serve_app,
     start_server,
 )
-from playwright.sync_api import sync_playwright  # noqa: E402
-from tlhelper import app as service  # noqa: E402
-from tlhelper.flashcards import decks, store  # noqa: E402
+from playwright.sync_api import sync_playwright
+from tlhelper import app as service
+from tlhelper.flashcards import decks, store
 
 
 def breakdown(page, text, translate):
