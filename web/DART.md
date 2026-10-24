@@ -1,7 +1,7 @@
 # Moving the page to Flutter
 
 A plan for replacing `static/` with a Flutter web app in `app/`, as the first
-step towards an Android/iOS app. Nothing here is built yet.
+step towards an Android/iOS app. Step 1 is done: `app/` is a blank app.
 
 ## Why Flutter, and what it changes
 
@@ -113,31 +113,36 @@ or Dart team.
 
 ### 1. Scaffold and serve an empty app
 
+Done (#26). README, "The Flutter app", has the commands.
+
 - `flutter create app --platforms web --project-name langhelper_app` inside
-  `web/`. Move `manifest.json` and the icons from `static/` to `app/web/`.
+  `web/`. Copy `manifest.json` and the icons from `static/` to `app/web/`.
   Write `app/web/index.html` with the theme colour, the viewport and the
   manifest link.
-- Add Noto Sans to `assets/fonts/` and make it the theme font.
-- `app.py`: default `STATIC_DIR` to `app/build/web`. Add a middleware that
-  sets `Cross-Origin-Opener-Policy: same-origin` and
+- Add Noto Sans, Noto Sans Arabic and Noto Sans Hebrew to `assets/fonts/`.
+  Noto Sans is the theme font, and the other two are its fallbacks.
+- `app.py`: a middleware sets `Cross-Origin-Opener-Policy: same-origin` and
   `Cross-Origin-Embedder-Policy: credentialless` on HTML responses.
   Multithreaded skwasm needs them; without them Flutter runs single-threaded.
-- Dockerfile: the build context is the repository root. A stage
-  `FROM ghcr.io/cirruslabs/flutter:3.47.5 AS web` copies `web/app/` to
-  `/src/app` and runs
+  The default `STATIC_DIR` stays `static/` until step 13.
+- Dockerfile: the build context is the repository root. A stage `app` from
+  `debian:trixie-slim` downloads the Flutter archive of `FLUTTER_VERSION`,
+  checks its SHA-256, copies `web/app/` to `/src/app` and runs
   `flutter build web --wasm --no-web-resources-cdn --base-href /static/`.
-  The python stage then has `COPY --from=web /src/app/build/web /app/static`
-  in place of `COPY web/static/ /app/static/`. `STATIC_DIR=/app/static` is
-  already set. The tag must equal the local `flutter --version`.
+  `ghcr.io/cirruslabs/flutter` has no tag after 3.44.0. The python stage
+  copies the build to `/app/flutter`, next to `static/` in `/app/static`.
+  `STATIC_DIR` chooses, and the image sets `/app/static`. The version must
+  equal the local `flutter --version`.
 - The root `.dockerignore` lets `web/app` in, but not `web/app/build`,
   `web/app/.dart_tool` or `web/app/test/goldens`.
-- Build, run uvicorn, and confirm the blank app loads at `/` with no request
-  outside the origin (Playwright `page.on("request")` in a smoke test).
+- `tests/test_browser_app.py`: with `STATIC_DIR` at the build, the blank app
+  loads at `/`, the page is cross-origin isolated, and there is no request
+  outside the origin (Playwright `page.on("request")`).
 
 ### 2. CI
 
 `.github/workflows/tests.yml` gets a job with `subosito/flutter-action`, at
-the version of the Dockerfile stage. It runs `flutter analyze`, `flutter test`
+`FLUTTER_VERSION` of the Dockerfile. It runs `flutter analyze`, `flutter test`
 and the web build, and uploads `app/build/web`. The `tests` job downloads the
 build, installs the Playwright Chromium, and runs the web tests with
 `STATIC_DIR` at the build, so the browser tests run and do not skip. prek gets
@@ -283,7 +288,9 @@ end, and when the user leaves the lesson.
 
 ### 13. Remove `static/`, update README
 
-Delete `static/` and its lines in the root `.dockerignore`. In the README,
+Delete `static/` and its lines in the root `.dockerignore`. The Dockerfile
+copies the Flutter build to `/app/static` in place of `/app/flutter`, and the
+default `STATIC_DIR` of `app.py` becomes `app/build/web`. In the README,
 update the `static/` rows of "Files", "Install on Android" (Chrome now
 installs from `app/web/manifest.json`, same address) and "Running locally"
 for the new commands. Note the tab address change. `AGENTS.md` and the root

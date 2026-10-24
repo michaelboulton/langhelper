@@ -59,7 +59,7 @@ from .translators import TranslationError
 
 DB_PATH = DATA_ROOT / "lemmas.db"
 # The page, its script and its style sheet. STATIC_DIR is for a layout where
-# static/ is not next to the package.
+# static/ is not next to the package, or for the Flutter build (app/build/web).
 STATIC_DIR = Path(os.environ.get("STATIC_DIR", Path(__file__).parent.parent / "static"))
 INDEX_HTML = STATIC_DIR / "index.html"
 
@@ -251,6 +251,17 @@ class RevalidatedFiles(StaticFiles):
 
 # static/js and static/css. The login gate below covers these files too.
 app.mount("/static", RevalidatedFiles(directory=STATIC_DIR), name="static")
+
+
+# A page with these headers is cross-origin isolated, and the Flutter build
+# then runs multithreaded (README.md, "The Flutter app").
+@app.middleware("http")
+async def cross_origin_isolation(request: Request, call_next):
+    response = await call_next(request)
+    if response.headers.get("content-type", "").startswith("text/html"):
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        response.headers["Cross-Origin-Embedder-Policy"] = "credentialless"
+    return response
 
 
 # On a fly.dev hostname, every route but /healthz and /auth/* needs a session

@@ -11,6 +11,14 @@
 !web/tlhelper/**
 !web/static
 !web/static/**
+!web/app
+!web/app/**
+web/app/build
+web/app/build/**
+web/app/.dart_tool
+web/app/.dart_tool/**
+web/app/test/goldens
+web/app/test/goldens/**
 !web/decks
 !web/decks/**
 !tts/pyproject.toml
