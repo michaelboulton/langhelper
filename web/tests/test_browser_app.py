@@ -25,9 +25,7 @@ def test_the_app_loads_with_no_request_outside_the_origin(browser, server):
     # The headers of the middleware: skwasm runs multithreaded.
     assert page.evaluate("crossOriginIsolated")
     outside = [
-        url
-        for url in requests
-        if not url.startswith((f"{server}/", "data:", "blob:"))
+        url for url in requests if not url.startswith((f"{server}/", "data:", "blob:"))
     ]
     assert outside == []
     assert errors == []
