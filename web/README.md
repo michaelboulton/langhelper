@@ -553,7 +553,9 @@ at 00:00 UTC.
 imported decks. `user_card` holds the FSRS state and the due time of one card
 for one user. `review` is the log: one row for each answer, with the typed text,
 both ratings and the time that the user needed. Anki has the same split, in
-its tables `cards` and `revlog`. `user` holds the name of each login.
+its tables `cards` and `revlog`. `user` holds the name of each login. The
+same file has the table `explanation` (section "Explain with AI") and the
+table `audio_progress` (section "Audio lessons").
 
 The user is the `sub` claim of the Pocket ID login, which never changes. A
 local run has no login, so all progress belongs to the user `local`.
@@ -775,13 +777,33 @@ no restart.
 
 | Route | Purpose |
 | ----- | ------- |
-| `GET /api/v1/audio-lessons` | The courses, with the number, the title and the audio state of each lesson: `ready`, `stale` (the script is newer than the mp3) or `none` |
+| `GET /api/v1/audio-lessons` | The courses, with the number, the title and the audio state of each lesson: `ready`, `stale` (the script is newer than the mp3) or `none`. Each lesson also has the progress of the user: `position`, `duration` and `finished` |
 | `GET /api/v1/audio-lessons/{course}/{lesson}` | The parsed script: the title, the summary, the grammar step and the lines. A pause is a line with the speaker `pause` |
 | `GET /api/v1/audio-lessons/{course}/{lesson}.mp3` | The mp3 as `audio/mpeg`. It answers a `Range` request, so the player can jump |
+| `PUT /api/v1/audio-lessons/{course}/{lesson}/progress` | Saves `{"position": 30.5, "duration": 120.0}` for the user, and returns `position`, `duration` and `finished` |
 
 `{course}` is the name of the folder, and `{lesson}` is the number of the
 lesson. A course name that leads out of `DATA_ROOT/audio/`, such as `..`,
 gets 404. The routes need the login, as the other routes.
+
+### The progress in a lesson
+
+The server keeps how far each user is through each lesson, so the progress
+follows the user to another device. The table
+`audio_progress(user_id, course, lesson, position, duration, finished_at)`
+in `flashcards.db` holds one row for each user and lesson. The user is the
+user of the flashcards: the `sub` of the login, or `local` for a local run.
+`course` is the name of the folder.
+
+The times are in seconds. `duration` is the length of the mp3, as the player
+of the user sees it. A lesson is finished the first time that the position is
+5 seconds or less from the end (`FINISHED_WITHIN` in `flashcards/store.py`).
+It stays finished when the user listens again from the start. A position
+after the end counts as the end. A lesson that the user never played has the
+position 0, the duration 0, and is not finished.
+
+`PUT .../progress` gets 404 for a course or a lesson that does not exist, and
+422 for a negative position or a duration that is not more than 0.
 
 ## Languages
 

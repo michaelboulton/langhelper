@@ -1,9 +1,12 @@
 """The routes of the audio lessons tab. The courses are the folders of
 DATA_ROOT/audio/, in the layout of script.py.
 
-GET /api/v1/audio-lessons                        the courses and their lessons
+GET /api/v1/audio-lessons                        the courses and their lessons,
+                                                 with the progress of the user
 GET /api/v1/audio-lessons/{course}/{lesson}      the script of a lesson
 GET /api/v1/audio-lessons/{course}/{lesson}.mp3  the sound of a lesson
+PUT /api/v1/audio-lessons/{course}/{lesson}/progress  save the position of
+                                                 the user in a lesson
 """
 
 import logging
@@ -11,8 +14,11 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
+from pydantic import Field
 
 from .. import schemas
+from ..flashcards import store
+from ..flashcards.routes import User
 from ..settings import DATA_ROOT
 from . import script
 
@@ -32,6 +38,16 @@ def course_folder(course: str) -> Path:
     return folder
 
 
+class AudioProgressRequest(schemas.Model):
+    position: float = Field(ge=0)
+    """Where the player is, in seconds."""
+    duration: float = Field(gt=0)
+    """The length of the mp3 in seconds, as the player sees it."""
+
+
+NOT_STARTED = {"position": 0.0, "duration": 0.0, "finished": False}
+
+
 def audio_state(folder: Path, number: int, path: Path) -> str:
     audio = script.audio_path(folder, number)
     if not audio.is_file():
@@ -40,9 +56,11 @@ def audio_state(folder: Path, number: int, path: Path) -> str:
 
 
 @router.get("/audio-lessons", response_model=schemas.AudioCoursesResponse)
-def courses() -> dict:
-    """The courses, by folder name, and their lessons in order. A course or a
-    lesson that does not parse is left out, and the log has the error."""
+def courses(user: User) -> dict:
+    """The courses, by folder name, and their lessons in order, each with the
+    progress of the user. A course or a lesson that does not parse is left
+    out, and the log has the error."""
+    progress = store.audio_progress(user)
     found = []
     folders = sorted(AUDIO_ROOT.iterdir()) if AUDIO_ROOT.is_dir() else []
     for folder in folders:
@@ -65,6 +83,7 @@ def courses() -> dict:
                     "number": number,
                     "title": title,
                     "audio": audio_state(folder, number, path),
+                    **progress.get((folder.name, number), NOT_STARTED),
                 }
             )
         found.append(
@@ -129,3 +148,22 @@ def lesson_script(course: str, lesson: int) -> dict:
             for line in parsed.lines
         ],
     }
+
+
+@router.put(
+    "/audio-lessons/{course}/{lesson}/progress",
+    response_model=schemas.AudioProgressResponse,
+    responses=schemas.NOT_FOUND,
+)
+def save_progress(
+    course: str, lesson: int, req: AudioProgressRequest, user: User
+) -> dict:
+    """Save where the user is in a lesson. The lesson is finished the first
+    time that the position is within a few seconds of the end, and stays
+    finished."""
+    folder = course_folder(course)
+    if not script.lesson_path(folder, lesson).is_file():
+        raise HTTPException(status_code=404, detail=f"no lesson {lesson}")
+    return store.save_audio_progress(
+        user, folder.name, lesson, req.position, req.duration
+    )

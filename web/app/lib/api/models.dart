@@ -665,6 +665,9 @@ class AudioLesson {
     required this.number,
     required this.title,
     required this.audio,
+    this.position = 0,
+    this.duration = 0,
+    this.finished = false,
   });
 
   factory AudioLesson.fromJson(Map<String, dynamic> json) =>
@@ -675,6 +678,9 @@ class AudioLesson {
   final int number;
   final String title;
   final AudioState audio;
+  final double position;
+  final double duration;
+  final bool finished;
 }
 
 @JsonSerializable()
@@ -754,6 +760,24 @@ class AudioLessonResponse {
   final String summary;
   final String grammar;
   final List<AudioLine> lines;
+}
+
+@JsonSerializable()
+class AudioProgressResponse {
+  const AudioProgressResponse({
+    required this.position,
+    required this.duration,
+    required this.finished,
+  });
+
+  factory AudioProgressResponse.fromJson(Map<String, dynamic> json) =>
+      _$AudioProgressResponseFromJson(json);
+  Map<String, dynamic> toJson() => _$AudioProgressResponseToJson(this);
+  static const fields = _$AudioProgressResponseFieldMap;
+
+  final double position;
+  final double duration;
+  final bool finished;
 }
 
 // The request bodies
@@ -840,4 +864,15 @@ class ExplainSentenceRequest extends ExplainRequest {
 
   final String text;
   final String language;
+}
+
+@JsonSerializable(createFactory: false)
+class AudioProgressRequest {
+  const AudioProgressRequest({required this.position, required this.duration});
+
+  Map<String, dynamic> toJson() => _$AudioProgressRequestToJson(this);
+  static const fields = _$AudioProgressRequestFieldMap;
+
+  final double position;
+  final double duration;
 }

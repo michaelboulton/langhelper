@@ -102,6 +102,31 @@ void main() {
     );
   });
 
+  test('the progress of an audio lesson', () async {
+    final requests = <http.Request>[];
+    final server = api((request) async {
+      requests.add(request);
+      return jsonResponse({
+        'position': 30.5,
+        'duration': 120,
+        'finished': false,
+      });
+    });
+    final saved = await server.audioLessons.saveProgress(
+      'it course',
+      3,
+      const AudioProgressRequest(position: 30.5, duration: 120),
+    );
+    expect((saved.position, saved.finished), (30.5, false));
+    final sent = requests.single;
+    expect(sent.method, 'PUT');
+    expect(
+      sent.url.toString(),
+      'https://example.fly.dev/api/v1/audio-lessons/it%20course/3/progress',
+    );
+    expect(jsonDecode(sent.body), {'position': 30.5, 'duration': 120});
+  });
+
   test('the sound of a text, and the model of the header', () async {
     final server = api(
       (request) async => http.Response.bytes(

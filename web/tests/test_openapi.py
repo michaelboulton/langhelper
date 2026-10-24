@@ -18,7 +18,7 @@ def operations():
 
 
 def test_each_route_has_a_description_and_a_response_shape():
-    assert len(list(operations())) == 21
+    assert len(list(operations())) == 22
     for name, operation in operations():
         assert operation.get("description"), name
         assert operation.get("tags"), name

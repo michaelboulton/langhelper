@@ -759,12 +759,18 @@ AudioLesson _$AudioLessonFromJson(Map<String, dynamic> json) => AudioLesson(
   number: (json['number'] as num).toInt(),
   title: json['title'] as String,
   audio: $enumDecode(_$AudioStateEnumMap, json['audio']),
+  position: (json['position'] as num?)?.toDouble() ?? 0,
+  duration: (json['duration'] as num?)?.toDouble() ?? 0,
+  finished: json['finished'] as bool? ?? false,
 );
 
 const _$AudioLessonFieldMap = <String, String>{
   'number': 'number',
   'title': 'title',
   'audio': 'audio',
+  'position': 'position',
+  'duration': 'duration',
+  'finished': 'finished',
 };
 
 Map<String, dynamic> _$AudioLessonToJson(AudioLesson instance) =>
@@ -772,6 +778,9 @@ Map<String, dynamic> _$AudioLessonToJson(AudioLesson instance) =>
       'number': instance.number,
       'title': instance.title,
       'audio': _$AudioStateEnumMap[instance.audio]!,
+      'position': instance.position,
+      'duration': instance.duration,
+      'finished': instance.finished,
     };
 
 const _$AudioStateEnumMap = {
@@ -871,6 +880,28 @@ Map<String, dynamic> _$AudioLessonResponseToJson(
   'lines': instance.lines.map((e) => e.toJson()).toList(),
 };
 
+AudioProgressResponse _$AudioProgressResponseFromJson(
+  Map<String, dynamic> json,
+) => AudioProgressResponse(
+  position: (json['position'] as num).toDouble(),
+  duration: (json['duration'] as num).toDouble(),
+  finished: json['finished'] as bool,
+);
+
+const _$AudioProgressResponseFieldMap = <String, String>{
+  'position': 'position',
+  'duration': 'duration',
+  'finished': 'finished',
+};
+
+Map<String, dynamic> _$AudioProgressResponseToJson(
+  AudioProgressResponse instance,
+) => <String, dynamic>{
+  'position': instance.position,
+  'duration': instance.duration,
+  'finished': instance.finished,
+};
+
 const _$ClassifyRequestFieldMap = <String, String>{
   'text': 'text',
   'language': 'language',
@@ -939,4 +970,16 @@ Map<String, dynamic> _$ExplainSentenceRequestToJson(
   'locale': instance.locale,
   'text': instance.text,
   'language': instance.language,
+};
+
+const _$AudioProgressRequestFieldMap = <String, String>{
+  'position': 'position',
+  'duration': 'duration',
+};
+
+Map<String, dynamic> _$AudioProgressRequestToJson(
+  AudioProgressRequest instance,
+) => <String, dynamic>{
+  'position': instance.position,
+  'duration': instance.duration,
 };

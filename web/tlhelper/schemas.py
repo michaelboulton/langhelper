@@ -399,6 +399,14 @@ class AudioLesson(Model):
     audio: Literal["ready", "stale", "none"]
     """ "ready": the mp3 is newer than the script. "stale": the script changed
     after the mp3 was made. "none": the lesson has no mp3."""
+    position: float
+    """Where the user stopped, in seconds. 0 if the user never played the
+    lesson."""
+    duration: float
+    """The length of the mp3 in seconds, as the player of the user saw it. 0
+    if the user never played the lesson."""
+    finished: bool
+    """The user once got to the end of the lesson."""
 
 
 class AudioCourse(Model):
@@ -430,6 +438,15 @@ class AudioLessonResponse(Model):
     """The grammar step of the lesson."""
     lines: list[AudioLine]
     """In the order of the mp3."""
+
+
+class AudioProgressResponse(Model):
+    position: float
+    """In seconds. A position after the end is the end."""
+    duration: float
+    """The length of the mp3 in seconds, as in the request."""
+    finished: bool
+    """The user once got to within a few seconds of the end."""
 
 
 class ErrorResponse(Model):
