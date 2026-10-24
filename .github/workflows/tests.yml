@@ -40,6 +40,7 @@ jobs:
       - uses: j178/prek-action@1382ad72dea72f9d53832f2bcb65b3e87a947204 # v3.0.1
 
   dart:
+    needs: prek
     runs-on: ubuntu-26.04
     timeout-minutes: 15
     defaults:
