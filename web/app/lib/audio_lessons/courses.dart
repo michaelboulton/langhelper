@@ -1,0 +1,155 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../api/models.dart';
+import '../i18n/i18n.dart';
+import 'state.dart';
+
+/// The title of the tab. It is also the title of the browser tab.
+class AudioTitle extends StatelessWidget {
+  const AudioTitle({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final title = I18n.of(context).t('audio-title');
+    return Title(
+      title: title,
+      color: Theme.of(context).primaryColor,
+      child: Text(title),
+    );
+  }
+}
+
+/// The width and the margins of the tab, as on the other tabs.
+class AudioPage extends StatelessWidget {
+  const AudioPage({super.key, required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 860),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 64),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: children,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A note of the tab, such as an error.
+class AudioNote extends StatelessWidget {
+  const AudioNote({super.key, required this.text, this.error = false});
+
+  final String text;
+  final bool error;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Semantics(
+        liveRegion: error,
+        child: Text(
+          text,
+          style: TextStyle(
+            color: error
+                ? const Color(0xFFC0392B)
+                : Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The courses, each with its lessons in order. A lesson opens at
+/// `/#/audio/<course>/<lesson>`.
+class CoursesView extends ConsumerWidget {
+  const CoursesView({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final i18n = I18n.of(context);
+    final courses = ref.watch(audioCoursesProvider);
+    return AudioPage(
+      children: [
+        Text(
+          i18n.t('audio-intro'),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        switch (courses) {
+          AsyncData(value: final list) when list.isEmpty => AudioNote(
+            text: i18n.t('audio-no-courses'),
+          ),
+          AsyncData(value: final list) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [for (final course in list) _Course(course: course)],
+          ),
+          AsyncError(:final error) => AudioNote(
+            text: i18n.errorText(error),
+            error: true,
+          ),
+          _ => const SizedBox.shrink(),
+        },
+      ],
+    );
+  }
+}
+
+class _Course extends StatelessWidget {
+  const _Course({required this.course});
+
+  final AudioCourse course;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final lessons = [...course.lessons]
+      ..sort((a, b) => a.number.compareTo(b.number));
+    return Padding(
+      padding: const EdgeInsets.only(top: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Semantics(
+            header: true,
+            child: Text(course.name, style: theme.textTheme.titleLarge),
+          ),
+          const SizedBox(height: 4),
+          for (final lesson in lessons)
+            Row(
+              children: [
+                SizedBox(
+                  width: 32,
+                  child: Text(
+                    '${lesson.number}.',
+                    textAlign: TextAlign.end,
+                    style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ),
+                Flexible(
+                  child: TextButton(
+                    onPressed: () =>
+                        context.go(lessonPath(course.id, lesson.number)),
+                    child: Text(lesson.title),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}

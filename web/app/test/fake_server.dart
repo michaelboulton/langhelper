@@ -38,7 +38,13 @@ class FakeServer {
     Future<http.Response> Function(http.Request request)? explain,
     Map<String, dynamic>? users,
     Future<http.Response> Function(http.Request request)? stats,
-  }) : classify = classify ?? ((_) async => json(fixture('classify.json'))),
+    Future<http.Response> Function(http.Request request)? audioCourses,
+    Future<http.Response> Function(http.Request request)? audioLesson,
+  }) : audioCourses =
+           audioCourses ?? ((_) async => json(fixture('audio_lessons.json'))),
+       audioLesson =
+           audioLesson ?? ((_) async => json(fixture('audio_lesson.json'))),
+       classify = classify ?? ((_) async => json(fixture('classify.json'))),
        questions = questions ?? fixture('questions.json'),
        explain = explain ?? ((_) async => json(fixture('explain.json'))),
        users = users ?? fixture('users.json'),
@@ -89,6 +95,15 @@ class FakeServer {
 
   /// The answer of GET /api/v1/flashcards/stats.
   Future<http.Response> Function(http.Request request) stats;
+
+  /// The answer of GET /api/v1/audio-lessons.
+  Future<http.Response> Function(http.Request request) audioCourses;
+
+  /// The answer of GET /api/v1/audio-lessons/{course}/{lesson}.
+  Future<http.Response> Function(http.Request request) audioLesson;
+
+  /// The path of each request for a lesson, in order.
+  final lessons = <String>[];
 
   /// The path and the body of each question to the AI, in order.
   final explained = <(String, Map<String, dynamic>)>[];
@@ -159,6 +174,11 @@ class FakeServer {
       case '/api/v1/flashcards/stats':
         statsQueries.add(request.url.queryParameters);
         return stats(request);
+      case '/api/v1/audio-lessons':
+        return audioCourses(request);
+      case final path when path.startsWith('/api/v1/audio-lessons/'):
+        lessons.add(path);
+        return audioLesson(request);
     }
     return json({'detail': 'Not Found'}, 404);
   }
@@ -183,20 +203,31 @@ class FakePlayer implements Player {
   /// The sounds on the server, in order.
   final uris = <Uri>[];
   final _playing = StreamController<bool>.broadcast();
+  final _position = StreamController<Duration>.broadcast();
   bool _isPlaying = false;
   int plays = 0;
   bool disposed = false;
 
+  /// The length of each sound.
+  Duration length = const Duration(seconds: 2);
+
+  /// The places of each seek, and the speeds, in order.
+  final seeks = <Duration>[];
+  final speeds = <double>[];
+
+  @override
+  Duration currentPosition = Duration.zero;
+
   @override
   Future<Duration?> load(Uint8List mp3) async {
     loaded.add(mp3);
-    return const Duration(seconds: 2);
+    return length;
   }
 
   @override
   Future<Duration?> loadUri(Uri uri) async {
     uris.add(uri);
-    return const Duration(seconds: 2);
+    return length;
   }
 
   @override
@@ -209,7 +240,13 @@ class FakePlayer implements Player {
   void pause() => _playing.add(_isPlaying = false);
 
   @override
-  void seek(Duration position) {}
+  void seek(Duration position) {
+    seeks.add(position);
+    _position.add(currentPosition = position);
+  }
+
+  @override
+  void setSpeed(double speed) => speeds.add(speed);
 
   /// The state now, then each change, as the stream of just_audio.
   @override
@@ -219,12 +256,16 @@ class FakePlayer implements Player {
   }
 
   @override
-  Stream<Duration> get position => const Stream.empty();
+  Stream<Duration> get position async* {
+    yield currentPosition;
+    yield* _position.stream;
+  }
 
   @override
-  Future<void> dispose() {
+  Future<void> dispose() async {
     disposed = true;
-    return _playing.close();
+    await _playing.close();
+    await _position.close();
   }
 }
 

@@ -7,6 +7,11 @@ String relativeTime(String locale, int amount, String unit) =>
 /// Intl.NumberFormat, so the format is the English one.
 String percent(String locale, double share) => '${(share * 100).round()}%';
 
+/// "0.75" for 0.75 and "3" for 3.0. Outside a browser the format is the
+/// English one.
+String decimal(String locale, double value) =>
+    value == value.roundToDouble() ? '${value.toInt()}' : '$value';
+
 /// flutter_tts can read a text aloud. Outside a browser it uses the voices of
 /// the system.
 bool canSpeak() => true;

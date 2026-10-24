@@ -249,6 +249,8 @@ charts with `fl_chart`.
 
 ### 10. Audio lessons tab
 
+Done (#35). README, "The Audio lessons tab", has the details.
+
 It replaces `audio_lessons.js`. `/#/audio` lists the courses of
 `/api/v1/audio-lessons` and their lessons in order.
 `/#/audio/<course>/<lesson>` shows the title, the grammar note, the player and

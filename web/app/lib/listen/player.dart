@@ -19,10 +19,16 @@ abstract class Player {
 
   void seek(Duration position);
 
+  /// 1 is the normal speed.
+  void setSpeed(double speed);
+
   /// False at the end of the sound.
   Stream<bool> get playing;
 
   Stream<Duration> get position;
+
+  /// The place in the sound now.
+  Duration get currentPosition;
 
   Future<void> dispose();
 }
@@ -66,6 +72,9 @@ class JustAudioPlayer implements Player {
   void seek(Duration position) => unawaited(_player.seek(position));
 
   @override
+  void setSpeed(double speed) => unawaited(_player.setSpeed(speed));
+
+  @override
   late final Stream<bool> playing = _player.playerStateStream
       .map(
         (state) =>
@@ -75,6 +84,9 @@ class JustAudioPlayer implements Player {
 
   @override
   late final Stream<Duration> position = _player.positionStream;
+
+  @override
+  Duration get currentPosition => _player.position;
 
   @override
   Future<void> dispose() => _player.dispose();

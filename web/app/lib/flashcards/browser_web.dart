@@ -26,5 +26,10 @@ String percent(String locale, double share) => _NumberFormat(
   {'style': 'percent', 'maximumFractionDigits': 0}.jsify()!,
 ).format(share);
 
+/// A number as [locale] writes it: "0,75", "0.75". A whole number has no
+/// decimals.
+String decimal(String locale, double value) =>
+    _NumberFormat(locale, <String, Object?>{}.jsify()!).format(value);
+
 /// The browser has speechSynthesis, which flutter_tts uses.
 bool canSpeak() => globalContext.has('speechSynthesis');
