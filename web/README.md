@@ -1369,7 +1369,8 @@ The smoke test opens the build in Chromium. It checks that the app shows its
 title, that the page is cross-origin isolated, and that the browser sends no
 request outside the origin. It skips unless `STATIC_DIR` is a Flutter build.
 The other browser tests need the page of `static/`, so run them without
-`STATIC_DIR`:
+`STATIC_DIR`. The `tests` job of CI runs the smoke test against the build of
+the `dart` job:
 
 ```bash
 STATIC_DIR=app/build/web uv run pytest tests/test_browser_app.py

@@ -69,7 +69,7 @@ Tests that need resources skip when the resources are missing:
 - The heavy German tests need `de_dep_news_trf`.
 - `test_the_clips_of_the_repo` needs the voice clips in `tts/omnivoice_server/voices/`.
 
-CI (`.github/workflows/tests.yml`) runs prek, then the tests of both members. The `dart` job runs `flutter test` in `web/app/`. It installs the heavy German model and caches the classla models in `.data/`, so `test_real_models` runs.
+CI (`.github/workflows/tests.yml`) runs prek, then the tests of both members. The `dart` job runs `flutter test` and the web build in `web/app/`. The tests job installs the Playwright Chromium, so the browser tests run, and runs `test_browser_app.py` against that build. It installs the heavy German model and caches the classla models in `.data/`, so `test_real_models` runs.
 
 ## web architecture
 
