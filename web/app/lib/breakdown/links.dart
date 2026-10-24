@@ -64,7 +64,8 @@ class _LinkLayerState extends State<LinkLayer> {
     final layer = context.findRenderObject() as RenderBox?;
     if (layer == null || !layer.hasSize) return;
     Rect? rect(Word word) {
-      final box = chipKey(word).currentContext?.findRenderObject() as RenderBox?;
+      final box =
+          chipKey(word).currentContext?.findRenderObject() as RenderBox?;
       if (box == null || !box.hasSize) return null;
       return MatrixUtils.transformRect(
         box.getTransformTo(layer),
