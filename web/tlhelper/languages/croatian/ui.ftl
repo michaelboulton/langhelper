@@ -178,6 +178,7 @@ problem-hr-genitive-adjective = '{ $word }' traži imenicu u genitivu (puna vode
 problem-preposition-case = Prijedlog '{ $word }' ovdje traži { $wantName }, a padež ovog oblika je { $gotName }.
 problem-preposition-cases = Prijedlog '{ $word }' traži { $want }, a padež ovog oblika je { $gotName }.
 problem-case-in-list = { $caseName }
+list-or = { $items } ili { $last }
 problem-agreement = Ne slaže se s '{ $noun }': ovaj oblik je { $mineName }, a imenica je { $theirsName } ({ $feat ->
     [Case] padež
     [Gender] rod

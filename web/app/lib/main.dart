@@ -1,15 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'api/client.dart';
+import 'breakdown/breakdown_tab.dart';
 import 'i18n/i18n.dart';
+import 'providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   // The browser tests find the widgets through the semantics tree (DART.md).
   SemanticsBinding.instance.ensureSemantics();
-  runApp(LanghelperApp(i18n: await startI18n(Api())));
+  final api = Api();
+  final i18n = await startI18n(api);
+  runApp(
+    ProviderScope(
+      overrides: [apiProvider.overrideWithValue(api)],
+      child: LanghelperApp(i18n: i18n),
+    ),
+  );
 }
 
 /// The theme colour of the manifest and of index.html.
@@ -51,13 +61,9 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final i18n = I18n.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          i18n.t('breakdown-title', {'language': i18n.t('language-name-hr')}),
-        ),
-      ),
+      appBar: AppBar(title: const BreakdownTitle()),
+      body: const BreakdownTab(),
     );
   }
 }

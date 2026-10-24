@@ -5,7 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/client.dart';
-import '../api/models.dart' show LocalesResponse, ScriptDirection;
+import '../api/models.dart' show LanguageInfo, LocalesResponse, ScriptDirection;
 
 /// The shared_preferences key of the locale that the user chose.
 const localeKey = 'langhelper.locale';
@@ -72,6 +72,10 @@ class I18n {
 
   String t(String id, [Map<String, Object?> args = const {}]) =>
       tOr(id, args: args);
+
+  /// The name of a language of /api/v1/languages.
+  String languageName(LanguageInfo info) =>
+      tOr('language-name-${info.code}', fallback: info.name);
 
   /// The message [id], or null if no catalog has it. It fits [Messages] of
   /// the API client.
