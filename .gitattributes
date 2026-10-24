@@ -13,6 +13,12 @@ web/app/pubspec.lock linguist-generated=true -merge
 # flutter create and flutter upgrade write it.
 web/app/.metadata linguist-generated=true
 
+# build_runner writes the *.g.dart files, and web/tests/test_dart_api.py writes
+# the copy of the OpenAPI schema (web/README.md, "The API client and the
+# models").
+*.g.dart linguist-generated=true
+web/app/test/api/openapi.json linguist-generated=true
+
 # The Noto fonts and their license are copies from notofonts.github.io.
 web/app/assets/fonts/** linguist-vendored=true
 

@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:langhelper_app/api/models.dart';
 
-import 'samples.dart';
+import 'fixtures.dart';
 
 /// The schema of each model: Dart field name -> JSON key.
 const models = <String, Map<String, String>>{

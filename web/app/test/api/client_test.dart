@@ -7,7 +7,7 @@ import 'package:http/testing.dart';
 import 'package:langhelper_app/api/client.dart';
 import 'package:langhelper_app/api/models.dart';
 
-import 'samples.dart';
+import 'fixtures.dart';
 
 /// A MockClient that knows if it was closed.
 class Tracked extends http.BaseClient {
@@ -63,7 +63,7 @@ void main() {
     final result = await api((request) async {
       requests.add(request);
       return http.Response.bytes(
-        utf8.encode(jsonEncode(sample('classify.json'))),
+        utf8.encode(jsonEncode(fixture('classify.json'))),
         200,
         headers: {'content-type': 'application/json'},
       );
@@ -82,9 +82,9 @@ void main() {
     final server = api((request) async {
       urls.add(request.url.toString());
       if (request.url.path.endsWith('/stats')) {
-        return jsonResponse(sample('stats.json'));
+        return jsonResponse(fixture('stats.json'));
       }
-      return jsonResponse(sample('audio_lesson.json'));
+      return jsonResponse(fixture('audio_lesson.json'));
     });
     await server.flashcards.stats(of: 'user 2');
     await server.audioLessons.lesson('it course', 3);
@@ -204,7 +204,7 @@ void main() {
     /// A server that answers only when [answer] completes.
     MockClientHandler waiting(Completer<void> answer) => (request) async {
       await answer.future;
-      return jsonResponse(sample('classify.json'));
+      return jsonResponse(fixture('classify.json'));
     };
 
     Matcher canceled(CancelReason reason) => throwsA(

@@ -1456,7 +1456,7 @@ Two parts of `app/test/api/` keep the models in step with the server:
   SAVE_OPENAPI=1 uv run pytest tests/test_dart_api.py
   ```
 
-- `samples/` has a saved response of each route that the page reads, from a
+- `fixtures/` has a saved response of each route that the page reads, from a
   local run with a small deck and course. `test/api/models_test.dart` decodes
   each one, and `tests/test_dart_api.py` checks that each one fits its
   Pydantic model. The speech info and the explain answer are written by hand,

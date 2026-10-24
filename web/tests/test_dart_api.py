@@ -11,7 +11,7 @@ from tlhelper import schemas
 
 FOLDER = Path(__file__).parents[1] / "app" / "test" / "api"
 # Each saved response, and its model.
-SAMPLES = {
+FIXTURES = {
     "answer.json": schemas.AnswerResponse,
     "audio_lesson.json": schemas.AudioLessonResponse,
     "audio_lessons.json": schemas.AudioCoursesResponse,
@@ -42,12 +42,11 @@ def test_the_saved_schema_is_the_schema_of_the_app():
     assert saved == schema, "run SAVE_OPENAPI=1 uv run pytest tests/test_dart_api.py"
 
 
-def test_each_sample_fits_its_model():
-    assert sorted(path.name for path in (FOLDER / "samples").glob("*.json")) == sorted(
-        SAMPLES
-    )
-    for name, model in SAMPLES.items():
-        body = json.loads((FOLDER / "samples" / name).read_text(encoding="utf-8"))
+def test_each_fixture_fits_its_model():
+    folder = FOLDER / "fixtures"
+    assert sorted(path.name for path in folder.glob("*.json")) == sorted(FIXTURES)
+    for name, model in FIXTURES.items():
+        body = json.loads((folder / name).read_text(encoding="utf-8"))
         # No key that the model does not have, and none that it changes.
         shape = model.model_validate(body).model_dump(mode="json", exclude_unset=True)
         assert shape == body, name
