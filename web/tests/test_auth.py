@@ -122,7 +122,7 @@ def test_fly_host_serves_the_manifest_and_icons_with_no_login(fly):
     assert manifest.status_code == 200
     for icon in manifest.json()["icons"]:
         assert fly.get(icon["src"]).status_code == 200
-    assert fly.get("/static/js/breakdown.js").status_code == 302
+    assert fly.get("/static/flutter_bootstrap.js").status_code == 302
 
 
 def test_fly_host_without_configuration_is_closed(fly, monkeypatch):

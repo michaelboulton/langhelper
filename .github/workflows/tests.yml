@@ -114,11 +114,6 @@ jobs:
           path: web/app/build/web
       - run: uv run --no-sync pytest
         working-directory: tts
+      # The browser tests open the build of the dart job in app/build/web.
       - run: uv run --no-sync pytest
         working-directory: web
-      # STATIC_DIR swaps the page for the whole server, so the JS page tests
-      # run without it.
-      - run: uv run --no-sync pytest tests/test_browser_app.py tests/test_browser_audio_app.py tests/flashcards/test_browser_cards_app.py
-        working-directory: web
-        env:
-          STATIC_DIR: app/build/web

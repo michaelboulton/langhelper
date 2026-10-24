@@ -66,12 +66,13 @@ login. The API refuses texts over `MAX_TEXT_CHARS`.
 | `app/assets/fonts/` | Noto Sans, Noto Sans Arabic and Noto Sans Hebrew, with their license `OFL.txt` |
 | `pyproject.toml` | Dependencies. Pins `torch` to the CPU-only wheel index of the root `pyproject.toml` |
 | `../uv.lock`     | Locked versions of the whole uv workspace. Update with `uv lock --upgrade` |
-| `Dockerfile`     | A stage that builds the Flutter app, then `python:3.12-slim` plus `uv sync --frozen`, runs as uid 1000. Its build context is the repository root |
+| `Dockerfile`     | A stage that builds the Flutter app, then `python:3.12-slim` plus `uv sync --frozen` with the build as the page in `/app/static`, runs as uid 1000. Its build context is the repository root |
 | `entrypoint.sh`  | Makes sure that `/data` is writable, then execs uvicorn                 |
 | `../docker-compose.yml` | Local run with Docker Compose and the models in `.data/` at the repository root, with a llama.cpp service for the AI buttons and the `tts/` service for the "Listen" buttons |
 | `../example.env` | The keys for `docker-compose.yml`. Copy it to `.env`, which git ignores |
 | `../podman-compose.yaml` | The same local run with rootless podman. See "With podman" |
 | `tests/`         | The tests, one file for each module, with the languages in `tests/languages/` and the flashcards in `tests/flashcards/`. Run them with `uv run pytest` |
+| `tests/shot.py`  | One picture of the Flutter app, with no test. See "Pictures of the page" |
 | `example.fly.toml` | An example Fly app configuration: one shared-cpu-2x 4 GB machine that stops at idle, and a 2 GB volume. Copy it to `fly.toml`, which git ignores |
 
 ## API
@@ -1190,9 +1191,9 @@ Set under `[env]` in `fly.toml`:
 
 - `MAX_TEXT_CHARS`: the longest text that the API accepts. Default `1000`.
 - `DATA_ROOT`: where the models and `lemmas.db` live. Default `/data`.
-- `STATIC_DIR`: the folder with the page, its script, and its style sheet.
-  Default: `static/` next to `tlhelper/`. The image sets `/app/static`. Set
-  `/app/flutter` for the Flutter app. See "The Flutter app".
+- `STATIC_DIR`: the folder with the page. Default: `static/` next to
+  `tlhelper/`. The image sets `/app/static`, which holds the build of the
+  Flutter app. See "The Flutter app".
 - `MODEL_URL`: a mirror for the model files. Default: clarin.si.
 - `DOWNLOAD_MODELS`: set to `0` to never download the models. Default `1`. The
   app always tries the models on disk first, with no network access.
@@ -1274,25 +1275,8 @@ process. A peak of 3600 MB or more gives a warning in the pytest summary, not
 a failure: the peak moves by about 20 MB from one CI run to the next, and it
 is close to that limit since torch 2.14.
 
-`tests/flashcards/test_browser.py` and `tests/test_browser_breakdown.py` open
-the page in a headless Chromium, with Playwright. The breakdown tests use the
-real light models and a fake translator. Download that browser one time:
-
-```bash
-uv run playwright install --only-shell chromium
-```
-
-If the browser is not there, pytest skips these tests. The browser fixtures are
-in `tests/conftest.py`.
-
-To see the page of each browser test, give a folder for the pictures:
-
-```bash
-uv run pytest tests/test_browser_breakdown.py --screenshots=shots
-```
-
-At the end of each test, each page saves a full-page PNG with the name of the
-test to that folder. Without the option, the tests save nothing.
+The browser tests open the build of the Flutter app. "The browser tests"
+under "The Flutter app" has the steps.
 
 With Docker Compose, from the repository root. The compose file mounts the
 models that are already in `.data/` there. The keys are in the file `.env`,
@@ -1378,8 +1362,8 @@ the Docker commands above, with `--userns=keep-id` and
 `DART.md` has the plan, and issue #24 tracks the parts. Now the app has the
 Breakdown tab, with the curves between the words and the Listen panel, the
 Flashcards tab, the "explain with AI" panel, the Progress tab, and the Audio
-lessons tab.
-`static/` stays the page of the app until the Flutter app has all the tabs.
+lessons tab. The image serves the Flutter app. A local run serves `static/`
+until issue #39 deletes it.
 
 Install Flutter 3.47.5, the version of `FLUTTER_VERSION` in `Dockerfile`. Build
 the app from `app/`. The build takes about a minute:
@@ -1394,27 +1378,72 @@ Then serve the build in place of `static/`, from this folder:
 STATIC_DIR=app/build/web DATA_ROOT=../.data uv run uvicorn tlhelper.app:app --port 8000 --no-access-log
 ```
 
-The smoke test opens the build in Chromium. It checks that the app shows its
-title, that the page is cross-origin isolated, and that the browser sends no
-request outside the origin. It also checks that `?locale=hr` and a German
-browser show the title in their language, and it types a sentence into the
-Breakdown tab at a phone width and at a desktop width. With a fake voice
-service, it clicks each button of the Listen panel. A second test file,
-`tests/flashcards/test_browser_cards_app.py`, opens a deck in the Flashcards
-tab, answers a card with a picture and a clip, and rates a card with the
-keys. With a fake AI service, it asks a question about an answer, then opens
-the Progress tab. A third file, `tests/test_browser_audio_app.py`, opens a
-lesson of a small course and clicks the buttons of the player. They skip
-unless `STATIC_DIR` is a Flutter build. With `--screenshots=DIR`, they save a
-picture of the Breakdown tab, the Listen panel, the cards, the Progress tab,
-the list of courses and a lesson at each width.
-The other browser tests need the page of `static/`, so run them without
-`STATIC_DIR`. The `tests` job of CI runs both against the build of the
-`dart` job:
+### The browser tests
+
+The browser tests open the build in `app/build/web` in a headless Chromium,
+with Playwright. The `server` fixture of `tests/conftest.py` serves that
+build, whatever `STATIC_DIR` is. Build the app first, and download the
+browser one time:
 
 ```bash
-STATIC_DIR=app/build/web uv run pytest tests/test_browser_app.py tests/test_browser_audio_app.py tests/flashcards/test_browser_cards_app.py
+uv run playwright install --only-shell chromium
+uv run pytest
 ```
+
+With no build or no browser, pytest skips these tests. The `tests` job of CI
+runs them against the build of the `dart` job.
+
+Flutter draws on a canvas, so the tests cannot use CSS selectors or
+`get_by_text` on the page. `main.dart` turns on the semantics tree, and
+Flutter mirrors it into `flt-semantics` nodes with roles and labels. The tests
+find the widgets with `get_by_role` and `get_by_label`, as a screen reader
+does. The `note` fixture finds a text of the tree: a node of its own, or a
+part of the label of a group. A key widget has a label of its own: a chip is
+`chip: <word> <upos>`, the curves are `links: N`, and the buttons of a player
+have their names.
+
+The browser context of each test has no network: a request outside the
+server fails, and a failed request is an error of the page. At the end of a
+test, each page must have no errors in its console.
+
+| File | What it opens |
+| ---- | ------------- |
+| `tests/test_browser_app.py` | The app: no request outside the origin, cross-origin isolation, the locale of the address and of the browser, and the dark theme. |
+| `tests/test_browser_breakdown.py` | The Breakdown tab with the real light models and a fake translator: the chips in order, the table of a word, the curves of a translation, a grammar problem, the Listen panel with a fake voice service, and "Large models". |
+| `tests/flashcards/test_browser.py` | The Flashcards tab: the tabs, the decks and the subdecks, a card with a picture and a clip, a listen card, the ratings and their keys, a right-to-left language, the accent note, "Read it aloud", the questions to a fake AI service, and the Progress tab. |
+| `tests/test_browser_audio.py` | The Audio lessons tab: the courses, a lesson with its script and its player, and the progress of each lesson. |
+
+### Pictures of the page
+
+To see each browser test, give a folder for the pictures:
+
+```bash
+uv run pytest tests/test_browser_breakdown.py --screenshots=shots
+```
+
+At the end of each test, each page saves a PNG with the name of the test to
+that folder. Some tests also save a picture in the middle, such as
+`listen-390.png`. The tests with a `width` parameter run at a phone width
+(390 px) and at a desktop width (1280 px). Without the option, the tests save
+nothing.
+
+One picture with no test:
+
+```bash
+uv run python tests/shot.py "Ovo je rečenica." --translate --out shot.png
+uv run python tests/shot.py --deck Basics --dark --width 390 --out card.png
+```
+
+`tests/shot.py` starts the server as `conftest.py` does, with new empty
+databases, opens the page, types the text and waits for the chips. `--deck
+NAME` imports the decks of the deck folders and opens the next card of the
+first deck whose name starts with NAME. `--dark` uses the dark theme.
+
+The curves have a golden widget test, which is exact to the pixel. Run
+`flutter test` in `app/`. On a failure, the images of the difference are in
+`app/test/<folder>/failures/`.
+
+### The widget tests
 
 The widget tests are in `app/test/`. Run them from `app/`. The `dart` job of
 CI runs them too:
@@ -1444,10 +1473,11 @@ How the parts fit:
   page is then cross-origin isolated, and skwasm runs on more than one thread.
   Without the headers, it runs on one thread.
 
-The image has both pages: the page of `static/` in `/app/static`, and the
-Flutter build in `/app/flutter`. `STATIC_DIR` chooses; the image sets
-`/app/static`. To try the Flutter app on Fly, set `STATIC_DIR = '/app/flutter'`
-under `[env]` in `fly.toml`.
+The image has only the Flutter page: the first stage builds the app, and the
+second stage copies the build to `/app/static`, the folder of `STATIC_DIR`.
+So `docker compose up --build` and `fly deploy` serve the Flutter app. The
+addresses of the tabs are `/#/cards`, `/#/progress` and `/#/audio`, in place
+of `#cards`, `#progress` and `#audio`.
 
 The first stage of `Dockerfile` downloads the Flutter archive and checks its
 SHA-256. The image `ghcr.io/cirruslabs/flutter` has no tag after 3.44.0. To
@@ -1598,6 +1628,8 @@ uses it for the links of an answer.
   font, because the web app loads the fallback fonts after the first frame,
   and the chips then change size.
 - A guess is a dashed curve. The curves of the selected word are thick.
+- With one curve or more, the layer has the semantics label `links: N`, the
+  number of curves. The browser tests read it.
 
 `app/test/breakdown/links_test.dart` checks the curves of two translated
 sentences against the golden image `app/test/breakdown/goldens/links.png`.
@@ -1630,6 +1662,18 @@ The seek bar is not the `Slider` of Flutter. The `Slider` always shows an
 overlay for its value indicator, and on the web that overlay is a node of
 the semantics tree over the whole page. Playwright then cannot click the
 other buttons.
+
+The seek bar of the player bar is not in the semantics tree. On the web, a
+node with increase and decrease actions is an `<input type="range">`. After
+the load of a clip, that node takes the focus from a text field of the page
+at the next key, and the other keys of the user go nowhere. The answer field
+of a card with a clip had that problem. The play button stays in the tree.
+The player of an audio lesson has no text field next to it, so its seek bar
+stays in the tree.
+
+Each button of a player is a `PlayerButton`: a tooltip, and a `Semantics`
+label that is its only name. Without that label, the tooltip of a hovered
+button adds its text to the name.
 
 `player.dart` has the `Player` interface. The widget tests in
 `app/test/listen/` use the `FakePlayer` of `app/test/fake_server.dart`,
@@ -1740,7 +1784,8 @@ a lesson is `/#/audio/<course>/<lesson>`, so a lesson has a link of its own.
   `audio_video_progress_bar` can jump.
 - The buttons are back 10 s, play and pause, forward 10 s, and the speeds
   0.75×, 1× and 1.25×. Back stops at the start, and forward stops at the
-  end. Each button has a tooltip, which is also its semantics label.
+  end. Each button has a tooltip and the same semantics label (see "The
+  Listen panel").
 - Space plays and pauses, and ← and → go back and forward 10 s. The keys
   work on the whole lesson, also when a button has the focus.
 - The script has the name of each speaker and a line for each pause. The

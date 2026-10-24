@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../flashcards/browser.dart'
     if (dart.library.js_interop) '../flashcards/browser_web.dart';
 import '../i18n/i18n.dart';
+import '../listen/listen_panel.dart' show PlayerButton;
 import '../listen/player.dart';
 
 /// The step of the back and forward buttons and keys.
@@ -133,27 +134,28 @@ class _LessonPlayerState extends State<LessonPlayer> {
             runSpacing: 8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              IconButton(
-                icon: const Icon(Icons.replay_10),
-                tooltip: i18n.t('audio-back'),
+              PlayerButton(
+                icon: Icons.replay_10,
+                label: i18n.t('audio-back'),
                 onPressed: () => audio.skip(-skipStep),
               ),
               StreamBuilder<bool>(
                 stream: player.playing,
                 builder: (context, snapshot) {
                   final playing = snapshot.data ?? false;
-                  return IconButton.filled(
-                    icon: Icon(playing ? Icons.pause : Icons.play_arrow),
-                    tooltip: playing
+                  return PlayerButton(
+                    icon: playing ? Icons.pause : Icons.play_arrow,
+                    label: playing
                         ? i18n.t('listen-pause')
                         : i18n.t('listen-play'),
                     onPressed: playing ? player.pause : player.play,
+                    filled: true,
                   );
                 },
               ),
-              IconButton(
-                icon: const Icon(Icons.forward_10),
-                tooltip: i18n.t('audio-forward'),
+              PlayerButton(
+                icon: Icons.forward_10,
+                label: i18n.t('audio-forward'),
                 onPressed: () => audio.skip(skipStep),
               ),
               // The label wraps with its buttons on a narrow screen.

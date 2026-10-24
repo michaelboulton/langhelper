@@ -9,8 +9,6 @@
 !web/entrypoint.sh
 !web/tlhelper
 !web/tlhelper/**
-!web/static
-!web/static/**
 !web/app
 !web/app/**
 web/app/build

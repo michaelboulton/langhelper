@@ -1,22 +1,20 @@
 """The browser for the tests of the page, the folders of the app data, and a
 fake AI service for the tools in scripts/.
 
-The browser tests need the browser of Playwright once:
+The browser tests open the Flutter build in app/build/web, and need the
+browser of Playwright once:
 uv run playwright install --only-shell chromium
-With no browser, they skip. With --screenshots=DIR, each page of a browser test
-saves a picture of itself to DIR at the end of the test (README.md, "Running
-locally").
+With no browser or no build, they skip. With --screenshots=DIR, each page of a
+browser test saves a picture of itself to DIR at the end of the test
+(README.md, "The browser tests").
 """
 
-import base64
-import hashlib
 import json
 import os
 import re
 import shlex
 import threading
 import time
-import urllib.request
 from pathlib import Path
 
 import pytest
@@ -27,8 +25,8 @@ from tlhelper import app as service
 from tlhelper import explain
 from tlhelper.flashcards import decks, store
 
-# index.html loads the Fluent script from here.
-CDN = "https://cdn.jsdelivr.net/**"
+# flutter build web --wasm --no-web-resources-cdn --base-href /static/
+APP_BUILD = Path(__file__).parents[1] / "app/build/web"
 
 
 def pytest_addoption(parser):
@@ -131,7 +129,15 @@ def fake_claude(tmp_path, monkeypatch):
 
 
 @pytest.fixture(scope="session")
-def browser():
+def app_build():
+    """The folder of the Flutter build. Without it, the browser tests skip."""
+    if not (APP_BUILD / "index.html").is_file():
+        pytest.skip(f"no Flutter build in {APP_BUILD} (README.md, 'The Flutter app')")
+    return APP_BUILD
+
+
+@pytest.fixture(scope="session")
+def browser(app_build):
     with sync_playwright() as playwright:
         try:
             # Chromium cannot make its own sandbox inside a container.
@@ -142,13 +148,20 @@ def browser():
         browser.close()
 
 
-@pytest.fixture
-def server(deck_dir, monkeypatch):
-    """The address of the app. The server is a thread of this process, so it
-    sees the deck folder and the databases of the test. No lifespan: no model
-    warm-up, and no import of the real decks."""
-    monkeypatch.setattr(service, "DB_PATH", deck_dir.parent / "lemmas.db")
-    monkeypatch.delenv("TLHELPER_ALWAYS_LARGE", raising=False)
+def serve_app(app_build, monkeypatch):
+    """The page of the app is the Flutter build, whatever STATIC_DIR is."""
+    files = next(
+        route for route in service.app.routes if getattr(route, "name", "") == "static"
+    )
+    monkeypatch.setattr(files, "app", service.RevalidatedFiles(directory=app_build))
+    monkeypatch.setattr(service, "INDEX_HTML", app_build / "index.html")
+
+
+def start_server():
+    """Starts the app in a thread of this process, so it sees the deck folder
+    and the databases of the caller. No lifespan: no model warm-up, and no
+    import of the real decks. Returns the address and a function that stops
+    the server."""
     config = uvicorn.Config(
         service.app, host="127.0.0.1", port=0, lifespan="off", log_level="warning"
     )
@@ -159,9 +172,40 @@ def server(deck_dir, monkeypatch):
         assert thread.is_alive(), "the server did not start"
         time.sleep(0.01)
     port = server.servers[0].sockets[0].getsockname()[1]
-    yield f"http://localhost:{port}"
-    server.should_exit = True
-    thread.join(timeout=5)
+
+    def stop():
+        server.should_exit = True
+        thread.join(timeout=5)
+
+    return f"http://localhost:{port}", stop
+
+
+@pytest.fixture
+def server(app_build, deck_dir, monkeypatch):
+    """The address of the app."""
+    monkeypatch.setattr(service, "DB_PATH", deck_dir.parent / "lemmas.db")
+    monkeypatch.delenv("TLHELPER_ALWAYS_LARGE", raising=False)
+    serve_app(app_build, monkeypatch)
+    address, stop = start_server()
+    yield address
+    stop()
+
+
+def new_context(
+    browser, server, *, locale="en-US", width=1280, height=1400, dark=False
+):
+    """A browser context with no network: a request outside the server fails.
+    Tall, so that a picture shows the whole tab."""
+    context = browser.new_context(
+        base_url=server,
+        locale=locale,
+        viewport={"width": width, "height": height},
+        color_scheme="dark" if dark else "light",
+    )
+    context.route(
+        lambda url: not url.startswith(f"{server}/"), lambda route: route.abort()
+    )
+    return context
 
 
 def _type_into(field, text):
@@ -181,53 +225,54 @@ def type_into():
     return _type_into
 
 
-@pytest.fixture(scope="session")
-def fluent_script(request):
-    """The Fluent script that index.html loads from the CDN, or None with no
-    network. The file stays in the cache of pytest, and it must have the hash
-    of the integrity attribute: the browser refuses another file."""
-    html = service.INDEX_HTML.read_text(encoding="utf-8")
-    url = re.search(r'src="(https://cdn\.jsdelivr\.net/[^"]+)"', html).group(1)  # ty: ignore[unresolved-attribute]
-    integrity = re.search(r'integrity="sha384-([^"]+)"', html).group(1)  # ty: ignore[unresolved-attribute]
-    cached = request.config.cache.mkdir("fluent") / url.rsplit("@", 1)[1].replace(
-        "/", "-"
-    )
-    if not cached.is_file():
-        try:
-            # The regex above allows only an https URL of jsdelivr.
-            with urllib.request.urlopen(url, timeout=10) as response:  # noqa: S310
-                cached.write_bytes(response.read())
-        except OSError:
-            return None
-    data = cached.read_bytes()
-    assert base64.b64encode(hashlib.sha384(data).digest()).decode() == integrity
-    return data
+@pytest.fixture
+def note():
+    """note(page, text): a text of the semantics tree, as a node of its own or
+    as the aria-label of the group that Flutter merges it into. Not the copy
+    in the announcement of a live region. text can be a regex."""
+
+    def find(page, text):
+        return (
+            page.get_by_label(text)
+            .or_(page.locator("flt-semantics").get_by_text(text))
+            .first
+        )
+
+    return find
+
+
+def _save(page, path):
+    # The canvas paints a moment after the semantics tree changes.
+    page.wait_for_timeout(1000)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    page.screenshot(path=path)
 
 
 @pytest.fixture
-def new_page(browser, server, fluent_script, request):
-    """Opens a page: new_page(locale="en-US", fluent=True, ignore=None).
-    fluent=False: the CDN does not answer. ignore: a text, and an error with
-    that text is not a failure. At the end of the test, each page saves its
-    picture (--screenshots), closes, and must have no errors."""
+def screenshot(request):
+    """screenshot(page, name): with --screenshots=DIR, a picture of the page
+    now, as DIR/name.png."""
+    folder = request.config.getoption("--screenshots")
+
+    def take(page, name):
+        if folder:
+            _save(page, Path(folder) / f"{name}.png")
+
+    return take
+
+
+@pytest.fixture
+def new_page(browser, server, request):
+    """Opens a page: new_page(locale="en-US", width=1280, height=1400,
+    dark=False, ignore=None). ignore: a text, and an error with that text is
+    not a failure. At the end of the test, each page saves its picture
+    (--screenshots), closes, and must have no errors."""
     opened = []
 
-    def open_page(locale="en-US", fluent=True, ignore=None):
-        script = fluent_script if fluent else None
-        context = browser.new_context(base_url=server, locale=locale)
-
-        # The tests must not need the network. Without the script, the page
-        # uses its own formatter for the English text (static/js/i18n.js).
-        def cdn(route):
-            if script is None:
-                return route.abort()
-            return route.fulfill(
-                body=script,
-                content_type="application/javascript",
-                headers={"access-control-allow-origin": "*"},
-            )
-
-        context.route(CDN, cdn)
+    def open_page(locale="en-US", width=1280, height=1400, dark=False, ignore=None):
+        context = new_context(
+            browser, server, locale=locale, width=width, height=height, dark=dark
+        )
         page = context.new_page()
         errors = []
 
@@ -238,10 +283,8 @@ def new_page(browser, server, fluent_script, request):
         page.on("pageerror", lambda exc: error(str(exc)))
 
         def console(message):
-            # The browser reports the script that did not load.
-            from_cdn = message.location.get("url", "").startswith(CDN[:-2])
-            if message.type == "error" and not from_cdn:
-                error(message.text)
+            if message.type == "error":
+                error(f"{message.text} {message.location.get('url', '')}")
 
         page.on("console", console)
         opened.append((page, errors))
@@ -254,9 +297,7 @@ def new_page(browser, server, fluent_script, request):
             name = re.sub(r"[^\w.-]+", "_", request.node.name)
             if number:
                 name += f"-{number + 1}"
-            path = Path(folder) / f"{name}.png"
-            path.parent.mkdir(parents=True, exist_ok=True)
-            page.screenshot(path=path, full_page=True)
+            _save(page, Path(folder) / f"{name}.png")
         page.context.close()
         assert errors == [], request.node.name
 

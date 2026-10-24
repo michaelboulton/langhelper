@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The repository is one uv workspace. The root `pyproject.toml` lists the members, and the root `uv.lock` holds the versions of both. Each member has its own `pyproject.toml`, `Dockerfile`, `README.md` and `tests/`:
 
-- `web/`: the language-learning web app (uv project `langhelper-web`). The Python package is `tlhelper`, a FastAPI service. The page is plain JS in `static/`, with no build step.
+- `web/`: the language-learning web app (uv project `langhelper-web`). The Python package is `tlhelper`, a FastAPI service. The page is the Flutter app in `app/`, with a build step: the image builds it and serves it. The plain JS page in `static/` is still the page of a local run without `STATIC_DIR`, until issue #39 deletes it.
 - `tts/`: the text-to-speech service (uv project `omnivoice-server`). The Python package is `omnivoice_server`, a ctypes binding to `libomnivoice.so` behind an OpenAI-shaped speech API.
 
 `README.md` at the root is a short overview. `web/README.md` and `tts/README.md` are the full reference: the API, the environment variables, the data files and the deploy steps. Read the relevant section before a change.
@@ -14,7 +14,7 @@ The repository is one uv workspace. The root `pyproject.toml` lists the members,
 Other documents in `web/`:
 
 - `LANGUAGES.md`: the extra work for a study language with a non-Latin script or no spaces.
-- `DART.md`: the plan to move `static/` to a Flutter app in `web/app/`. The move is in progress. Issue [#24](https://github.com/michaelboulton/langhelper/issues/24) tracks it, and each of its sub-issues is one part. Before a change to `static/`, `web/app/` or a route that the page reads, read #24 and its sub-issues: they say which parts are done, and what each next part needs. `static/` stays the page that the app serves until the sub-issue that deletes it is done.
+- `DART.md`: the plan to move `static/` to a Flutter app in `web/app/`. The move is in progress. Issue [#24](https://github.com/michaelboulton/langhelper/issues/24) tracks it, and each of its sub-issues is one part. Before a change to `static/`, `web/app/` or a route that the page reads, read #24 and its sub-issues: they say which parts are done, and what each next part needs. The image serves the Flutter build, and the browser tests test only that build.
 - `scripts/README.md`: admin tools that are not in the image.
 
 To plan an audio course ("a course of 20 lessons of Italian, with flashcards"), follow `.claude/skills/audio-course/SKILL.md`. It writes a `plan.sh` of the commands for the user to run.
@@ -44,8 +44,11 @@ Commands for `web/`, from `web/`:
 
 ```bash
 DATA_ROOT=../.data uv run uvicorn tlhelper.app:app --port 8000 --no-access-log   # local run, no login
+STATIC_DIR=app/build/web DATA_ROOT=../.data uv run uvicorn tlhelper.app:app --port 8000 --no-access-log   # local run of the Flutter app
+(cd app && flutter build web --wasm --no-web-resources-cdn --base-href /static/)   # build the Flutter app, for the browser tests
 uv run playwright install --only-shell chromium        # one time, for the browser tests
 uv run pytest tests/test_browser_breakdown.py --screenshots=shots   # save a PNG of each browser test
+uv run python tests/shot.py "Ovo je rečenica." --translate --out shot.png   # one PNG, no test (--deck NAME, --dark)
 uv run pytest tests/test_locales.py                    # check the Fluent catalogs
 uv run python -m tlhelper.build_glosses --language de kaikki.org-dictionary-German.jsonl   # rebuild a glosses.db
 uv run python -m tlhelper.flashcards.make_toml decks/x.apkg --language hr --name "X"      # write the .toml of a deck
@@ -63,13 +66,13 @@ fly deploy . --config web/fly.toml --dockerfile web/Dockerfile --ha=false   # de
 Tests that need resources skip when the resources are missing:
 
 - `test_real_models` needs the classla models in `.data/` at the repository root.
-- The browser tests need the Playwright Chromium. A Claude Code cloud container has a Chromium in `/opt/pw-browsers`, but it can be an older build than the version that `uv.lock` pins. Then each browser test skips with `Executable doesn't exist at /opt/pw-browsers/chromium_headless_shell-<N>`. Do not run `playwright install`. Instead, link the build that is there under the name that Playwright wants, in a folder of your own, and set `PLAYWRIGHT_BROWSERS_PATH` to that folder. For example: `ln -s /opt/pw-browsers/chromium_headless_shell-1243 <dir>/chromium_headless_shell-1248`, then `PLAYWRIGHT_BROWSERS_PATH=<dir> uv run pytest ...`.
+- The browser tests need the Flutter build in `web/app/build/web` (the `server` fixture serves it, whatever `STATIC_DIR` is) and the Playwright Chromium. Their browser has no network. They find the widgets through the semantics tree with `get_by_role` and `get_by_label`, because Flutter draws on a canvas. `web/README.md`, "The browser tests", has the details. A Claude Code cloud container has a Chromium in `/opt/pw-browsers`, but it can be an older build than the version that `uv.lock` pins. Then each browser test skips with `Executable doesn't exist at /opt/pw-browsers/chromium_headless_shell-<N>`. Do not run `playwright install`. Instead, link the build that is there under the name that Playwright wants, in a folder of your own, and set `PLAYWRIGHT_BROWSERS_PATH` to that folder. For example: `ln -s /opt/pw-browsers/chromium_headless_shell-1243 <dir>/chromium_headless_shell-1248`, then `PLAYWRIGHT_BROWSERS_PATH=<dir> uv run pytest ...`.
 - DeepL and the AI service are fakes in the tests, so the tests need no key.
 - The `tts/` tests use a fake model and need no build of `libomnivoice.so`.
 - The heavy German tests need `de_dep_news_trf`.
 - `test_the_clips_of_the_repo` needs the voice clips in `tts/omnivoice_server/voices/`.
 
-CI (`.github/workflows/tests.yml`) runs prek, then the tests of both members. The `dart` job runs `flutter test` and the web build in `web/app/`. The tests job installs the Playwright Chromium, so the browser tests run, and runs `test_browser_app.py` against that build. It installs the heavy German model and caches the classla models in `.data/`, so `test_real_models` runs.
+CI (`.github/workflows/tests.yml`) runs prek, then the tests of both members. The `dart` job runs `flutter test` and the web build in `web/app/`. The tests job downloads that build and installs the Playwright Chromium, so the browser tests run. It installs the heavy German model and caches the classla models in `.data/`, so `test_real_models` runs.
 
 ## web architecture
 

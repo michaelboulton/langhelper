@@ -15,7 +15,7 @@ services:
     environment:
       # The app reads and writes the downloaded models and the SQLite databases under this path.
       DATA_ROOT: /data
-      # The page, its script and its style sheet (web/static/).
+      # The page: the build of the Flutter app (web/app/) in the image.
       STATIC_DIR: /app/static
       # Never download. If the models are not in ./.data, classify returns 503.
       DOWNLOAD_MODELS: "0"

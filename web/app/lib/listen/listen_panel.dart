@@ -180,6 +180,42 @@ class _ListenPanelState extends ConsumerState<ListenPanel> {
   }
 }
 
+/// A button of a player, with its tooltip. The label is its only name in the
+/// semantics tree: the tooltip of a hovered button adds its text to the
+/// label otherwise.
+class PlayerButton extends StatelessWidget {
+  const PlayerButton({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    this.filled = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: label,
+      button: true,
+      enabled: true,
+      onTap: onPressed,
+      excludeSemantics: true,
+      child: filled
+          ? IconButton.filled(
+              icon: Icon(icon),
+              tooltip: label,
+              onPressed: onPressed,
+            )
+          : IconButton(icon: Icon(icon), tooltip: label, onPressed: onPressed),
+    );
+  }
+}
+
 /// Play or pause, and the place in the sound.
 class PlayerBar extends StatelessWidget {
   const PlayerBar({super.key, required this.player, required this.duration});
@@ -199,24 +235,26 @@ class PlayerBar extends StatelessWidget {
             stream: player.playing,
             builder: (context, snapshot) {
               final playing = snapshot.data ?? false;
-              return IconButton(
-                icon: Icon(playing ? Icons.pause : Icons.play_arrow),
-                tooltip: playing
-                    ? i18n.t('listen-pause')
-                    : i18n.t('listen-play'),
+              return PlayerButton(
+                icon: playing ? Icons.pause : Icons.play_arrow,
+                label: playing ? i18n.t('listen-pause') : i18n.t('listen-play'),
                 onPressed: playing ? player.pause : player.play,
               );
             },
           ),
           if (length != null && length > Duration.zero)
             Expanded(
-              child: StreamBuilder<Duration>(
-                stream: player.position,
-                builder: (context, snapshot) => ProgressBar(
-                  progress: snapshot.data ?? Duration.zero,
-                  total: length,
-                  onSeek: player.seek,
-                  timeLabelLocation: TimeLabelLocation.sides,
+              // The seek bar of the semantics tree takes the focus from a
+              // text field on the web (README.md, "The Listen panel").
+              child: ExcludeSemantics(
+                child: StreamBuilder<Duration>(
+                  stream: player.position,
+                  builder: (context, snapshot) => ProgressBar(
+                    progress: snapshot.data ?? Duration.zero,
+                    total: length,
+                    onSeek: player.seek,
+                    timeLabelLocation: TimeLabelLocation.sides,
+                  ),
                 ),
               ),
             ),

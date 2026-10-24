@@ -131,9 +131,8 @@ Done (#26). README, "The Flutter app", has the commands.
   checks its SHA-256, copies `web/app/` to `/src/app` and runs
   `flutter build web --wasm --no-web-resources-cdn --base-href /static/`.
   `ghcr.io/cirruslabs/flutter` has no tag after 3.44.0. The python stage
-  copies the build to `/app/flutter`, next to `static/` in `/app/static`.
-  `STATIC_DIR` chooses, and the image sets `/app/static`. The version must
-  equal the local `flutter --version`.
+  copies the build to `/app/static` (step 12). The version must equal the
+  local `flutter --version`.
 - The root `.dockerignore` lets `web/app` in, but not `web/app/build`,
   `web/app/.dart_tool` or `web/app/test/goldens`.
 - `tests/test_browser_app.py`: with `STATIC_DIR` at the build, the blank app
@@ -146,9 +145,8 @@ Done. The `dart` job of `.github/workflows/tests.yml` runs `flutter test`
 and the web build with `subosito/flutter-action` at `FLUTTER_VERSION` of the
 Dockerfile, and uploads `app/build/web`. prek runs `dart format` and
 `flutter analyze` (`app/.pre-commit-config.yaml`). The `tests` job downloads
-the build and installs the Playwright Chromium. It runs the web tests, then
-`tests/test_browser_app.py` with `STATIC_DIR` at the build, so no browser
-test skips.
+the build and installs the Playwright Chromium. It runs the web tests, and
+the browser tests open the build, so no browser test skips.
 
 ### 3. API client and models
 
@@ -293,6 +291,9 @@ end, and when the user leaves the lesson.
 
 ### 12. Tests and screenshots
 
+Done (#38). README, "The browser tests" and "Pictures of the page", has the
+details. The image serves the Flutter build in `/app/static` too.
+
 - Golden tests in `app/test/`: the link layer with a fixed fake classification
   (two sentences, links and guesses, one selected chip), a chip row, the diff,
   the bar charts. `flutter test` compares with `test/goldens/*.png`;
@@ -310,9 +311,11 @@ end, and when the user leaves the lesson.
 
 ### 13. Remove `static/`, update README
 
-Delete `static/` and its lines in the root `.dockerignore`. The Dockerfile
-copies the Flutter build to `/app/static` in place of `/app/flutter`, and the
-default `STATIC_DIR` of `app.py` becomes `app/build/web`. In the README,
+Delete `static/`. The Dockerfile already copies the Flutter build to
+`/app/static`, and the root `.dockerignore` already leaves `static/` out. The
+default `STATIC_DIR` of `app.py` becomes `app/build/web`, and
+`serve_app` in `tests/conftest.py` goes. The tests of `test_app.py` that read
+`static/js/` and `static/css/` read files of the build. In the README,
 update the `static/` rows of "Files", "Install on Android" (Chrome now
 installs from `app/web/manifest.json`, same address) and "Running locally"
 for the new commands. Note the tab address change. `AGENTS.md` and the root
@@ -320,23 +323,8 @@ for the new commands. Note the tab address change. `AGENTS.md` and the root
 
 ## Pictures of the page, for a coding loop
 
-These are the commands for checking a drawing, such as the curves, without a
-person looking at a browser. They go into README under "Running locally" when
-the app exists.
-
-1. Build: `cd web/app` and
-   `flutter build web --wasm --no-web-resources-cdn --base-href /static/`.
-   About a minute. `flutter build web` without `--wasm` is faster for a check.
-2. Pictures of every browser test:
-   `uv run pytest tests/test_browser_breakdown.py --screenshots=shots` writes
-   one full-page PNG per test to `shots/`. Open them with the Read tool and
-   compare the curves with `app/test/goldens/link_layer.png`.
-3. One picture, no test: `uv run python tests/shot.py "Ovo je rečenica." --translate --out shot.png`
-   starts the server as `conftest.py` does, opens the page, types the text,
-   waits for the chips and saves the picture. `--deck NAME` does the same for
-   a card. `--dark` for the dark theme.
-4. Pixel-exact: `flutter test`. On a failure the diff images land in
-   `app/test/failures/`.
+README, "Pictures of the page", has the commands: the pictures of the
+browser tests, `tests/shot.py`, and the golden tests.
 
 ## Verification of the whole change
 

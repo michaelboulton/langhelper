@@ -171,8 +171,9 @@ class _Course extends StatelessWidget {
   }
 }
 
-/// A ✓ for a finished lesson, and a bar with the percentage for a lesson
-/// that the user started. Nothing for a lesson that the user never played.
+/// A check mark for a finished lesson, and a bar with the percentage for a
+/// lesson that the user started. Nothing for a lesson that the user never
+/// played.
 class _LessonProgress extends StatelessWidget {
   const _LessonProgress({required this.lesson});
 
@@ -183,16 +184,12 @@ class _LessonProgress extends StatelessWidget {
     final i18n = I18n.of(context);
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
     if (lesson.finished) {
+      // An icon: the bundled fonts have no ✓, and the browser would fetch
+      // a font from Google for it.
       return Semantics(
         label: i18n.t('audio-finished'),
         child: const ExcludeSemantics(
-          child: Text(
-            '✓',
-            style: TextStyle(
-              color: Color(0xFF2E7D32),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          child: Icon(Icons.check, color: Color(0xFF2E7D32), size: 20),
         ),
       );
     }

@@ -99,6 +99,8 @@ void main() {
     // Three links and one guess for each sentence.
     expect(painter.lines, hasLength(8));
     expect(painter.lines.where((line) => line.guess), hasLength(2));
+    // The browser tests read the number from the semantics tree.
+    expect(find.bySemanticsLabel('links: 8'), findsOne);
     final thick = painter.lines.where((line) => line.selected).single;
     final je = tester
         .getRect(find.byKey(chipKey(selected)))

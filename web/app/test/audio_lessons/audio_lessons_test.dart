@@ -225,7 +225,7 @@ void main() {
     );
     await openTab(tester, server);
     // Lesson 1 is finished, and the user is a quarter through lesson 2.
-    expect(find.text('✓'), findsOne);
+    expect(find.byIcon(Icons.check), findsOne);
     expect(find.bySemanticsLabel('Finished'), findsOne);
     expect(find.text('25%'), findsOne);
     final bar = tester.widget<LinearProgressIndicator>(
@@ -248,7 +248,7 @@ void main() {
     );
     await openTab(tester, server);
     expect(find.byType(LinearProgressIndicator), findsNothing);
-    expect(find.text('✓'), findsNothing);
+    expect(find.byIcon(Icons.check), findsNothing);
     await tap(tester, find.text('Continue'));
     expect(path(tester), '/audio/it-course/1');
   });
@@ -258,7 +258,7 @@ void main() {
       audioCourses: courses('none', second: {'finished': true}),
     );
     await openTab(tester, server);
-    expect(find.text('✓'), findsNWidgets(2));
+    expect(find.byIcon(Icons.check), findsNWidgets(2));
     expect(find.text('Continue'), findsNothing);
   });
 
@@ -318,7 +318,7 @@ void main() {
     expect(server.saves.single.$2, {'position': 120.0, 'duration': 120.0});
     await tap(tester, find.text('All lessons'));
     expect(server.saves, hasLength(1));
-    expect(find.text('✓'), findsOne);
+    expect(find.byIcon(Icons.check), findsOne);
     expect(find.byType(LinearProgressIndicator), findsNothing);
   });
 
