@@ -239,6 +239,9 @@ With neither, the button does not show.
 
 ### 9. Explain panel and Progress tab
 
+Done (#34). README, "The Explain panel" and "The Progress tab", has the
+details.
+
 Explain: `/api/v1/explain/questions`, one button per question, the context
 field, a 60 s timeout, under the breakdown and under an answered card.
 Progress: the user selector (admin), the stats table and the two 90-day bar
