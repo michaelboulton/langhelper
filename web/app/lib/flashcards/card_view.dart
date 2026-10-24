@@ -8,6 +8,7 @@ import '../breakdown/form.dart' show CheckboxLabel, textDirection;
 import '../breakdown/links.dart';
 import '../breakdown/result.dart';
 import '../breakdown/state.dart';
+import '../explain/explain_panel.dart';
 import '../i18n/i18n.dart';
 import 'decks.dart' show countsText;
 import 'diff.dart';
@@ -213,6 +214,7 @@ class _CardState extends ConsumerState<_Card> {
                 ),
               ],
             ),
+            ExplainPanel(target: ReviewTarget(answered.reviewId)),
           ],
           if (state.selected case final selected?)
             SelectionArea(

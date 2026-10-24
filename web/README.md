@@ -1354,8 +1354,8 @@ the Docker commands above, with `--userns=keep-id` and
 
 `app/` is a Flutter web app that replaces `static/`, one part at a time.
 `DART.md` has the plan, and issue #24 tracks the parts. Now the app has the
-Breakdown tab, with the curves between the words and the Listen panel, and
-the Flashcards tab.
+Breakdown tab, with the curves between the words and the Listen panel, the
+Flashcards tab, the "explain with AI" panel, and the Progress tab.
 `static/` stays the page of the app until the Flutter app has all the tabs.
 
 Install Flutter 3.47.5, the version of `FLUTTER_VERSION` in `Dockerfile`. Build
@@ -1379,9 +1379,10 @@ Breakdown tab at a phone width and at a desktop width. With a fake voice
 service, it clicks each button of the Listen panel. A second test file,
 `tests/flashcards/test_browser_cards_app.py`, opens a deck in the Flashcards
 tab, answers a card with a picture and a clip, and rates a card with the
-keys. Both skip unless `STATIC_DIR` is a Flutter build. With
+keys. With a fake AI service, it asks a question about an answer, then opens
+the Progress tab. Both skip unless `STATIC_DIR` is a Flutter build. With
 `--screenshots=DIR`, they save a picture of the Breakdown tab, the Listen
-panel and the cards at each width.
+panel, the cards and the Progress tab at each width.
 The other browser tests need the page of `static/`, so run them without
 `STATIC_DIR`. The `tests` job of CI runs both against the build of the
 `dart` job:
@@ -1623,7 +1624,7 @@ because `just_audio` needs a platform plugin.
 | `media.dart` | The pictures and the sound clips of one side of a card. |
 | `read_aloud.dart` | The "Read it aloud" button. |
 | `voices.dart` | The voices of the browser, through `flutter_tts`, and why they cannot read a text. |
-| `browser.dart`, `browser_web.dart` | The parts that need a browser: `Intl.RelativeTimeFormat` and `speechSynthesis`. `browser.dart` is the version for `flutter test`. |
+| `browser.dart`, `browser_web.dart` | The parts that need a browser: `Intl.RelativeTimeFormat`, `Intl.NumberFormat` and `speechSynthesis`. `browser.dart` is the version for `flutter test`. |
 | `time.dart` | The time of the next card, such as "in 5 minutes". |
 | `flashcards_tab.dart` | The title, the note over the decks, the status line, and the two legends. |
 
@@ -1646,3 +1647,48 @@ the golden image `app/test/flashcards/goldens/diff.png`. After a change of
 the look, write the image again with
 `flutter test --update-goldens test/flashcards/flashcards_test.dart` in
 `app/`, and look at it before the commit.
+
+### The Explain panel
+
+`app/lib/explain/explain_panel.dart` does what `static/js/explain.js` does
+(see "Explain with AI").
+
+- The app reads `GET /api/v1/explain/questions` one time. With no AI key on
+  the server, the panel does not show.
+- The Breakdown tab shows the panel under the breakdown, with the questions
+  about a sentence. A card shows it after the answer, with the questions
+  about the answer and about a sentence.
+- A click sends the id of the question, the text of the field under the
+  buttons, and the locale of the page, so the AI answers in that language.
+  The buttons are disabled while the request runs.
+- The time limit is 60 s. The server stops the AI service after 30 s, and the
+  tagger can load a model first.
+- A new breakdown of the same text keeps the answer on the panel. A new text
+  or a new card removes it.
+
+The widget tests are in `app/test/explain/`.
+
+### The Progress tab
+
+`app/lib/progress/` does what `static/js/progress.js` does (see "The progress
+of each user"). The address of the tab is `/#/progress`.
+
+| File | What it has |
+| ---- | ----------- |
+| `state.dart` | The users, the selected user and the numbers, with `flutter_riverpod`. |
+| `progress_tab.dart` | The title, the user selector, the status line and the table. |
+| `charts.dart` | The two bar charts of the last 90 days, with `fl_chart`. |
+
+- The tab reads the numbers again each time that it opens, so a new answer
+  shows.
+- Only an admin gets the user selector. The choice stays while the app is
+  open.
+- A bar shows the text of its day under the pointer, or after a tap. The
+  whole height of a day is the target, so a day with no bar has its text
+  too.
+
+The widget tests are in `app/test/progress/`. They check the charts with
+fixed numbers against the golden image `app/test/progress/goldens/charts.png`.
+After a change of the look, write the image again with
+`flutter test --update-goldens test/progress/progress_test.dart` in `app/`,
+and look at it before the commit.

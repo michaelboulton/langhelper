@@ -135,3 +135,37 @@ def test_an_answered_card(
     assert page.url.endswith("/#/cards")
     assert errors == []
     context.close()
+
+
+@pytest.mark.parametrize("width", [390, 1280])
+def test_explain_and_progress(
+    backend, browser, server, deck_dir, make_apkg, request, type_into, width
+):
+    make_apkg(
+        deck_dir / "basics.apkg", [("guid-coffee", "I drink coffee.", "Pijem kavu.")]
+    )
+    (deck_dir / "basics.toml").write_text(TOML, encoding="utf-8")
+    decks.import_decks()
+    context, page, errors = open_tab(browser, server, width)
+    deck_button(page).click()
+    note(page, "Enter this in Croatian.").wait_for()
+    # No questions before the answer.
+    expect(page.get_by_role("button", name="Why is my answer wrong?")).to_have_count(0)
+
+    type_into(page.get_by_role("textbox"), "Pijem kafu.")
+    page.keyboard.press("Enter")
+    page.get_by_role("button", name="Next card").wait_for(timeout=60_000)
+    page.get_by_role("button", name="Why is my answer wrong?").click()
+    note(page, "Answer 1.").wait_for()
+    note(page, "fake-model wrote this. It can be wrong.").wait_for()
+    assert len(backend.prompts) == 1
+    screenshot(request, page, f"card-explain-{width}")
+
+    # One answer, rated Hard: not "Again".
+    page.get_by_role("tab", name="Progress").click()
+    note(page, "Answers").wait_for()
+    note(page, "100%").wait_for()
+    assert page.url.endswith("/#/progress")
+    screenshot(request, page, f"progress-{width}")
+    assert errors == []
+    context.close()
