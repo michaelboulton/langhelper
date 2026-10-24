@@ -59,7 +59,11 @@ class I18n {
 
   /// The message [id] of the first catalog that has it. Without one: the
   /// [fallback], else the id, and the log names the id one time.
-  String tOr(String id, {Map<String, Object?> args = const {}, String? fallback}) {
+  String tOr(
+    String id, {
+    Map<String, Object?> args = const {},
+    String? fallback,
+  }) {
     if (message(id, args) case final text?) return text;
     if (fallback != null) return fallback;
     if (_missing.add(id)) debugPrint('i18n: no message $id');

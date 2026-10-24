@@ -33,9 +33,8 @@ BreakdownApi server(
       final list = jsonEncode(locales ?? fixture('locales.json'));
       return http.Response.bytes(utf8.encode(list), 200);
     }
-    final code = RegExp(
-      r'^/api/v1/locales/(\w+)/ui\.ftl$',
-    ).firstMatch(request.url.path)?[1];
+    final code = RegExp(r'^/api/v1/locales/(\w+)/ui\.ftl$')
+        .firstMatch(request.url.path)?[1];
     final source = catalogs[code];
     return source == null
         ? http.Response('{"detail": "Not Found"}', 404)
@@ -76,7 +75,10 @@ void main() {
     });
 
     test('a parameter, with the number in the format of the locale', () {
-      expect(i18n.t('status-timeout', {'seconds': 1.5}), 'No answer after 1.5 s.');
+      expect(
+        i18n.t('status-timeout', {'seconds': 1.5}),
+        'No answer after 1.5 s.',
+      );
     });
 
     test('a missing message gives the fallback, else the id', () {
