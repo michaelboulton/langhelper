@@ -58,6 +58,9 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get --enforce-lockfile
+      # lib/api/models.g.dart must be the output of lib/api/models.dart.
+      - run: dart run build_runner build
+      - run: git diff --exit-code -- lib
       - run: flutter test
       # The build of the image, for tests/test_browser_app.py.
       - run: flutter build web --wasm --no-web-resources-cdn --base-href /static/

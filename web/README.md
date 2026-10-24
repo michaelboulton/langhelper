@@ -58,6 +58,8 @@ login. The API refuses texts over `MAX_TEXT_CHARS`.
 | `static/manifest.json`, `static/icon*.svg`, `static/icon*.png` | The web app manifest and the icons, for the install on a phone. See "Install on Android" |
 | `app/` | The Flutter app that replaces `static/`. See "The Flutter app" and `DART.md` |
 | `app/lib/main.dart` | The start of the app: the theme and the router |
+| `app/lib/api/` | `models.dart` has the models of `tlhelper/schemas.py` that the page reads, and `client.dart` has the client of the API. `models.g.dart` is generated. See "The Flutter app" |
+| `app/test/api/` | A copy of `/openapi.json` and a saved response of each route that the page reads, for the tests of the models |
 | `app/web/` | `index.html`, the manifest and the icons of the app. The manifest and the icons are copies of those in `static/` |
 | `app/assets/fonts/` | Noto Sans, Noto Sans Arabic and Noto Sans Hebrew, with their license `OFL.txt` |
 | `pyproject.toml` | Dependencies. Pins `torch` to the CPU-only wheel index of the root `pyproject.toml` |
@@ -1416,3 +1418,46 @@ change the version, take `version` and `sha256` from
 set `FLUTTER_VERSION` and `FLUTTER_SHA256`, and install the same version
 locally. The root `.dockerignore` lets `web/app/` in, but not its `build/`,
 `.dart_tool/` and `test/goldens/`.
+
+### The API client and the models
+
+`app/lib/api/models.dart` has a Dart class for each model of
+`tlhelper/schemas.py` that the page reads, and for each request body.
+`json_serializable` generates the JSON code in `models.g.dart`, and git keeps
+that file. After a change to `models.dart`, generate it again from `app/`:
+
+```bash
+dart run build_runner build
+```
+
+The `dart` job of CI runs the same command, and fails if `lib/` then has a
+change.
+
+`app/lib/api/client.dart` has one class for each group of routes, on the
+origin of the page. Each request has its own `http.Client`, and `close()` of
+that client cancels the request: on the Cancel button, on a newer classify,
+and on a timeout. The request then fails with `ApiCanceled` and its reason. A
+response with an error status is an `ApiException`. Its `message()` is the
+Fluent message `error-{code}` if the body has a code and a catalog has the
+message, else the `detail` of the body, as on the page of `static/`. A 401
+loads `/auth/login`, and after the login the browser comes back to the same
+address.
+
+Two parts of `app/test/api/` keep the models in step with the server:
+
+- `openapi.json` is a copy of `/openapi.json`. `test/api/openapi_test.dart`
+  checks that each model has exactly the fields of its schema, and that each
+  schema has a model or is on the list of the schemas that the page does not
+  read. `tests/test_dart_api.py` checks that the copy equals the schema of
+  the app. So a new key in `schemas.py` fails CI until the copy and the Dart
+  model have it. Write the copy again from this folder:
+
+  ```bash
+  SAVE_OPENAPI=1 uv run pytest tests/test_dart_api.py
+  ```
+
+- `samples/` has a saved response of each route that the page reads, from a
+  local run with a small deck and course. `test/api/models_test.dart` decodes
+  each one, and `tests/test_dart_api.py` checks that each one fits its
+  Pydantic model. The speech info and the explain answer are written by hand,
+  because they need a voice service and an AI service.

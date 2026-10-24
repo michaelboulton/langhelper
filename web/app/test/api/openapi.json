@@ -1,0 +1,2719 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Sentence breakdown",
+    "summary": "Break down a Croatian, German, French or Italian sentence, and learn with flashcards.",
+    "description": "A text in a study language becomes sentences and words, each word with its lemma, its tags and the problems that the checks found. On request, the result has the English translation and the links between the words of the two sides.",
+    "version": "1"
+  },
+  "paths": {
+    "/api/v1/decks": {
+      "get": {
+        "tags": [
+          "flashcards"
+        ],
+        "summary": "Deck List",
+        "description": "The decks, each with the card counts of the user.",
+        "operationId": "deck_list_api_v1_decks_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecksResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/decks/{deck_id}/next": {
+      "get": {
+        "tags": [
+          "flashcards"
+        ],
+        "summary": "Next Card",
+        "description": "The next card of the queue, with the breakdown of its prompt and with\nno answers. `done` if the user is through for now.",
+        "operationId": "next_card_api_v1_decks__deck_id__next_get",
+        "parameters": [
+          {
+            "name": "deck_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Deck Id"
+            }
+          },
+          {
+            "name": "heavy",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Use the heavy models of the study language for the breakdown.",
+              "default": false,
+              "title": "Heavy"
+            },
+            "description": "Use the heavy models of the study language for the breakdown."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/NextCard"
+                    },
+                    {
+                      "$ref": "#/components/schemas/NoCard"
+                    }
+                  ],
+                  "title": "Response Next Card Api V1 Decks  Deck Id  Next Get"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The models are not on the disk",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cards/{card_id}/answer": {
+      "post": {
+        "tags": [
+          "flashcards"
+        ],
+        "summary": "Answer",
+        "description": "Grade a typed answer, schedule the card, and break down the typed and\nthe correct answer.",
+        "operationId": "answer_api_v1_cards__card_id__answer_post",
+        "parameters": [
+          {
+            "name": "card_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Card Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnswerResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The models are not on the disk",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reviews/{review_id}/rating": {
+      "post": {
+        "tags": [
+          "flashcards"
+        ],
+        "summary": "Change Rating",
+        "description": "Replace the automatic rating of an answer, and schedule the card again.",
+        "operationId": "change_rating_api_v1_reviews__review_id__rating_post",
+        "parameters": [
+          {
+            "name": "review_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Review Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RatingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RatingResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/decks/{deck_id}/media/{name}": {
+      "get": {
+        "tags": [
+          "flashcards"
+        ],
+        "summary": "Media File",
+        "description": "An image or a sound clip of a card. The `url` of a media entry is the\naddress of this route.",
+        "operationId": "media_file_api_v1_decks__deck_id__media__name__get",
+        "parameters": [
+          {
+            "name": "deck_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Deck Id"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file",
+            "content": {
+              "image/*": {},
+              "audio/*": {}
+            }
+          },
+          "404": {
+            "description": "No such item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/flashcards/users": {
+      "get": {
+        "tags": [
+          "flashcards"
+        ],
+        "summary": "Users",
+        "description": "The users whose numbers this user can see. The own entry comes first.",
+        "operationId": "users_api_v1_flashcards_users_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsersResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/flashcards/stats": {
+      "get": {
+        "tags": [
+          "flashcards"
+        ],
+        "summary": "Stats",
+        "description": "The numbers of the user: the counts, the success rate, and the reviews\nof each of the last days.",
+        "operationId": "stats_api_v1_flashcards_stats_get",
+        "parameters": [
+          {
+            "name": "deck",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only this deck. Default: all.",
+              "title": "Deck"
+            },
+            "description": "Only this deck. Default: all."
+          },
+          {
+            "name": "of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The `id` of another user. Only for an admin.",
+              "title": "Of"
+            },
+            "description": "The `id` of another user. Only for an admin."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not an admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/explain/questions": {
+      "get": {
+        "tags": [
+          "explain"
+        ],
+        "summary": "Questions",
+        "description": "The questions that a user can select, and if an AI service is set up.",
+        "operationId": "questions_api_v1_explain_questions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/explain": {
+      "post": {
+        "tags": [
+          "explain"
+        ],
+        "summary": "Explain Sentence",
+        "description": "Ask the AI a question about a text in the study language. Only a\nquestion with `where` \"sentence\".",
+        "operationId": "explain_sentence_api_v1_explain_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExplainSentenceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExplainResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The limit of the user for a day",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The AI service failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "No key for an AI service, or the models are not on the disk",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/reviews/{review_id}/explain": {
+      "post": {
+        "tags": [
+          "explain"
+        ],
+        "summary": "Explain Review",
+        "description": "Ask the AI a question about an answer of the user to a flashcard. The\nserver reads the card and the answer from the review. A question with\n`where` \"sentence\" is about the side of the card in the study language.",
+        "operationId": "explain_review_api_v1_reviews__review_id__explain_post",
+        "parameters": [
+          {
+            "name": "review_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Review Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExplainRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExplainResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "The limit of the user for a day",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "The AI service failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "No key for an AI service, or the models are not on the disk",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/speech": {
+      "get": {
+        "tags": [
+          "speech"
+        ],
+        "summary": "Speech Info",
+        "description": "Whether a voice service is set up, its model, and the languages that\nit reads aloud. With no service, the page has no \"Listen\" buttons.",
+        "operationId": "speech_info_api_v1_speech_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpeechInfoResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/speech/audio": {
+      "get": {
+        "tags": [
+          "speech",
+          "speech"
+        ],
+        "summary": "Speak",
+        "description": "Read a text aloud: the mp3 from the voice service. The text goes to\nthat service. 422 with the code `voice-language` when the service does not\nread the language.",
+        "operationId": "speak_api_v1_speech_audio_get",
+        "parameters": [
+          {
+            "name": "text",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000,
+              "description": "The text to read aloud.",
+              "title": "Text"
+            },
+            "description": "The text to read aloud."
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "The language of the text: a `code` from /api/v1/languages, or \"en\".",
+              "default": "hr",
+              "title": "Language"
+            },
+            "description": "The language of the text: a `code` from /api/v1/languages, or \"en\"."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The sound",
+            "content": {
+              "audio/mpeg": {}
+            }
+          },
+          "502": {
+            "description": "The voice service failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "No voice service is set up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audio-lessons": {
+      "get": {
+        "tags": [
+          "audio lessons"
+        ],
+        "summary": "Courses",
+        "description": "The courses, by folder name, and their lessons in order. A course or a\nlesson that does not parse is left out, and the log has the error.",
+        "operationId": "courses_api_v1_audio_lessons_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioCoursesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audio-lessons/{course}/{lesson}.mp3": {
+      "get": {
+        "tags": [
+          "audio lessons"
+        ],
+        "summary": "Lesson Audio",
+        "description": "The mp3 of a lesson. FileResponse answers a Range request, so the\nplayer can jump.",
+        "operationId": "lesson_audio_api_v1_audio_lessons__course___lesson__mp3_get",
+        "parameters": [
+          {
+            "name": "course",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Course"
+            }
+          },
+          {
+            "name": "lesson",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Lesson"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The sound",
+            "content": {
+              "audio/mpeg": {}
+            }
+          },
+          "404": {
+            "description": "No such item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audio-lessons/{course}/{lesson}": {
+      "get": {
+        "tags": [
+          "audio lessons"
+        ],
+        "summary": "Lesson Script",
+        "description": "The parsed script of a lesson.",
+        "operationId": "lesson_script_api_v1_audio_lessons__course___lesson__get",
+        "parameters": [
+          {
+            "name": "course",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Course"
+            }
+          },
+          {
+            "name": "lesson",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Lesson"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioLessonResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/languages": {
+      "get": {
+        "tags": [
+          "breakdown"
+        ],
+        "summary": "Language List",
+        "description": "The study languages, English as the other side, and whether the page\nticks \"Large models\" by default.",
+        "operationId": "language_list_api_v1_languages_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LanguagesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/locales": {
+      "get": {
+        "tags": [
+          "breakdown"
+        ],
+        "summary": "Locale List",
+        "description": "The languages that the page has its text in.",
+        "operationId": "locale_list_api_v1_locales_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocalesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/locales/{code}/ui.ftl": {
+      "get": {
+        "tags": [
+          "breakdown"
+        ],
+        "summary": "Locale Catalog",
+        "description": "The messages of the page in one language, as a Fluent file.",
+        "operationId": "locale_catalog_api_v1_locales__code__ui_ftl_get",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No catalog for this code."
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/status": {
+      "get": {
+        "tags": [
+          "breakdown"
+        ],
+        "summary": "Status",
+        "description": "Which models are in memory, and which one loads at this moment.",
+        "operationId": "status_api_v1_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/classify": {
+      "post": {
+        "tags": [
+          "breakdown"
+        ],
+        "summary": "Classify",
+        "description": "Break a text into sentences and words, with the lemma, the tags and\nthe grammar problems of each word. A translation that fails is an `error`\nin `translation`, and the breakdown is still there.",
+        "operationId": "classify_api_v1_classify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClassifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassifyResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The models are not on the disk",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/lemmas": {
+      "get": {
+        "tags": [
+          "breakdown"
+        ],
+        "summary": "Lemmas",
+        "description": "The lemmas that were in the most texts, for one language.",
+        "operationId": "lemmas_api_v1_lemmas_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "How many lemmas.",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "How many lemmas."
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "A `code` from /api/v1/languages.",
+              "default": "hr",
+              "title": "Language"
+            },
+            "description": "A `code` from /api/v1/languages."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LemmasResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Accent": {
+        "properties": {
+          "form": {
+            "type": "string",
+            "title": "Form",
+            "description": "The word with its accent marks. \" / \" is between two possible forms."
+          },
+          "exact": {
+            "type": "boolean",
+            "title": "Exact",
+            "description": "False: the accent is that of the dictionary form, and not of this form."
+          },
+          "ambiguous": {
+            "type": "boolean",
+            "title": "Ambiguous",
+            "description": "The data has more than one accented form for this word.",
+            "default": false
+          },
+          "clitic": {
+            "type": "boolean",
+            "title": "Clitic",
+            "description": "The word has no accent of its own.",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "form",
+          "exact"
+        ],
+        "title": "Accent"
+      },
+      "AnswerRequest": {
+        "properties": {
+          "typed": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Typed",
+            "description": "What the user entered. Empty for \"I do not know\"."
+          },
+          "heavy": {
+            "type": "boolean",
+            "title": "Heavy",
+            "description": "Use the heavy models of the study language for the breakdown.",
+            "default": false
+          },
+          "elapsed_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elapsed Ms",
+            "description": "How long the user looked at the card, in milliseconds."
+          }
+        },
+        "type": "object",
+        "required": [
+          "typed"
+        ],
+        "title": "AnswerRequest"
+      },
+      "AnswerResponse": {
+        "properties": {
+          "review_id": {
+            "type": "integer",
+            "title": "Review Id",
+            "description": "The key for a change of the rating."
+          },
+          "rating": {
+            "type": "integer",
+            "title": "Rating",
+            "description": "The automatic rating: 1 Again, 2 Hard, 3 Good, 4 Easy."
+          },
+          "next_due": {
+            "type": "string",
+            "title": "Next Due",
+            "description": "When the card comes again, ISO 8601."
+          },
+          "diff": {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "equal",
+                    "delete",
+                    "insert"
+                  ]
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array",
+            "title": "Diff",
+            "description": "The typed answer against the closest accepted answer. \"delete\" is a\ntyped part that is wrong, and \"insert\" is a part that is missing."
+          },
+          "answers": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Answers",
+            "description": "All the accepted answers."
+          },
+          "media": {
+            "items": {
+              "$ref": "#/components/schemas/Media"
+            },
+            "type": "array",
+            "title": "Media",
+            "description": "The images and the sound clips of the answer."
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt",
+            "description": "The text of the prompt. A \"listen\" card has it only here."
+          },
+          "prompt_sentences": {
+            "items": {
+              "$ref": "#/components/schemas/Sentence"
+            },
+            "type": "array",
+            "title": "Prompt Sentences",
+            "description": "The breakdown of the prompt."
+          },
+          "typed": {
+            "$ref": "#/components/schemas/LinkedAnswer",
+            "description": "The typed answer, with the checks and the links to the prompt."
+          },
+          "correct": {
+            "$ref": "#/components/schemas/LinkedAnswer",
+            "description": "The closest accepted answer, with the links to the prompt."
+          }
+        },
+        "type": "object",
+        "required": [
+          "review_id",
+          "rating",
+          "next_due",
+          "diff",
+          "answers",
+          "media",
+          "prompt",
+          "prompt_sentences",
+          "typed",
+          "correct"
+        ],
+        "title": "AnswerResponse"
+      },
+      "AudioCourse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The name of the folder in DATA_ROOT/audio/, for the other routes."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "lessons": {
+            "items": {
+              "$ref": "#/components/schemas/AudioLesson"
+            },
+            "type": "array",
+            "title": "Lessons",
+            "description": "In order. A lesson whose script does not parse is not here."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "language",
+          "lessons"
+        ],
+        "title": "AudioCourse"
+      },
+      "AudioCoursesResponse": {
+        "properties": {
+          "courses": {
+            "items": {
+              "$ref": "#/components/schemas/AudioCourse"
+            },
+            "type": "array",
+            "title": "Courses"
+          }
+        },
+        "type": "object",
+        "required": [
+          "courses"
+        ],
+        "title": "AudioCoursesResponse"
+      },
+      "AudioLesson": {
+        "properties": {
+          "number": {
+            "type": "integer",
+            "title": "Number"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "audio": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "stale",
+              "none"
+            ],
+            "title": "Audio",
+            "description": "\"ready\": the mp3 is newer than the script. \"stale\": the script changed\nafter the mp3 was made. \"none\": the lesson has no mp3."
+          }
+        },
+        "type": "object",
+        "required": [
+          "number",
+          "title",
+          "audio"
+        ],
+        "title": "AudioLesson"
+      },
+      "AudioLessonResponse": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "grammar": {
+            "type": "string",
+            "title": "Grammar",
+            "description": "The grammar step of the lesson."
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/AudioLine"
+            },
+            "type": "array",
+            "title": "Lines",
+            "description": "In the order of the mp3."
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "summary",
+          "grammar",
+          "lines"
+        ],
+        "title": "AudioLessonResponse"
+      },
+      "AudioLine": {
+        "properties": {
+          "speaker": {
+            "type": "string",
+            "enum": [
+              "narrator",
+              "actor 1",
+              "actor 2",
+              "pause"
+            ],
+            "title": "Speaker",
+            "description": "The narrator speaks English. The actors speak the study language."
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "Empty for a pause."
+          },
+          "seconds": {
+            "type": "number",
+            "title": "Seconds",
+            "description": "The length of a pause. 0 for a spoken line."
+          }
+        },
+        "type": "object",
+        "required": [
+          "speaker",
+          "text",
+          "seconds"
+        ],
+        "title": "AudioLine"
+      },
+      "ClassifyRequest": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Text",
+            "description": "The text to break down, in the language of `source`."
+          },
+          "heavy": {
+            "type": "boolean",
+            "title": "Heavy",
+            "description": "Use the heavy models of the study language. They are more exact, and\nthe first request waits for their load. English only has a light model.",
+            "default": false
+          },
+          "nonstandard": {
+            "type": "boolean",
+            "title": "Nonstandard",
+            "description": "Use the heavy models for casual text. Only Croatian has them.",
+            "default": false
+          },
+          "track": {
+            "type": "boolean",
+            "title": "Track",
+            "description": "Count each lemma of the text, for `seen` and for /api/v1/lemmas.",
+            "default": true
+          },
+          "translate": {
+            "type": "boolean",
+            "title": "Translate",
+            "description": "Also translate the text to English, and link the words of the two\nsides.",
+            "default": false
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "description": "The study language: a `code` from /api/v1/languages.",
+            "default": "hr"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "study",
+              "en"
+            ],
+            "title": "Source",
+            "description": "Which side the user entered. \"en\": translate the text to the study\nlanguage first, and break down that text. `translate` and `nonstandard`\nthen have no effect, because the translator writes the standard language.",
+            "default": "study"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text"
+        ],
+        "title": "ClassifyRequest"
+      },
+      "ClassifyResponse": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "The model type that made the breakdown: \"light\", \"heavy\" or\n\"nonstandard\"."
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "study",
+              "en"
+            ],
+            "title": "Source"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "The text in the study language: from the user, or from the translator.\nEmpty after a translation that failed."
+          },
+          "sentences": {
+            "items": {
+              "$ref": "#/components/schemas/Sentence"
+            },
+            "type": "array",
+            "title": "Sentences",
+            "description": "The side of the study language."
+          },
+          "translation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Translation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The English side. Only with `translate`, or with the source \"en\"."
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "language",
+          "source",
+          "text",
+          "sentences"
+        ],
+        "title": "ClassifyResponse"
+      },
+      "Counts": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "The cards of the deck."
+          },
+          "new": {
+            "type": "integer",
+            "title": "New",
+            "description": "The cards that the user never answered."
+          },
+          "learning": {
+            "type": "integer",
+            "title": "Learning",
+            "description": "The cards in the short learning steps."
+          },
+          "due": {
+            "type": "integer",
+            "title": "Due",
+            "description": "The cards in review whose next review time is now or in the past."
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "new",
+          "learning",
+          "due"
+        ],
+        "title": "Counts"
+      },
+      "Deck": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "path": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Path",
+            "description": "The place in the deck tree, for a deck of a package with subdecks:\n[\"Croatian sentences\", \"Read\", \"2\"]. Empty for a deck on its own."
+          },
+          "counts": {
+            "$ref": "#/components/schemas/Counts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "language",
+          "path",
+          "counts"
+        ],
+        "title": "Deck"
+      },
+      "DecksResponse": {
+        "properties": {
+          "decks": {
+            "items": {
+              "$ref": "#/components/schemas/Deck"
+            },
+            "type": "array",
+            "title": "Decks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "decks"
+        ],
+        "title": "DecksResponse"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "ErrorResponse"
+      },
+      "ExplainQuestion": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The `question` of a request."
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "The text of the button."
+          },
+          "where": {
+            "type": "string",
+            "enum": [
+              "sentence",
+              "card"
+            ],
+            "title": "Where",
+            "description": "\"sentence\": about a text, for each of the two routes. \"card\": about an\nanswer to a flashcard, only for the route of a review."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "where"
+        ],
+        "title": "ExplainQuestion"
+      },
+      "ExplainRequest": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "title": "Question",
+            "description": "An `id` from /api/v1/explain/questions."
+          },
+          "user_context": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "User Context",
+            "description": "What the user wants to add to the question. It goes into the prompt as\ndata of the user.",
+            "default": ""
+          },
+          "locale": {
+            "type": "string",
+            "title": "Locale",
+            "description": "The language of the answer: a `code` from /api/v1/locales.",
+            "default": "en"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "ExplainRequest"
+      },
+      "ExplainResponse": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "The answer of the model, as plain text. It can be wrong."
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The model that wrote the answer."
+          },
+          "cached": {
+            "type": "boolean",
+            "title": "Cached",
+            "description": "The answer is from an earlier, equal request."
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "model",
+          "cached"
+        ],
+        "title": "ExplainResponse"
+      },
+      "ExplainSentenceRequest": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "title": "Question",
+            "description": "An `id` from /api/v1/explain/questions."
+          },
+          "user_context": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "User Context",
+            "description": "What the user wants to add to the question. It goes into the prompt as\ndata of the user.",
+            "default": ""
+          },
+          "locale": {
+            "type": "string",
+            "title": "Locale",
+            "description": "The language of the answer: a `code` from /api/v1/locales.",
+            "default": "en"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Text",
+            "description": "A text in the study language."
+          },
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "description": "The study language: a `code` from /api/v1/languages.",
+            "default": "hr"
+          }
+        },
+        "type": "object",
+        "required": [
+          "question",
+          "text"
+        ],
+        "title": "ExplainSentenceRequest"
+      },
+      "FlashcardUser": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "The `sub` claim of the login."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "FlashcardUser"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LanguageInfo": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "ISO 639-1. This is the `language` of a request."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "tag_name": {
+            "type": "string",
+            "title": "Tag Name",
+            "description": "The name of the xpos tag set."
+          },
+          "placeholder": {
+            "type": "string",
+            "title": "Placeholder",
+            "description": "An example text for the input field."
+          },
+          "variants": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Variants",
+            "description": "The model types. The first one is the default."
+          },
+          "light_note": {
+            "type": "string",
+            "title": "Light Note",
+            "description": "What the light model cannot do, if the heavy one can."
+          },
+          "has_accents": {
+            "type": "boolean",
+            "title": "Has Accents"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "ltr",
+              "rtl"
+            ],
+            "title": "Direction",
+            "description": "The direction of the script: the `dir` of a text in this language."
+          },
+          "speech": {
+            "type": "string",
+            "title": "Speech",
+            "description": "The BCP 47 tag for the speech synthesis of the browser."
+          },
+          "dictionary_links": {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array",
+            "title": "Dictionary Links",
+            "description": "(label, address). \"{lemma}\" in either one becomes the lemma of a word."
+          },
+          "ui_locale": {
+            "type": "string",
+            "title": "Ui Locale",
+            "description": "The `code` of the page text in this language (/api/v1/locales). Empty:\nthe page has no text in this language.",
+            "default": ""
+          },
+          "native_name": {
+            "type": "string",
+            "title": "Native Name",
+            "description": "The name of the language in the language.",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "tag_name",
+          "placeholder",
+          "variants",
+          "light_note",
+          "has_accents",
+          "direction",
+          "speech",
+          "dictionary_links"
+        ],
+        "title": "LanguageInfo"
+      },
+      "LanguagesResponse": {
+        "properties": {
+          "languages": {
+            "items": {
+              "$ref": "#/components/schemas/LanguageInfo"
+            },
+            "type": "array",
+            "title": "Languages",
+            "description": "The study languages."
+          },
+          "english": {
+            "$ref": "#/components/schemas/LanguageInfo",
+            "description": "The other side of each study language."
+          },
+          "large_by_default": {
+            "type": "boolean",
+            "title": "Large By Default",
+            "description": "True: TLHELPER_ALWAYS_LARGE is 1, as in the compose file. The page then\nticks \"Large models\" until the user makes a choice."
+          }
+        },
+        "type": "object",
+        "required": [
+          "languages",
+          "english",
+          "large_by_default"
+        ],
+        "title": "LanguagesResponse"
+      },
+      "LemmaCount": {
+        "properties": {
+          "lemma": {
+            "type": "string",
+            "title": "Lemma"
+          },
+          "upos": {
+            "type": "string",
+            "title": "Upos"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "last_seen": {
+            "type": "string",
+            "title": "Last Seen",
+            "description": "ISO 8601, UTC."
+          }
+        },
+        "type": "object",
+        "required": [
+          "lemma",
+          "upos",
+          "count",
+          "last_seen"
+        ],
+        "title": "LemmaCount"
+      },
+      "LemmasResponse": {
+        "properties": {
+          "lemmas": {
+            "items": {
+              "$ref": "#/components/schemas/LemmaCount"
+            },
+            "type": "array",
+            "title": "Lemmas",
+            "description": "The most frequent lemma first."
+          }
+        },
+        "type": "object",
+        "required": [
+          "lemmas"
+        ],
+        "title": "LemmasResponse"
+      },
+      "LinkedAnswer": {
+        "properties": {
+          "links": {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array",
+            "title": "Links",
+            "description": "Pairs [word of the study language, English word] from the dictionary.\nAn index counts the words of all the sentences of a side, from 0.",
+            "default": []
+          },
+          "guesses": {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array",
+            "title": "Guesses",
+            "description": "Pairs like links, but only from the position of the two words.",
+            "default": []
+          },
+          "sentences": {
+            "items": {
+              "$ref": "#/components/schemas/Sentence"
+            },
+            "type": "array",
+            "title": "Sentences"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sentences"
+        ],
+        "title": "LinkedAnswer"
+      },
+      "LoadingModel": {
+        "properties": {
+          "language": {
+            "type": "string",
+            "title": "Language",
+            "description": "A `code` from /api/v1/languages."
+          },
+          "variant": {
+            "type": "string",
+            "title": "Variant",
+            "description": "The model type, for example \"heavy\"."
+          }
+        },
+        "type": "object",
+        "required": [
+          "language",
+          "variant"
+        ],
+        "title": "LoadingModel"
+      },
+      "Locale": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code",
+            "description": "BCP 47. The catalog is /api/v1/locales/{code}/ui.ftl."
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the language in the language, for example \"Hrvatski\"."
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "ltr",
+              "rtl"
+            ],
+            "title": "Direction",
+            "description": "The direction of the script: the `dir` of the page."
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "direction"
+        ],
+        "title": "Locale"
+      },
+      "LocalesResponse": {
+        "properties": {
+          "default": {
+            "type": "string",
+            "title": "Default",
+            "description": "The complete catalog. A message that another catalog does not have\ncomes from this one."
+          },
+          "locales": {
+            "items": {
+              "$ref": "#/components/schemas/Locale"
+            },
+            "type": "array",
+            "title": "Locales",
+            "description": "The default one first."
+          }
+        },
+        "type": "object",
+        "required": [
+          "default",
+          "locales"
+        ],
+        "title": "LocalesResponse"
+      },
+      "Media": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "image",
+              "audio"
+            ],
+            "title": "Kind"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "url"
+        ],
+        "title": "Media"
+      },
+      "NextCard": {
+        "properties": {
+          "card_id": {
+            "type": "integer",
+            "title": "Card Id"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "to_study",
+              "to_english",
+              "listen",
+              "dictation"
+            ],
+            "title": "Direction",
+            "description": "\"to_study\": the prompt is English, and the user enters the study\nlanguage. \"to_english\" is the other way round. \"listen\" and \"dictation\":\nthe prompt is a sound clip with no text, and the user enters the English\nor the study language. The answer gives the text of a \"listen\" card."
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt"
+          },
+          "media": {
+            "items": {
+              "$ref": "#/components/schemas/Media"
+            },
+            "type": "array",
+            "title": "Media",
+            "description": "The images and the sound clips of the prompt."
+          },
+          "prompt_sentences": {
+            "items": {
+              "$ref": "#/components/schemas/Sentence"
+            },
+            "type": "array",
+            "title": "Prompt Sentences",
+            "description": "The breakdown of the prompt."
+          },
+          "counts": {
+            "$ref": "#/components/schemas/Counts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "card_id",
+          "direction",
+          "language",
+          "prompt",
+          "media",
+          "prompt_sentences",
+          "counts"
+        ],
+        "title": "NextCard"
+      },
+      "NoCard": {
+        "properties": {
+          "done": {
+            "type": "boolean",
+            "const": true,
+            "title": "Done"
+          },
+          "next_due": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Due",
+            "description": "When the next card comes, ISO 8601. Null: the deck has no more cards."
+          },
+          "counts": {
+            "$ref": "#/components/schemas/Counts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "done",
+          "next_due",
+          "counts"
+        ],
+        "title": "NoCard"
+      },
+      "ProblemMessage": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "The id of a message in /api/v1/locales/{code}/ui.ftl."
+          },
+          "params": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Params",
+            "description": "The parameters of the message. A value is a raw tag (\"Loc\"), and the\ncatalog has the word for it."
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "params"
+        ],
+        "title": "ProblemMessage"
+      },
+      "QuestionsResponse": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "description": "False: the server has no key for an AI service, so each request fails."
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The model that answers. Empty if none is set."
+          },
+          "max_context_chars": {
+            "type": "integer",
+            "title": "Max Context Chars",
+            "description": "The most characters of `user_context`."
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/ExplainQuestion"
+            },
+            "type": "array",
+            "title": "Questions",
+            "description": "In the order of the buttons."
+          }
+        },
+        "type": "object",
+        "required": [
+          "available",
+          "model",
+          "max_context_chars",
+          "questions"
+        ],
+        "title": "QuestionsResponse"
+      },
+      "RatingRequest": {
+        "properties": {
+          "rating": {
+            "type": "integer",
+            "maximum": 4.0,
+            "minimum": 1.0,
+            "title": "Rating",
+            "description": "1 Again, 2 Hard, 3 Good, 4 Easy."
+          }
+        },
+        "type": "object",
+        "required": [
+          "rating"
+        ],
+        "title": "RatingRequest"
+      },
+      "RatingResponse": {
+        "properties": {
+          "rating": {
+            "type": "integer",
+            "title": "Rating"
+          },
+          "next_due": {
+            "type": "string",
+            "title": "Next Due"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rating",
+          "next_due"
+        ],
+        "title": "RatingResponse"
+      },
+      "Sentence": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "words": {
+            "items": {
+              "$ref": "#/components/schemas/Word"
+            },
+            "type": "array",
+            "title": "Words"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "words"
+        ],
+        "title": "Sentence"
+      },
+      "SpeechInfoResponse": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available",
+            "description": "A voice service is set up. If not, the page has no \"Listen\" buttons."
+          },
+          "model": {
+            "type": "string",
+            "title": "Model",
+            "description": "The model that reads aloud. Empty if none is set."
+          },
+          "languages": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Languages",
+            "description": "The codes of the languages that the service reads aloud: study\nlanguages, and \"en\"."
+          }
+        },
+        "type": "object",
+        "required": [
+          "available",
+          "model",
+          "languages"
+        ],
+        "title": "SpeechInfoResponse"
+      },
+      "StatsDay": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "reviews": {
+            "type": "integer",
+            "title": "Reviews"
+          },
+          "passed": {
+            "type": "integer",
+            "title": "Passed",
+            "description": "The reviews with a rating other than \"Again\"."
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "reviews",
+          "passed"
+        ],
+        "title": "StatsDay"
+      },
+      "StatsResponse": {
+        "properties": {
+          "counts": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Counts"
+              },
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              }
+            ],
+            "title": "Counts",
+            "description": "The sum over the decks. Empty if there is no deck."
+          },
+          "reviews": {
+            "type": "integer",
+            "title": "Reviews"
+          },
+          "success_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success Rate",
+            "description": "The share of the reviews that were not \"Again\". Null with no reviews."
+          },
+          "lapses": {
+            "type": "integer",
+            "title": "Lapses",
+            "description": "How often a card in review got \"Again\"."
+          },
+          "streak_days": {
+            "type": "integer",
+            "title": "Streak Days"
+          },
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/StatsDay"
+            },
+            "type": "array",
+            "title": "Days",
+            "description": "One entry for each of the last days, the oldest first. A day starts at\n00:00 UTC."
+          }
+        },
+        "type": "object",
+        "required": [
+          "counts",
+          "reviews",
+          "success_rate",
+          "lapses",
+          "streak_days",
+          "days"
+        ],
+        "title": "StatsResponse"
+      },
+      "StatusResponse": {
+        "properties": {
+          "loading": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loading",
+            "description": "The model that loads at this moment, for example \"Croatian heavy\"."
+          },
+          "loading_model": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LoadingModel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The same model, as values."
+          },
+          "loaded": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Loaded",
+            "description": "The models in memory."
+          }
+        },
+        "type": "object",
+        "required": [
+          "loading",
+          "loaded"
+        ],
+        "title": "StatusResponse"
+      },
+      "Translation": {
+        "properties": {
+          "links": {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array",
+            "title": "Links",
+            "description": "Pairs [word of the study language, English word] from the dictionary.\nAn index counts the words of all the sentences of a side, from 0.",
+            "default": []
+          },
+          "guesses": {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "integer"
+                }
+              ],
+              "type": "array",
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "type": "array",
+            "title": "Guesses",
+            "description": "Pairs like links, but only from the position of the two words.",
+            "default": []
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "The English side.",
+            "default": ""
+          },
+          "sentences": {
+            "items": {
+              "$ref": "#/components/schemas/Sentence"
+            },
+            "type": "array",
+            "title": "Sentences",
+            "default": []
+          },
+          "error": {
+            "type": "string",
+            "title": "Error",
+            "description": "Why there is no translation, in English. The other keys can then be\nabsent.",
+            "default": ""
+          },
+          "error_code": {
+            "type": "string",
+            "title": "Error Code",
+            "description": "The message \"error-{error_code}\" of /api/v1/locales/{code}/ui.ftl has\nthe same text for a page in another language. Not for each error.",
+            "default": ""
+          },
+          "error_params": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Error Params",
+            "description": "The parameters of that message.",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "title": "Translation"
+      },
+      "UsersResponse": {
+        "properties": {
+          "me": {
+            "type": "string",
+            "title": "Me"
+          },
+          "admin": {
+            "type": "boolean",
+            "title": "Admin"
+          },
+          "users": {
+            "items": {
+              "$ref": "#/components/schemas/FlashcardUser"
+            },
+            "type": "array",
+            "title": "Users",
+            "description": "The own entry first. The other users are only there for an admin."
+          }
+        },
+        "type": "object",
+        "required": [
+          "me",
+          "admin",
+          "users"
+        ],
+        "title": "UsersResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "Word": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id",
+            "description": "The position in the sentence, from 1."
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "lemma": {
+            "type": "string",
+            "title": "Lemma",
+            "description": "The dictionary form."
+          },
+          "upos": {
+            "type": "string",
+            "title": "Upos",
+            "description": "The Universal POS tag, for example \"NOUN\"."
+          },
+          "xpos": {
+            "type": "string",
+            "title": "Xpos",
+            "description": "The tag of the tag set of the language (LanguageInfo.tag_name)."
+          },
+          "feats": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Feats",
+            "description": "The Universal features, for example {\"Case\": \"Nom\", \"Number\": \"Sing\"}."
+          },
+          "head": {
+            "type": "integer",
+            "title": "Head",
+            "description": "The `id` of the word that this word depends on. 0 for the root of the\nsentence, and for a tagger with no parser (classla).",
+            "default": 0
+          },
+          "deprel": {
+            "type": "string",
+            "title": "Deprel",
+            "description": "The relation to the head, in the labels of the model: \"obj\" for\nCroatian (Universal Dependencies), \"oa\" for German (TIGER). Empty for a\ntagger with no parser.",
+            "default": ""
+          },
+          "start_char": {
+            "type": "integer",
+            "title": "Start Char",
+            "description": "The position of the first letter in the text."
+          },
+          "end_char": {
+            "type": "integer",
+            "title": "End Char",
+            "description": "The position after the last letter in the text."
+          },
+          "problems": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Problems",
+            "description": "What the grammar and spelling checks found, in English. Only with the\nchecks.",
+            "default": []
+          },
+          "problem_messages": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/ProblemMessage"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Problem Messages",
+            "description": "The message of each entry of `problems`, in the same order, for a page\nin another language. Null for a problem with no message. Absent if the\nword has no problem.",
+            "default": []
+          },
+          "accent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Accent"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The pitch accent. Only for Croatian, and null for a word with no data."
+          },
+          "reading": {
+            "type": "string",
+            "title": "Reading",
+            "description": "How to say the word, for a script that does not show it. No language\nof today gives it.",
+            "default": ""
+          },
+          "seen": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seen",
+            "description": "How often the lemma was in a text before. Null for a lemma with no\ncount, for example punctuation. Only in /api/v1/classify."
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "text",
+          "lemma",
+          "upos",
+          "xpos",
+          "feats",
+          "start_char",
+          "end_char"
+        ],
+        "title": "Word"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "breakdown",
+      "description": "The breakdown of a text."
+    },
+    {
+      "name": "flashcards",
+      "description": "The decks and the cards of a user."
+    },
+    {
+      "name": "speech",
+      "description": "A text read aloud by the voice service."
+    },
+    {
+      "name": "audio lessons",
+      "description": "The spoken courses of the admin."
+    }
+  ]
+}
