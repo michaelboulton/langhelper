@@ -74,19 +74,8 @@ def test_the_app_loads_with_no_request_outside_the_origin(browser, server):
     context.close()
 
 
-def type_into(field, text):
-    """Type into a text field of the app. Flutter connects the field a moment
-    after the browser focuses it, and drops the keys of that moment."""
-    field.click()
-    expect(field).to_be_focused()
-    field.page.wait_for_timeout(500)
-    field.press("ControlOrMeta+a")
-    field.press_sequentially(text)
-    expect(field).to_have_value(text)
-
-
 @pytest.mark.parametrize("width", [390, 1280])
-def test_the_breakdown_of_a_sentence(browser, server, request, width):
+def test_the_breakdown_of_a_sentence(browser, server, request, type_into, width):
     # Tall, so that --screenshots shows the whole tab.
     context = browser.new_context(
         base_url=server, viewport={"width": width, "height": 1400}
@@ -114,7 +103,7 @@ def test_the_breakdown_of_a_sentence(browser, server, request, width):
 
 
 @pytest.mark.parametrize("width", [390, 1280])
-def test_the_listen_panel(browser, server, request, monkeypatch, width):
+def test_the_listen_panel(browser, server, request, monkeypatch, type_into, width):
     fake = FakeSynthesizer()
     monkeypatch.setitem(speech.SYNTHESIZERS, "fake", fake)
     monkeypatch.setenv("TLHELPER_VOICE_BACKEND", "fake")

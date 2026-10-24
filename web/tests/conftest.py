@@ -21,7 +21,7 @@ from pathlib import Path
 
 import pytest
 import uvicorn
-from playwright.sync_api import Error, sync_playwright
+from playwright.sync_api import Error, expect, sync_playwright
 from scripts import lessons
 from tlhelper import app as service
 from tlhelper import explain
@@ -162,6 +162,23 @@ def server(deck_dir, monkeypatch):
     yield f"http://localhost:{port}"
     server.should_exit = True
     thread.join(timeout=5)
+
+
+def _type_into(field, text):
+    field.click()
+    expect(field).to_be_focused()
+    field.page.wait_for_timeout(500)
+    field.press("ControlOrMeta+a")
+    field.press_sequentially(text)
+    expect(field).to_have_value(text)
+
+
+@pytest.fixture
+def type_into():
+    """type_into(field, text): type into a text field of the Flutter app.
+    Flutter connects the field a moment after the browser focuses it, and
+    drops the keys of that moment."""
+    return _type_into
 
 
 @pytest.fixture(scope="session")

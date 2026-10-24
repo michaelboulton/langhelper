@@ -9,6 +9,9 @@ abstract class Player {
   /// Replaces the sound, and gives its length if the player knows it.
   Future<Duration?> load(Uint8List mp3);
 
+  /// The same for a sound on the server, such as a clip of a card.
+  Future<Duration?> loadUri(Uri uri);
+
   /// After the end, from the start again. A browser can refuse to play.
   void play();
 
@@ -24,7 +27,7 @@ abstract class Player {
   Future<void> dispose();
 }
 
-/// Makes the player of a Listen panel.
+/// Makes the player of a Listen panel or of a clip.
 final newPlayerProvider = Provider<Player Function()>(
   (ref) => JustAudioPlayer.new,
 );
@@ -36,6 +39,10 @@ class JustAudioPlayer implements Player {
   Future<Duration?> load(Uint8List mp3) => _player.setAudioSource(
     AudioSource.uri(Uri.dataFromBytes(mp3, mimeType: 'audio/mpeg')),
   );
+
+  @override
+  Future<Duration?> loadUri(Uri uri) =>
+      _player.setAudioSource(AudioSource.uri(uri));
 
   @override
   void play() => unawaited(_play());

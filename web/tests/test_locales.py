@@ -92,7 +92,10 @@ def test_the_code_names_messages_that_exist():
     dart = "\n".join(
         path.read_text(encoding="utf-8") for path in (ROOT / "app/lib").rglob("*.dart")
     )
-    named |= set(re.findall(r"\bt(?:Or)?\(\s*'([A-Za-z0-9_-]+[A-Za-z0-9_])'", dart))
+    named |= set(
+        re.findall(r"\b(?:t|tOr|CardsNote)\(\s*'([A-Za-z0-9_-]+[A-Za-z0-9_])'", dart)
+    )
+    assert "cards-no-decks" in named
     assert {"breakdown-title", "language-name-hr"} <= named
     assert named - english == set()
 

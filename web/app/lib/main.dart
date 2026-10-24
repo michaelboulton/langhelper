@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'api/client.dart';
 import 'breakdown/breakdown_tab.dart';
+import 'flashcards/flashcards_tab.dart';
 import 'i18n/i18n.dart';
 import 'providers.dart';
 
@@ -36,8 +37,31 @@ class LanghelperApp extends StatelessWidget {
 
   final I18n i18n;
 
+  /// One branch for each tab, so each tab keeps its state while another one
+  /// shows. The address keeps the tab: /#/cards.
   final GoRouter router = GoRouter(
-    routes: [GoRoute(path: '/', builder: (context, state) => const HomePage())],
+    routes: [
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, shell) => HomePage(shell: shell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: '/', builder: (context, _) => const BreakdownTab()),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/cards',
+                builder: (context, _) => const FlashcardsTab(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ],
+    // An unknown address shows the Breakdown tab, as on the page of static/.
+    onException: (context, state, router) => router.go('/'),
   );
 
   @override
@@ -56,14 +80,59 @@ class LanghelperApp extends StatelessWidget {
   }
 }
 
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+/// The title of the tab over the tabs, and the tab under them.
+class HomePage extends StatefulWidget {
+  const HomePage({super.key, required this.shell});
+
+  final StatefulNavigationShell shell;
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
+  late final _tabs = TabController(
+    length: 2,
+    vsync: this,
+    initialIndex: widget.shell.currentIndex,
+  );
+
+  @override
+  void didUpdateWidget(HomePage old) {
+    super.didUpdateWidget(old);
+    // The Back button of the browser changes the tab too.
+    _tabs.index = widget.shell.currentIndex;
+  }
+
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final i18n = I18n.of(context);
+    final shell = widget.shell;
     return Scaffold(
-      appBar: AppBar(title: const BreakdownTitle()),
-      body: const BreakdownTab(),
+      appBar: AppBar(
+        title: shell.currentIndex == 0
+            ? const BreakdownTitle()
+            : const FlashcardsTitle(),
+        bottom: TabBar(
+          controller: _tabs,
+          // Scrolls sideways on a narrow screen.
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
+          onTap: shell.goBranch,
+          tabs: [
+            Tab(text: i18n.t('tab-breakdown')),
+            Tab(text: i18n.t('tab-cards')),
+          ],
+        ),
+      ),
+      body: shell,
     );
   }
 }

@@ -152,11 +152,13 @@ class Side {
   final LanguageInfo info;
 }
 
-class SentenceRow extends ConsumerWidget {
+class SentenceRow extends StatelessWidget {
   const SentenceRow({
     super.key,
     required this.sentence,
     required this.info,
+    required this.selected,
+    required this.onSelect,
     this.padding = bottom,
   });
 
@@ -164,14 +166,14 @@ class SentenceRow extends ConsumerWidget {
 
   final Sentence sentence;
   final LanguageInfo info;
+
+  /// The selected word of the tab.
+  final Word? selected;
+  final void Function(Selected selected) onSelect;
   final EdgeInsets padding;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selected = ref.watch(
-      breakdownProvider.select((state) => state.selected?.word),
-    );
-    final notifier = ref.read(breakdownProvider.notifier);
+  Widget build(BuildContext context) {
     return Padding(
       padding: padding,
       // A right-to-left sentence starts on the right.
@@ -187,7 +189,7 @@ class SentenceRow extends ConsumerWidget {
                 word: word,
                 info: info,
                 selected: identical(word, selected),
-                onTap: () => notifier.select((word: word, info: info)),
+                onTap: () => onSelect((word: word, info: info)),
               ),
           ],
         ),
@@ -225,9 +227,16 @@ class BreakdownResult extends ConsumerWidget {
       padding: const EdgeInsets.only(top: 14, bottom: 6),
       child: Text(text, style: TextStyle(color: muted)),
     );
+    final selected = state.selected?.word;
+    final onSelect = ref.read(breakdownProvider.notifier).select;
     final rows = <Widget>[
       for (final sentence in top.sentences)
-        SentenceRow(sentence: sentence, info: top.info),
+        SentenceRow(
+          sentence: sentence,
+          info: top.info,
+          selected: selected,
+          onSelect: onSelect,
+        ),
     ];
     if (translation != null && translation.error.isNotEmpty) {
       final error = codedMessage(
@@ -246,6 +255,8 @@ class BreakdownResult extends ConsumerWidget {
         final row = SentenceRow(
           sentence: sentence,
           info: bottom.info,
+          selected: selected,
+          onSelect: onSelect,
           padding: paired || index == 0 ? translated : SentenceRow.bottom,
         );
         if (paired) {
@@ -279,7 +290,7 @@ class BreakdownResult extends ConsumerWidget {
         ...chipLinks(translation?.links ?? const [], guess: false),
         ...chipLinks(translation?.guesses ?? const [], guess: true),
       ],
-      selected: state.selected?.word,
+      selected: selected,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: rows,
@@ -288,8 +299,7 @@ class BreakdownResult extends ConsumerWidget {
   }
 }
 
-/// The table of the selected word, with its problems and the dictionary
-/// links of its language.
+/// The table of the selected word of the breakdown.
 class WordDetail extends ConsumerWidget {
   const WordDetail({super.key});
 
@@ -302,6 +312,22 @@ class WordDetail extends ConsumerWidget {
     final languages = ref.watch(
       breakdownProvider.select((state) => state.languages),
     );
+    return WordTable(selected: selected, languages: languages);
+  }
+}
+
+/// The table of a word, with its problems and the dictionary links of its
+/// language.
+class WordTable extends StatelessWidget {
+  const WordTable({super.key, required this.selected, required this.languages});
+
+  final Selected selected;
+
+  /// For the names of the languages in a problem.
+  final Languages? languages;
+
+  @override
+  Widget build(BuildContext context) {
     final (:word, :info) = selected;
     final i18n = I18n.of(context);
     final theme = Theme.of(context);

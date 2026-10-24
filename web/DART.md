@@ -224,6 +224,8 @@ text goes to the voice service, so a request goes out only on a click.
 
 ### 8. Flashcards tab
 
+Done (#33). README, "The Flashcards tab", has the details.
+
 The deck tree with counts, the card view, `Image.network` for pictures,
 `just_audio` for clips (the first one autoplays), the typed answer, the diff
 (equal, delete and insert spans), the other answers, ratings 1-4 with the

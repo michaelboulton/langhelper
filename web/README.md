@@ -1354,7 +1354,8 @@ the Docker commands above, with `--userns=keep-id` and
 
 `app/` is a Flutter web app that replaces `static/`, one part at a time.
 `DART.md` has the plan, and issue #24 tracks the parts. Now the app has the
-Breakdown tab, with the curves between the words and the Listen panel.
+Breakdown tab, with the curves between the words and the Listen panel, and
+the Flashcards tab.
 `static/` stays the page of the app until the Flutter app has all the tabs.
 
 Install Flutter 3.47.5, the version of `FLUTTER_VERSION` in `Dockerfile`. Build
@@ -1375,15 +1376,18 @@ title, that the page is cross-origin isolated, and that the browser sends no
 request outside the origin. It also checks that `?locale=hr` and a German
 browser show the title in their language, and it types a sentence into the
 Breakdown tab at a phone width and at a desktop width. With a fake voice
-service, it clicks each button of the Listen panel. It skips unless
-`STATIC_DIR` is a Flutter build. With `--screenshots=DIR`, it saves a picture
-of the Breakdown tab and of the Listen panel at each width.
+service, it clicks each button of the Listen panel. A second test file,
+`tests/flashcards/test_browser_cards_app.py`, opens a deck in the Flashcards
+tab, answers a card with a picture and a clip, and rates a card with the
+keys. Both skip unless `STATIC_DIR` is a Flutter build. With
+`--screenshots=DIR`, they save a picture of the Breakdown tab, the Listen
+panel and the cards at each width.
 The other browser tests need the page of `static/`, so run them without
-`STATIC_DIR`. The `tests` job of CI runs the smoke test against the build of
-the `dart` job:
+`STATIC_DIR`. The `tests` job of CI runs both against the build of the
+`dart` job:
 
 ```bash
-STATIC_DIR=app/build/web uv run pytest tests/test_browser_app.py
+STATIC_DIR=app/build/web uv run pytest tests/test_browser_app.py tests/flashcards/test_browser_cards_app.py
 ```
 
 The widget tests are in `app/test/`. Run them from `app/`. The `dart` job of
@@ -1554,8 +1558,8 @@ answers with the saved responses of `app/test/api/fixtures/`.
 ### The link layer
 
 `LinkLayer` in `app/lib/breakdown/links.dart` draws the curves of
-"Links between the words". The breakdown uses it, and the flashcards will
-use it for the links of an answer.
+"Links between the words". The breakdown uses it, and the Flashcards tab
+uses it for the links of an answer.
 
 - `LinkLayer` is a `Stack`: a `CustomPaint` under the sentences. A curve
   goes from the bottom centre of the upper chip to the top centre of the
@@ -1578,8 +1582,8 @@ and look at it before the commit.
 ### The Listen panel
 
 `app/lib/listen/` does what `static/js/listen.js` does (see "Listen"). The
-Breakdown tab shows the panel under the breakdown, and the flashcards will
-use it too.
+Breakdown tab shows the panel under the breakdown. The Flashcards tab uses
+its player bar for the clips, and its voice service for "Read it aloud".
 
 - The app reads `GET /api/v1/speech` one time. With no voice service, or
   with no text in a language of the service, the panel does not show.
@@ -1604,3 +1608,41 @@ other buttons.
 `player.dart` has the `Player` interface. The widget tests in
 `app/test/listen/` use the `FakePlayer` of `app/test/fake_server.dart`,
 because `just_audio` needs a platform plugin.
+
+### The Flashcards tab
+
+`app/lib/flashcards/` does what `static/js/flashcards.js` does (see
+"Flashcards"). The address of the tab is `/#/cards`.
+
+| File | What it has |
+| ---- | ----------- |
+| `state.dart` | The state of the tab, with `flutter_riverpod`: the decks, the card, the answer, the rating and the status line. |
+| `decks.dart` | The tree of the decks and subdecks, with the counts of each. |
+| `card_view.dart` | The card: the prompt, the answer field, the answer with its links, the ratings, "Read it aloud" and Next card. |
+| `diff.dart` | The answer of the user against the correct one. The wrong letters are struck out, and the missing letters are marked. |
+| `media.dart` | The pictures and the sound clips of one side of a card. |
+| `read_aloud.dart` | The "Read it aloud" button. |
+| `voices.dart` | The voices of the browser, through `flutter_tts`, and why they cannot read a text. |
+| `browser.dart`, `browser_web.dart` | The parts that need a browser: `Intl.RelativeTimeFormat` and `speechSynthesis`. `browser.dart` is the version for `flutter test`. |
+| `time.dart` | The time of the next card, such as "in 5 minutes". |
+| `flashcards_tab.dart` | The title, the note over the decks, the status line, and the two legends. |
+
+How the card works:
+
+- Enter in the answer field sends the answer. In an input method (IME),
+  Enter accepts a word. So while the composing range is valid, Enter does
+  not send.
+- The keys 1 to 4 change the rating, as in Anki. They work only after the
+  answer, because then the card has no text field.
+- Only the first clip of each side plays on its own. The other clips have a
+  play button.
+- "Read it aloud" uses the voice service of the server when
+  `/api/v1/speech` has the language. Otherwise it uses `flutter_tts`, which
+  uses the voices of the browser, for a language with a `speech` tag. If neither
+  can read the language, the button does not show.
+
+The widget tests are in `app/test/flashcards/`. They check the diff against
+the golden image `app/test/flashcards/goldens/diff.png`. After a change of
+the look, write the image again with
+`flutter test --update-goldens test/flashcards/flashcards_test.dart` in
+`app/`, and look at it before the commit.

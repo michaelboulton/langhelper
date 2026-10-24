@@ -160,7 +160,7 @@ class _ListenPanelState extends ConsumerState<ListenPanel> {
             ],
           ),
           if (_player case final player? when _loaded)
-            _PlayerBar(player: player, duration: _duration),
+            PlayerBar(player: player, duration: _duration),
           if (_note case final note?)
             Padding(
               padding: const EdgeInsets.only(top: 8),
@@ -181,8 +181,8 @@ class _ListenPanelState extends ConsumerState<ListenPanel> {
 }
 
 /// Play or pause, and the place in the sound.
-class _PlayerBar extends StatelessWidget {
-  const _PlayerBar({required this.player, required this.duration});
+class PlayerBar extends StatelessWidget {
+  const PlayerBar({super.key, required this.player, required this.duration});
 
   final Player player;
   final Duration? duration;
