@@ -1761,7 +1761,8 @@ a lesson is `/#/audio/<course>/<lesson>`, so a lesson has a link of its own.
 | ---- | ----------- |
 | `state.dart` | The list of courses with the progress of the user, the saves of a position, and the script of a lesson, with `flutter_riverpod`. |
 | `courses.dart` | The title, the intro, and the courses with their lessons in order, the progress of each lesson and the Continue button. |
-| `lesson_view.dart` | The title and the grammar step of a lesson, the note of its audio state, the player and the script. |
+| `lesson_view.dart` | The title and the grammar step of a lesson, the note of its audio state, the player and the lines of the script. |
+| `script.dart`, `script_web.dart` | The page of a lesson: the header, then the script. `script.dart` is the version for a native app and for `flutter test`: a lazy list of Flutter widgets. `script_web.dart` is the version for a browser: HTML, with the style `.lesson-script` of `app/web/index.html`. |
 | `lesson_player.dart` | The buttons and the seek bar of the player, the start at the saved position, and the saves. |
 
 - The app reads the list of courses one time. An error shows at once, with
@@ -1780,6 +1781,12 @@ a lesson is `/#/audio/<course>/<lesson>`, so a lesson has a link of its own.
 - The script has the name of each speaker and a line for each pause. The
   lines of the narrator have the locale of English, and the lines of the
   actors have the locale and the direction of the study language.
+- In a browser, the script is HTML under the header, in an
+  `HtmlElementView`. Flutter draws on a canvas, and the browser cannot
+  scroll, select or find (Ctrl+F) a text on a canvas. The header stays above
+  the script. The HTML changes only when the lines change, so a save of the
+  position keeps the selection. The browser tests find the lines with the CSS
+  selector `.lesson-script p`.
 - The player stops when the user goes back to the list or opens another
   lesson. It keeps playing when the user opens another tab.
 

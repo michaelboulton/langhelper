@@ -23,6 +23,11 @@ class AudioTitle extends StatelessWidget {
   }
 }
 
+/// The side margin of the tab in a window [width] wide: a column of at most
+/// 860 px in the middle, with margins of 16 px. index.html has the same
+/// column for the script of a lesson in a browser.
+double pageSide(double width) => max(0.0, (width - 860) / 2) + 16;
+
 /// The width and the margins of the tab, as on the other tabs.
 class AudioPage extends StatelessWidget {
   const AudioPage({super.key, required this.children, this.sliver});
@@ -37,8 +42,7 @@ class AudioPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, box) {
-        // A column of at most 860 px in the middle, with margins of 16 px.
-        final side = max(0.0, (box.maxWidth - 860) / 2) + 16;
+        final side = pageSide(box.maxWidth);
         return CustomScrollView(
           slivers: [
             SliverPadding(
