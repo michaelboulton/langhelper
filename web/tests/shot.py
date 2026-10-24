@@ -22,7 +22,6 @@ from conftest import (
     APP_BUILD,
     _type_into,
     new_context,
-    serve_app,
     start_server,
 )
 from playwright.sync_api import sync_playwright
@@ -65,7 +64,7 @@ def main():
     if (args.text is None) == (args.deck is None):
         parser.error("give a text or --deck, not both")
     if not (APP_BUILD / "index.html").is_file():
-        sys.exit(f"no Flutter build in {APP_BUILD} (README.md, 'The Flutter app')")
+        sys.exit(f"no Flutter build in {APP_BUILD} (README.md, 'Running locally')")
 
     with tempfile.TemporaryDirectory() as folder, pytest.MonkeyPatch.context() as patch:
         # The databases of the picture are new, and are gone after it.
@@ -73,7 +72,6 @@ def main():
         patch.setattr(store, "DB_PATH", Path(folder) / "flashcards.db")
         if args.deck:
             decks.import_decks()
-        serve_app(APP_BUILD, patch)
         address, stop = start_server()
         try:
             with sync_playwright() as playwright:

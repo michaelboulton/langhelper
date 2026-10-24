@@ -1,8 +1,8 @@
 """The browser for the tests of the page, the folders of the app data, and a
 fake AI service for the tools in scripts/.
 
-The browser tests open the Flutter build in app/build/web, and need the
-browser of Playwright once:
+The browser tests open the Flutter build in STATIC_DIR (default
+app/build/web), and need the browser of Playwright once:
 uv run playwright install --only-shell chromium
 With no browser or no build, they skip. With --screenshots=DIR, each page of a
 browser test saves a picture of itself to DIR at the end of the test
@@ -26,7 +26,7 @@ from tlhelper import explain
 from tlhelper.flashcards import decks, store
 
 # flutter build web --wasm --no-web-resources-cdn --base-href /static/
-APP_BUILD = Path(__file__).parents[1] / "app/build/web"
+APP_BUILD = service.STATIC_DIR
 
 
 def pytest_addoption(parser):
@@ -130,9 +130,10 @@ def fake_claude(tmp_path, monkeypatch):
 
 @pytest.fixture(scope="session")
 def app_build():
-    """The folder of the Flutter build. Without it, the browser tests skip."""
+    """The folder of the Flutter build. Without it, the tests of the page
+    skip."""
     if not (APP_BUILD / "index.html").is_file():
-        pytest.skip(f"no Flutter build in {APP_BUILD} (README.md, 'The Flutter app')")
+        pytest.skip(f"no Flutter build in {APP_BUILD} (README.md, 'Running locally')")
     return APP_BUILD
 
 
@@ -146,15 +147,6 @@ def browser(app_build):
             pytest.skip(f"no browser (uv run playwright install chromium): {exc}")
         yield browser
         browser.close()
-
-
-def serve_app(app_build, monkeypatch):
-    """The page of the app is the Flutter build, whatever STATIC_DIR is."""
-    files = next(
-        route for route in service.app.routes if getattr(route, "name", "") == "static"
-    )
-    monkeypatch.setattr(files, "app", service.RevalidatedFiles(directory=app_build))
-    monkeypatch.setattr(service, "INDEX_HTML", app_build / "index.html")
 
 
 def start_server():
@@ -185,7 +177,6 @@ def server(app_build, deck_dir, monkeypatch):
     """The address of the app."""
     monkeypatch.setattr(service, "DB_PATH", deck_dir.parent / "lemmas.db")
     monkeypatch.delenv("TLHELPER_ALWAYS_LARGE", raising=False)
-    serve_app(app_build, monkeypatch)
     address, stop = start_server()
     yield address
     stop()
@@ -205,7 +196,19 @@ def new_context(
     context.route(
         lambda url: not url.startswith(f"{server}/"), lambda route: route.abort()
     )
+    context.route("**/static/flutter_bootstrap.js", _single_threaded)
     return context
+
+
+def _single_threaded(route):
+    """skwasm on one thread: on more threads, the page crashes now and then
+    (README.md, "The browser tests")."""
+    response = route.fetch()
+    body = response.text().replace(
+        "_flutter.loader.load({",
+        "_flutter.loader.load({config: {forceSingleThreadedSkwasm: true},",
+    )
+    route.fulfill(response=response, body=body)
 
 
 def _type_into(field, text):

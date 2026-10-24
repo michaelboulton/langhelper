@@ -17,7 +17,8 @@ import 'providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // The browser tests find the widgets through the semantics tree (DART.md).
+  // The browser tests find the widgets through the semantics tree
+  // (web/README.md, "The browser tests").
   SemanticsBinding.instance.ensureSemantics();
   final api = Api();
   final i18n = await startI18n(api);
@@ -101,7 +102,7 @@ class LanghelperApp extends StatelessWidget {
         ],
       ),
     ],
-    // An unknown address shows the Breakdown tab, as on the page of static/.
+    // An unknown address shows the Breakdown tab.
     onException: (context, state, router) => router.go('/'),
   );
 

@@ -15,7 +15,7 @@ TextDirection textDirection(LanguageInfo info) =>
     : TextDirection.ltr;
 
 /// The name of the study language for the text of the tab. Before the list
-/// of languages loads, Croatian, as on the page of static/.
+/// of languages loads, Croatian, the default language of the server.
 String studyName(I18n i18n, LanguageInfo? info) =>
     info == null ? i18n.t('language-name-hr') : i18n.languageName(info);
 

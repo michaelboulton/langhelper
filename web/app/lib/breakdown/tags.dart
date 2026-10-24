@@ -3,8 +3,8 @@ import 'package:flutter/painting.dart';
 import '../api/models.dart';
 import '../i18n/i18n.dart';
 
-/// One colour for each Universal POS tag, as in static/js/breakdown.js. The
-/// name of a tag is the message "upos-NOUN".
+/// One colour for each Universal POS tag. The name of a tag is the message
+/// "upos-NOUN".
 const uposColors = <String, Color>{
   'NOUN': Color(0xFF9ECBFF),
   'PROPN': Color(0xFF6FA8FF),

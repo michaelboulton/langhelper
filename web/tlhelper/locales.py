@@ -1,6 +1,6 @@
 """The text of the page in each language: one Fluent file (ui.ftl) in the
 folder of a language that has LanguageInfo.ui_locale. The page gets the file
-as it is and formats the messages (static/js/i18n.js), so Python only names a
+as it is and formats the messages (app/lib/i18n/), so Python only names a
 message: a Message has the id and the parameters, and the English text for a
 client that has no catalog.
 """

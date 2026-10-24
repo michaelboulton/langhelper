@@ -2,11 +2,11 @@
 # that another ui.ftl does not have comes from this file.
 #
 # The format is Fluent (https://projectfluent.org/fluent/guide/). The page
-# gets this file from /api/v1/locales/en/ui.ftl (static/js/i18n.js).
+# gets this file from /api/v1/locales/en/ui.ftl (app/lib/i18n/).
 # app/assets/i18n/ui.ftl is a copy for the Flutter app: copy this file there
 # after each change (README.md, "The text of the app").
-# Rules for this file: no attributes and no functions, because the page has a
-# small formatter of its own for when the Fluent script does not load.
+# Rules for this file: no attributes, because the page formats only the value
+# of a message.
 #
 # A variable that ends in "Name" is the word for a raw value, from this
 # catalog: $gotName is "accusative" when $got is "Acc". A translation can use

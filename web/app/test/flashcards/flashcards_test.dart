@@ -118,7 +118,7 @@ void main() {
   group('the relative time', () {
     final now = DateTime.utc(2026, 10, 24, 9);
 
-    test('as the page of static/ rounds it', () {
+    test('rounds to the nearest unit', () {
       Duration? at(Duration offset) =>
           switch (relativeParts(now.add(offset), now)) {
             null => null,

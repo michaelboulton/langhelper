@@ -1,8 +1,8 @@
 """Sentence breakdown service for a study language (Croatian, German, French,
 Italian) and English. The languages are in languages/.
 
-GET  /                  the single page (static/index.html)
-GET  /static/...        the script and the style sheet of the page
+GET  /                  the single page (index.html of the Flutter build)
+GET  /static/...        the other files of the Flutter build
 GET  /healthz           liveness, does not touch the models
 GET  /api/v1/languages  the study languages, for the list on the page
 GET  /api/v1/locales    the languages of the page text, and the Fluent file of
@@ -58,9 +58,10 @@ from .speech import routes as speech_routes
 from .translators import TranslationError
 
 DB_PATH = DATA_ROOT / "lemmas.db"
-# The page, its script and its style sheet. STATIC_DIR is for a layout where
-# static/ is not next to the package, or for the Flutter build (app/build/web).
-STATIC_DIR = Path(os.environ.get("STATIC_DIR", Path(__file__).parent.parent / "static"))
+# The build of the Flutter app in app/ (README.md, "The Flutter app").
+STATIC_DIR = Path(
+    os.environ.get("STATIC_DIR", Path(__file__).parent.parent / "app/build/web")
+)
 INDEX_HTML = STATIC_DIR / "index.html"
 
 # Not worth counting: nobody asks for a translation of a comma or a number.
@@ -240,8 +241,8 @@ app.include_router(audio_lesson_routes.router)
 
 class RevalidatedFiles(StaticFiles):
     """Each file with Cache-Control: no-cache. Without it, a browser keeps a
-    script of an older release for hours, and the scripts of the page must be
-    of one release."""
+    file of an older release for hours, and the files of the page must be of
+    one release."""
 
     def file_response(self, *args, **kwargs) -> Response:
         response = super().file_response(*args, **kwargs)
@@ -249,8 +250,11 @@ class RevalidatedFiles(StaticFiles):
         return response
 
 
-# static/js and static/css. The login gate below covers these files too.
-app.mount("/static", RevalidatedFiles(directory=STATIC_DIR), name="static")
+# The login gate below covers these files too. With no build, the app starts,
+# and / says what to do.
+app.mount(
+    "/static", RevalidatedFiles(directory=STATIC_DIR, check_dir=False), name="static"
+)
 
 
 # A page with these headers is cross-origin isolated, and the Flutter build
@@ -364,7 +368,13 @@ class ClassifyRequest(schemas.Model):
 
 
 @app.get("/", include_in_schema=False)
-def index() -> FileResponse:
+def index() -> Response:
+    if not INDEX_HTML.is_file():
+        return PlainTextResponse(
+            f"No page in {STATIC_DIR}: build the Flutter app first "
+            '(web/README.md, "Running locally").',
+            status_code=503,
+        )
     return FileResponse(INDEX_HTML, headers={"Cache-Control": "no-cache"})
 
 

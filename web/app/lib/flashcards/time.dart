@@ -1,8 +1,8 @@
 import '../i18n/i18n.dart';
 import 'browser.dart' if (dart.library.js_interop) 'browser_web.dart';
 
-/// The amount and the unit of the time from [now] to [due], as the page of
-/// static/ rounds it. Null for less than a minute.
+/// The amount and the unit of the time from [now] to [due], rounded. Null for
+/// less than a minute.
 (int, String)? relativeParts(DateTime due, DateTime now) {
   final minutes = (due.difference(now).inMilliseconds / 60000).round();
   if (minutes < 1) return null;

@@ -47,22 +47,13 @@ login. The API refuses texts over `MAX_TEXT_CHARS`.
 | `tlhelper/languages/german/glosses.db` | Generated SQLite file with the English glosses of the German words from Wiktionary |
 | `tlhelper/languages/french/glosses.db` | Generated SQLite file with the English glosses of the French words from Wiktionary |
 | `tlhelper/languages/italian/glosses.db` | Generated SQLite file with the English glosses of the Italian words from Wiktionary |
-| `static/index.html` | The single page. The app serves it at `/`                            |
-| `static/js/breakdown.js` | The script of the page, with the fixed color palette. Served under `/static` |
-| `static/js/flashcards.js` | The script of the flashcard tab, and the tabs. It uses the functions of `breakdown.js` |
-| `static/js/explain.js` | The script of the "explain with AI" buttons on the two tabs. It uses the functions of `breakdown.js` and `flashcards.js` |
-| `static/js/listen.js` | The script of the "Listen" buttons on the breakdown tab. It uses the functions of `breakdown.js` and `flashcards.js` |
-| `static/js/progress.js` | The script of the progress tab: the numbers and the bar charts of a user. It uses the functions of `breakdown.js` and `flashcards.js` |
-| `static/js/audio_lessons.js` | The script of the audio lessons tab: the courses, the player and the script of a lesson. It uses the functions of `breakdown.js` and `flashcards.js` |
-| `static/css/breakdown.css` | The style sheet of the page. Served under `/static`           |
-| `static/manifest.json`, `static/icon*.svg`, `static/icon*.png` | The web app manifest and the icons, for the install on a phone. See "Install on Android" |
-| `app/` | The Flutter app that replaces `static/`. See "The Flutter app" and `DART.md` |
+| `app/` | The page: a Flutter app. The app serves its build, `app/build/web`, at `/` and under `/static`. See "The Flutter app" |
 | `app/lib/main.dart` | The start of the app: the text of the locale, the theme and the router |
 | `app/lib/i18n/` | Loads the catalogs of the page text, and has `t()` and `tOr()`. See "The text of the app" |
 | `app/assets/i18n/ui.ftl` | A copy of `tlhelper/languages/english/ui.ftl`, for an app that gets no catalog from the server |
 | `app/lib/api/` | `models.dart` has the models of `tlhelper/schemas.py` that the page reads, and `client.dart` has the client of the API. `models.g.dart` is generated. See "The Flutter app" |
 | `app/test/api/` | A copy of `/openapi.json` and a saved response of each route that the page reads, for the tests of the models |
-| `app/web/` | `index.html`, the manifest and the icons of the app. The manifest and the icons are copies of those in `static/` |
+| `app/web/` | `index.html`, the manifest and the icons of the app. See "Install on Android" |
 | `app/assets/fonts/` | Noto Sans, Noto Sans Arabic and Noto Sans Hebrew, with their license `OFL.txt` |
 | `pyproject.toml` | Dependencies. Pins `torch` to the CPU-only wheel index of the root `pyproject.toml` |
 | `../uv.lock`     | Locked versions of the whole uv workspace. Update with `uv lock --upgrade` |
@@ -1005,8 +996,7 @@ lets a translator select a text by a number or by a grammar value.
 | `tlhelper/languages/italian/ui.ftl`  | The Italian text                      |
 | `tlhelper/locales.py`                | Finds the files and serves them       |
 | `tlhelper/messages.py`               | `Problem` and the errors with a code  |
-| `static/js/i18n.js`                  | Loads the catalogs, and has `t()`     |
-| `app/lib/i18n/i18n.dart`             | The same for the Flutter app          |
+| `app/lib/i18n/i18n.dart`             | Loads the catalogs, and has `t()`     |
 
 `GET /api/v1/locales` lists the languages, and
 `GET /api/v1/locales/{code}/ui.ftl` gives one file. The page gets the English
@@ -1035,20 +1025,9 @@ follows English instructions best. The cache has one answer for each language.
 If the study language is also the language of the page, the app still works,
 but the AI then explains German in German.
 
-The page loads the Fluent runtime (`@fluent/bundle`) from jsDelivr, with an
-exact version and an `integrity` hash in `static/index.html`. For another
-version, change the address and compute the hash again:
-
-```bash
-curl -s https://cdn.jsdelivr.net/npm/@fluent/bundle@0.19.1/index.js \
-  | openssl dgst -sha384 -binary | openssl base64 -A
-```
-
-If the script does not load, the page shows English with a small formatter of
-its own, and the list of languages is hidden. That formatter has no attributes
-and no functions, so the catalogs do not use them (`tests/test_locales.py`).
-If the app gets a `Content-Security-Policy` header, `script-src` must allow
-`cdn.jsdelivr.net`.
+The page formats the messages with the Dart package `fluent`, which is part of
+the build. It formats only the value of a message, so the catalogs do not use
+attributes (`tests/test_locales.py`). "The text of the app" has the details.
 
 To add a language of the page:
 
@@ -1071,19 +1050,20 @@ Chrome on Android can install the page as an app, with its own icon on the
 home screen. Open the page, open the Chrome menu, and select "Add to home
 screen" or "Install app". The installed app opens `/` with no address bar.
 
-The page links `static/manifest.json`, a web app manifest (a JSON file that
-gives the name, the start address and the icon of the app). The icon is
-`static/icon.svg`: a circle in the blue, white and red of the Croatian flag.
-`static/icon-maskable.svg` is the same design on the full square, with no
-circle. Android cuts it to the icon shape of the phone, so the icon fills that
-shape and has no white border.
+The page links `/static/manifest.json`, a web app manifest (a JSON file that
+gives the name, the start address and the icon of the app). The source of the
+manifest and the icons is `app/web/`, and the Flutter build copies them. The
+icon is `app/web/icon.svg`: a circle in the blue, white and red of the
+Croatian flag. `app/web/icon-maskable.svg` is the same design on the full
+square, with no circle. Android cuts it to the icon shape of the phone, so the
+icon fills that shape and has no white border.
 
 The PNG files are the same icons at fixed sizes, because Android makes the
 installed app from a PNG icon of 192 or 512 pixels. If you change an SVG file,
 render the PNG files again at the same sizes, for example:
 
 ```bash
-rsvg-convert -w 512 -h 512 static/icon.svg -o static/icon-512.png
+rsvg-convert -w 512 -h 512 app/web/icon.svg -o app/web/icon-512.png
 ```
 
 Chrome fetches the manifest and the icons with no cookie. On the fly.dev host,
@@ -1191,9 +1171,9 @@ Set under `[env]` in `fly.toml`:
 
 - `MAX_TEXT_CHARS`: the longest text that the API accepts. Default `1000`.
 - `DATA_ROOT`: where the models and `lemmas.db` live. Default `/data`.
-- `STATIC_DIR`: the folder with the page. Default: `static/` next to
-  `tlhelper/`. The image sets `/app/static`, which holds the build of the
-  Flutter app. See "The Flutter app".
+- `STATIC_DIR`: the folder with the build of the Flutter app. Default:
+  `app/build/web` next to `tlhelper/`. The image sets `/app/static`. See "The
+  Flutter app".
 - `MODEL_URL`: a mirror for the model files. Default: clarin.si.
 - `DOWNLOAD_MODELS`: set to `0` to never download the models. Default `1`. The
   app always tries the models on disk first, with no network access.
@@ -1242,8 +1222,18 @@ Set as a secret:
 
 ## Running locally
 
-With [uv](https://docs.astral.sh/uv/), from this folder (`web/`). The models
-are in `.data/` at the repository root:
+With [uv](https://docs.astral.sh/uv/), from this folder (`web/`). First build
+the page. Install Flutter 3.47.5, the version of `FLUTTER_VERSION` in
+`Dockerfile`, and build the app in `app/`. The build takes about a minute, and
+goes to `app/build/web`:
+
+```bash
+(cd app && flutter build web --wasm --no-web-resources-cdn --base-href /static/)
+```
+
+Build it again after each change in `app/`. Without a build, `/` returns 503
+with this step. Then start the app. The models are in `.data/` at the
+repository root:
 
 ```bash
 DATA_ROOT=../.data uv run uvicorn tlhelper.app:app --port 8000 --no-access-log
@@ -1277,6 +1267,38 @@ is close to that limit since torch 2.14.
 
 The browser tests open the build of the Flutter app. "The browser tests"
 under "The Flutter app" has the steps.
+
+### Pictures of the page
+
+To see each browser test, give a folder for the pictures:
+
+```bash
+uv run pytest tests/test_browser_breakdown.py --screenshots=shots
+```
+
+At the end of each test, each page saves a PNG with the name of the test to
+that folder. Some tests also save a picture in the middle, such as
+`listen-390.png`. The tests with a `width` parameter run at a phone width
+(390 px) and at a desktop width (1280 px). Without the option, the tests save
+nothing.
+
+One picture with no test:
+
+```bash
+uv run python tests/shot.py "Ovo je rečenica." --translate --out shot.png
+uv run python tests/shot.py --deck Basics --dark --width 390 --out card.png
+```
+
+`tests/shot.py` starts the server as `conftest.py` does, with new empty
+databases, opens the page, types the text and waits for the chips. `--deck
+NAME` imports the decks of the deck folders and opens the next card of the
+first deck whose name starts with NAME. `--dark` uses the dark theme.
+
+The curves have a golden widget test, which is exact to the pixel. Run
+`flutter test` in `app/`. On a failure, the images of the difference are in
+`app/test/<folder>/failures/`.
+
+### With Docker Compose
 
 With Docker Compose, from the repository root. The compose file mounts the
 models that are already in `.data/` there. The keys are in the file `.env`,
@@ -1358,31 +1380,15 @@ the Docker commands above, with `--userns=keep-id` and
 
 ## The Flutter app
 
-`app/` is a Flutter web app that replaces `static/`, one part at a time.
-`DART.md` has the plan, and issue #24 tracks the parts. Now the app has the
-Breakdown tab, with the curves between the words and the Listen panel, the
-Flashcards tab, the "explain with AI" panel, the Progress tab, and the Audio
-lessons tab. The image serves the Flutter app. A local run serves `static/`
-until issue #39 deletes it.
-
-Install Flutter 3.47.5, the version of `FLUTTER_VERSION` in `Dockerfile`. Build
-the app from `app/`. The build takes about a minute:
-
-```bash
-flutter build web --wasm --no-web-resources-cdn --base-href /static/
-```
-
-Then serve the build in place of `static/`, from this folder:
-
-```bash
-STATIC_DIR=app/build/web DATA_ROOT=../.data uv run uvicorn tlhelper.app:app --port 8000 --no-access-log
-```
+`app/` is the page: a Flutter web app with the Breakdown tab, with the curves
+between the words and the Listen panel, the Flashcards tab, the "explain with
+AI" panel, the Progress tab, and the Audio lessons tab. The app serves the
+build of `app/` from `STATIC_DIR`. "Running locally" has the build command.
 
 ### The browser tests
 
-The browser tests open the build in `app/build/web` in a headless Chromium,
-with Playwright. The `server` fixture of `tests/conftest.py` serves that
-build, whatever `STATIC_DIR` is. Build the app first, and download the
+The browser tests open the build in `STATIC_DIR` (default `app/build/web`) in
+a headless Chromium, with Playwright. Build the app first, and download the
 browser one time:
 
 ```bash
@@ -1390,8 +1396,10 @@ uv run playwright install --only-shell chromium
 uv run pytest
 ```
 
-With no build or no browser, pytest skips these tests. The `tests` job of CI
-runs them against the build of the `dart` job.
+With no build or no browser, pytest skips these tests. With no build, it also
+skips the tests of `tests/test_app.py` and `tests/test_auth.py` that read the
+page. The `tests` job of CI runs them all against the build of the `dart`
+job.
 
 Flutter draws on a canvas, so the tests cannot use CSS selectors or
 `get_by_text` on the page. `main.dart` turns on the semantics tree, and
@@ -1406,6 +1414,16 @@ The browser context of each test has no network: a request outside the
 server fails, and a failed request is an error of the page. At the end of a
 test, each page must have no errors in its console.
 
+The browser tests run skwasm on one thread. `new_context` in
+`tests/conftest.py` changes `flutter_bootstrap.js` on its way to the
+browser, and gives `forceSingleThreadedSkwasm: true` to the loader. On more
+than one thread, the headless Chromium of Playwright crashed about one page in
+ten: 4 crashes in 38 tests on a local run, and one or two in each CI run, as
+"Target crashed" or the wasm trap "operation does not support unaligned
+accesses". On one thread, 76 tests in four local runs had no crash. The page
+is still cross-origin isolated, and a real browser still runs skwasm on more
+than one thread.
+
 | File | What it opens |
 | ---- | ------------- |
 | `tests/test_browser_app.py` | The app: no request outside the origin, cross-origin isolation, the locale of the address and of the browser, and the dark theme. |
@@ -1413,35 +1431,8 @@ test, each page must have no errors in its console.
 | `tests/flashcards/test_browser.py` | The Flashcards tab: the tabs, the decks and the subdecks, a card with a picture and a clip, a listen card, the ratings and their keys, a right-to-left language, the accent note, "Read it aloud", the questions to a fake AI service, and the Progress tab. |
 | `tests/test_browser_audio.py` | The Audio lessons tab: the courses, a lesson with its script and its player, and the progress of each lesson. |
 
-### Pictures of the page
-
-To see each browser test, give a folder for the pictures:
-
-```bash
-uv run pytest tests/test_browser_breakdown.py --screenshots=shots
-```
-
-At the end of each test, each page saves a PNG with the name of the test to
-that folder. Some tests also save a picture in the middle, such as
-`listen-390.png`. The tests with a `width` parameter run at a phone width
-(390 px) and at a desktop width (1280 px). Without the option, the tests save
-nothing.
-
-One picture with no test:
-
-```bash
-uv run python tests/shot.py "Ovo je rečenica." --translate --out shot.png
-uv run python tests/shot.py --deck Basics --dark --width 390 --out card.png
-```
-
-`tests/shot.py` starts the server as `conftest.py` does, with new empty
-databases, opens the page, types the text and waits for the chips. `--deck
-NAME` imports the decks of the deck folders and opens the next card of the
-first deck whose name starts with NAME. `--dark` uses the dark theme.
-
-The curves have a golden widget test, which is exact to the pixel. Run
-`flutter test` in `app/`. On a failure, the images of the difference are in
-`app/test/<folder>/failures/`.
+"Pictures of the page" under "Running locally" has the pictures of the
+browser tests.
 
 ### The widget tests
 
@@ -1460,8 +1451,8 @@ How the parts fit:
 
 - `--base-href /static/`: `/static` serves the build, and `/` returns its
   `index.html`. So `flutter_bootstrap.js`, `main.dart.wasm`, `canvaskit/`,
-  the manifest and the icons are under `/static/`. The manifest and the icons
-  have the names of those in `static/`, so `OPEN_PATHS` in `auth.py` stays.
+  the manifest and the icons are under `/static/`. `OPEN_PATHS` in `auth.py`
+  lists the manifest and the icons (see "Install on Android").
 - `--no-web-resources-cdn`: the app loads CanvasKit and skwasm from the
   server, not from Google.
 - The fonts: Flutter fetches a font from fonts.gstatic.com for a letter that
@@ -1473,11 +1464,13 @@ How the parts fit:
   page is then cross-origin isolated, and skwasm runs on more than one thread.
   Without the headers, it runs on one thread.
 
-The image has only the Flutter page: the first stage builds the app, and the
-second stage copies the build to `/app/static`, the folder of `STATIC_DIR`.
-So `docker compose up --build` and `fly deploy` serve the Flutter app. The
-addresses of the tabs are `/#/cards`, `/#/progress` and `/#/audio`, in place
-of `#cards`, `#progress` and `#audio`.
+The first stage of the image builds the app, and the second stage copies the
+build to `/app/static`, the folder of `STATIC_DIR`. So `docker compose up
+--build` and `fly deploy` build the page too.
+
+The addresses of the tabs are `/#/cards`, `/#/progress` and `/#/audio`, in
+place of `#cards`, `#progress` and `#audio` of the page before the Flutter
+app. Change an older bookmark to the new address.
 
 The first stage of `Dockerfile` downloads the Flutter archive and checks its
 SHA-256. The image `ghcr.io/cirruslabs/flutter` has no tag after 3.44.0. To
@@ -1507,7 +1500,7 @@ that client cancels the request: on the Cancel button, on a newer classify,
 and on a timeout. The request then fails with `ApiCanceled` and its reason. A
 response with an error status is an `ApiException`. Its `message()` is the
 Fluent message `error-{code}` if the body has a code and a catalog has the
-message, else the `detail` of the body, as on the page of `static/`. A 401
+message, else the `detail` of the body. A 401
 loads `/auth/login`, and after the login the browser comes back to the same
 address.
 
@@ -1532,15 +1525,13 @@ Two parts of `app/test/api/` keep the models in step with the server:
 
 ### The text of the app
 
-The app has the text of the page in the same Fluent catalogs as `static/`
-(see "The language of the page"). `app/lib/i18n/i18n.dart` formats them with
-the Dart package [`fluent`](https://pub.dev/packages/fluent). Before the
-first frame, `main()` reads `GET /api/v1/locales` and chooses the locale as
-`static/js/i18n.js` does: `?locale=` of the address, then the choice that
-`shared_preferences` keeps under `langhelper.locale`, then the languages of
-the browser. On the web, `shared_preferences` adds the prefix `flutter.` to
-the key, so the app does not read the `classla.locale` choice of `static/`.
-The app then gets the catalog of that locale and the English one. The
+The app has the text of the page in the Fluent catalogs of the server (see
+"The language of the page"). `app/lib/i18n/i18n.dart` formats them with the
+Dart package [`fluent`](https://pub.dev/packages/fluent). Before the first
+frame, `main()` reads `GET /api/v1/locales` and chooses the locale:
+`?locale=` of the address, then the choice that `shared_preferences` keeps
+under `langhelper.locale`, then the languages of the browser. The app then
+gets the catalog of that locale and the English one. The
 `direction` of the locale sets the `Directionality` of the whole app.
 
 A widget gets the text through `I18n.of(context)`. `t(id, args)` gives the
@@ -1557,8 +1548,8 @@ needs the same change in the copy. From this folder:
 cp tlhelper/languages/english/ui.ftl app/assets/i18n/ui.ftl
 ```
 
-The Fluent runtime of Dart is not the one of JS. Its parser skips a message
-that it cannot read, with no error. So `app/test/i18n/catalogs_test.dart`
+The parser of the Dart package skips a message that it cannot read, with no
+error. So `app/test/i18n/catalogs_test.dart`
 checks each catalog of `tlhelper/languages/`: the parser must read each
 message, and each message must format with no error, once with each
 variable as a number and once as a text. It also checks that the copy equals
@@ -1567,7 +1558,7 @@ or `tOr()` of `app/lib/` is in the English catalog.
 
 ### The Breakdown tab
 
-`app/lib/breakdown/` does what `static/js/breakdown.js` does:
+`app/lib/breakdown/` has the Breakdown tab:
 
 | File | What it has |
 | ---- | ----------- |
@@ -1594,9 +1585,7 @@ How the form sends:
 The tab keeps the form in `shared_preferences`: `langhelper.entry` has the
 side, the language, the text and the two options as JSON, and
 `langhelper.heavy` has the choice of the large models. On the web,
-`shared_preferences` adds the prefix `flutter.` to each key, so the app does
-not read the `classla.entry` and `classla.heavy` settings of `static/`. The
-settings reset one time. The saved text goes into the text field only when
+`shared_preferences` adds the prefix `flutter.` to each key. The saved text goes into the text field only when
 the list of languages loads, and only if the user has typed nothing.
 
 The chips and the table are in a `SelectionArea`, so a drag selects their
@@ -1604,9 +1593,8 @@ text for a copy. A tap on a chip selects the word. Each chip has the
 semantics label `chip: <word> <upos>`, for the browser tests and for a
 screen reader.
 
-`static/js/breakdown.js` writes the list of the cases of a problem ("the
-accusative or the locative") with `Intl.ListFormat`. Dart has no such
-formatter, so each catalog has the message `list-or`.
+Dart has no `Intl.ListFormat`, so each catalog has the message `list-or` for
+the list of the cases of a problem ("the accusative or the locative").
 
 The widget tests are in `app/test/breakdown/`. `app/test/fake_server.dart`
 answers with the saved responses of `app/test/api/fixtures/`.
@@ -1619,7 +1607,7 @@ uses it for the links of an answer.
 
 - `LinkLayer` is a `Stack`: a `CustomPaint` under the sentences. A curve
   goes from the bottom centre of the upper chip to the top centre of the
-  lower chip, as `drawLinks` in `static/js/breakdown.js` does.
+  lower chip.
 - Each chip has the `GlobalKey` of its word (`chipKey`). After a frame, the
   layer reads the place of each linked chip, and it draws again only when a
   place changes.
@@ -1639,8 +1627,7 @@ and look at it before the commit.
 
 ### The Listen panel
 
-`app/lib/listen/` does what `static/js/listen.js` does (see "Listen"). The
-Breakdown tab shows the panel under the breakdown. The Flashcards tab uses
+`app/lib/listen/` has the Listen panel (see "Listen"). The Breakdown tab shows the panel under the breakdown. The Flashcards tab uses
 its player bar for the clips, and its voice service for "Read it aloud".
 
 - The app reads `GET /api/v1/speech` one time. With no voice service, or
@@ -1681,8 +1668,7 @@ because `just_audio` needs a platform plugin.
 
 ### The Flashcards tab
 
-`app/lib/flashcards/` does what `static/js/flashcards.js` does (see
-"Flashcards"). The address of the tab is `/#/cards`.
+`app/lib/flashcards/` has the Flashcards tab (see "Flashcards"). The address of the tab is `/#/cards`.
 
 | File | What it has |
 | ---- | ----------- |
@@ -1719,8 +1705,8 @@ the look, write the image again with
 
 ### The Explain panel
 
-`app/lib/explain/explain_panel.dart` does what `static/js/explain.js` does
-(see "Explain with AI").
+`app/lib/explain/explain_panel.dart` has the "explain with AI" panel (see
+"Explain with AI").
 
 - The app reads `GET /api/v1/explain/questions` one time. With no AI key on
   the server, the panel does not show.
@@ -1739,8 +1725,8 @@ The widget tests are in `app/test/explain/`.
 
 ### The Progress tab
 
-`app/lib/progress/` does what `static/js/progress.js` does (see "The progress
-of each user"). The address of the tab is `/#/progress`.
+`app/lib/progress/` has the Progress tab (see "The progress of each user").
+The address of the tab is `/#/progress`.
 
 | File | What it has |
 | ---- | ----------- |
@@ -1764,8 +1750,8 @@ and look at it before the commit.
 
 ### The Audio lessons tab
 
-`app/lib/audio_lessons/` does what `static/js/audio_lessons.js` does (see
-"Audio lessons"). The address of the list is `/#/audio`, and the address of
+`app/lib/audio_lessons/` has the Audio lessons tab (see "Audio lessons").
+The address of the list is `/#/audio`, and the address of
 a lesson is `/#/audio/<course>/<lesson>`, so a lesson has a link of its own.
 
 | File | What it has |

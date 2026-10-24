@@ -108,20 +108,20 @@ def test_lemma_key_keeps_case_only_for_proper_nouns():
     assert service.lemma_key("ｶﾒﾗ", "NOUN") == service.lemma_key("カメラ", "NOUN")
 
 
-def test_healthz_and_index(client):
+def test_healthz_and_index(client, app_build):
     assert client.get("/healthz").text == "ok"
     page = client.get("/")
     assert page.status_code == 200
-    # The page loads its script, its style sheet, and its manifest and icon
-    # for the install on Android from /static.
-    for path, content in [
-        ("/static/js/breakdown.js", "/api/v1/classify"),
-        ("/static/css/breakdown.css", ".chip"),
-        ("/static/manifest.json", '"src": "/static/icon.svg"'),
-        ("/static/icon.svg", "<svg"),
+    assert '<base href="/static/">' in page.text
+    # The page loads the app, and its manifest and icon for the install on
+    # Android, from /static.
+    for name, content in [
+        ("flutter_bootstrap.js", "main.dart"),
+        ("manifest.json", '"src": "/static/icon.svg"'),
+        ("icon.svg", "<svg"),
     ]:
-        assert path in page.text
-        file = client.get(path)
+        assert f'"{name}"' in page.text
+        file = client.get(f"/static/{name}")
         assert file.status_code == 200
         assert content in file.text
     manifest = client.get("/static/manifest.json").json()
@@ -135,23 +135,31 @@ def test_healthz_and_index(client):
     assert ("image/png", "maskable") in purposes
 
 
-def test_the_browser_asks_again_for_the_page_and_its_scripts(client):
+def test_without_a_build_the_page_says_what_to_do(client, tmp_path, monkeypatch):
+    monkeypatch.setattr(service, "INDEX_HTML", tmp_path / "index.html")
+    page = client.get("/")
+    assert page.status_code == 503
+    assert "build the Flutter app" in page.text
+
+
+def test_the_browser_asks_again_for_the_page_and_its_scripts(client, app_build):
     assert client.get("/").headers["cache-control"] == "no-cache"
-    script = client.get("/static/js/flashcards.js")
+    script = client.get("/static/flutter_bootstrap.js")
     assert script.headers["cache-control"] == "no-cache"
     again = client.get(
-        "/static/js/flashcards.js", headers={"if-none-match": script.headers["etag"]}
+        "/static/flutter_bootstrap.js",
+        headers={"if-none-match": script.headers["etag"]},
     )
     assert again.status_code == 304
     assert again.headers["cache-control"] == "no-cache"
 
 
-def test_the_page_is_cross_origin_isolated(client):
+def test_the_page_is_cross_origin_isolated(client, app_build):
     page = client.get("/")
     assert page.headers["cross-origin-opener-policy"] == "same-origin"
     assert page.headers["cross-origin-embedder-policy"] == "credentialless"
     # Only the HTML: the other files do not need the headers.
-    script = client.get("/static/js/flashcards.js")
+    script = client.get("/static/flutter_bootstrap.js")
     assert "cross-origin-opener-policy" not in script.headers
     assert "cross-origin-opener-policy" not in client.get("/healthz").headers
 
@@ -666,11 +674,11 @@ def test_access_log_line_has_the_latency(client, monkeypatch):
     )
     # The health checks call /healthz every few seconds: no line for it.
     assert client.get("/healthz").text == "ok"
-    client.get("/", headers={"fly-client-ip": "203.0.113.7"})
+    client.get("/api/v1/languages", headers={"fly-client-ip": "203.0.113.7"})
     client.get("/api/v1/lemmas?limit=0")
     assert re.fullmatch(
         r"203\.0\.113\.7 - - \[\d{2}/\w{3}/\d{4}:\d{2}:\d{2}:\d{2} \+0000\]"
-        r' "GET / HTTP/1\.1" 200 \d+ \d+\.\dms',
+        r' "GET /api/v1/languages HTTP/1\.1" 200 \d+ \d+\.\dms',
         lines[0],
     ), lines[0]
     assert '"GET /api/v1/lemmas?limit=0 HTTP/1.1" 422 ' in lines[1]

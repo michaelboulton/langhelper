@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The repository is one uv workspace. The root `pyproject.toml` lists the members, and the root `uv.lock` holds the versions of both. Each member has its own `pyproject.toml`, `Dockerfile`, `README.md` and `tests/`:
 
-- `web/`: the language-learning web app (uv project `langhelper-web`). The Python package is `tlhelper`, a FastAPI service. The page is the Flutter app in `app/`, with a build step: the image builds it and serves it. The plain JS page in `static/` is still the page of a local run without `STATIC_DIR`, until issue #39 deletes it.
+- `web/`: the language-learning web app (uv project `langhelper-web`). The Python package is `tlhelper`, a FastAPI service. The page is the Flutter app in `app/`, with a build step: the app serves the build in `STATIC_DIR` (default `app/build/web`), and the image builds it.
 - `tts/`: the text-to-speech service (uv project `omnivoice-server`). The Python package is `omnivoice_server`, a ctypes binding to `libomnivoice.so` behind an OpenAI-shaped speech API.
 
 `README.md` at the root is a short overview. `web/README.md` and `tts/README.md` are the full reference: the API, the environment variables, the data files and the deploy steps. Read the relevant section before a change.
@@ -14,12 +14,12 @@ The repository is one uv workspace. The root `pyproject.toml` lists the members,
 Other documents in `web/`:
 
 - `LANGUAGES.md`: the extra work for a study language with a non-Latin script or no spaces.
-- `DART.md`: the plan to move `static/` to a Flutter app in `web/app/`. The move is in progress. Issue [#24](https://github.com/michaelboulton/langhelper/issues/24) tracks it, and each of its sub-issues is one part. Before a change to `static/`, `web/app/` or a route that the page reads, read #24 and its sub-issues: they say which parts are done, and what each next part needs. The image serves the Flutter build, and the browser tests test only that build.
+- `DART.md`: the plan for a native Android and iOS app from the code of `web/app/`. `README.md`, "The Flutter app", describes the app as it is.
 - `scripts/README.md`: admin tools that are not in the image.
 
 To plan an audio course ("a course of 20 lessons of Italian, with flashcards"), follow `.claude/skills/audio-course/SKILL.md`. It writes a `plan.sh` of the commands for the user to run.
 
-"classla" in the code and the docs is the Croatian NLP library (`import classla`, `classla_resources/`), not a folder. The `classla.*` localStorage keys keep the old name on purpose, because a rename loses the settings that browsers saved. `web/example.fly.toml` and the app name `my-deployment-example` in the docs are examples. The real `web/fly.toml` is a copy that git ignores.
+"classla" in the code and the docs is the Croatian NLP library (`import classla`, `classla_resources/`), not a folder. `web/example.fly.toml` and the app name `my-deployment-example` in the docs are examples. The real `web/fly.toml` is a copy that git ignores.
 
 ## Commands
 
@@ -43,9 +43,8 @@ prek run --all-files
 Commands for `web/`, from `web/`:
 
 ```bash
+(cd app && flutter build web --wasm --no-web-resources-cdn --base-href /static/)   # build the page, for a local run and the browser tests
 DATA_ROOT=../.data uv run uvicorn tlhelper.app:app --port 8000 --no-access-log   # local run, no login
-STATIC_DIR=app/build/web DATA_ROOT=../.data uv run uvicorn tlhelper.app:app --port 8000 --no-access-log   # local run of the Flutter app
-(cd app && flutter build web --wasm --no-web-resources-cdn --base-href /static/)   # build the Flutter app, for the browser tests
 uv run playwright install --only-shell chromium        # one time, for the browser tests
 uv run pytest tests/test_browser_breakdown.py --screenshots=shots   # save a PNG of each browser test
 uv run python tests/shot.py "Ovo je rečenica." --translate --out shot.png   # one PNG, no test (--deck NAME, --dark)
@@ -66,7 +65,7 @@ fly deploy . --config web/fly.toml --dockerfile web/Dockerfile --ha=false   # de
 Tests that need resources skip when the resources are missing:
 
 - `test_real_models` needs the classla models in `.data/` at the repository root.
-- The browser tests need the Flutter build in `web/app/build/web` (the `server` fixture serves it, whatever `STATIC_DIR` is) and the Playwright Chromium. Their browser has no network. They find the widgets through the semantics tree with `get_by_role` and `get_by_label`, because Flutter draws on a canvas. `web/README.md`, "The browser tests", has the details. A Claude Code cloud container has a Chromium in `/opt/pw-browsers`, but it can be an older build than the version that `uv.lock` pins. Then each browser test skips with `Executable doesn't exist at /opt/pw-browsers/chromium_headless_shell-<N>`. Do not run `playwright install`. Instead, link the build that is there under the name that Playwright wants, in a folder of your own, and set `PLAYWRIGHT_BROWSERS_PATH` to that folder. For example: `ln -s /opt/pw-browsers/chromium_headless_shell-1243 <dir>/chromium_headless_shell-1248`, then `PLAYWRIGHT_BROWSERS_PATH=<dir> uv run pytest ...`.
+- The browser tests need the Flutter build in `STATIC_DIR` (default `web/app/build/web`) and the Playwright Chromium. The tests of `test_app.py` and `test_auth.py` that read the page need the build too. Their browser has no network. They find the widgets through the semantics tree with `get_by_role` and `get_by_label`, because Flutter draws on a canvas. `web/README.md`, "The browser tests", has the details. A Claude Code cloud container has a Chromium in `/opt/pw-browsers`, but it can be an older build than the version that `uv.lock` pins. Then each browser test skips with `Executable doesn't exist at /opt/pw-browsers/chromium_headless_shell-<N>`. Do not run `playwright install`. Instead, link the build that is there under the name that Playwright wants, in a folder of your own, and set `PLAYWRIGHT_BROWSERS_PATH` to that folder. For example: `ln -s /opt/pw-browsers/chromium_headless_shell-1243 <dir>/chromium_headless_shell-1248`, then `PLAYWRIGHT_BROWSERS_PATH=<dir> uv run pytest ...`.
 - DeepL and the AI service are fakes in the tests, so the tests need no key.
 - The `tts/` tests use a fake model and need no build of `libomnivoice.so`.
 - The heavy German tests need `de_dep_news_trf`.
@@ -78,7 +77,7 @@ CI (`.github/workflows/tests.yml`) runs prek, then the tests of both members. Th
 
 ### Languages and the model slot
 
-Each study language is a class in `tlhelper/languages/<name>/` that implements the `Language` protocol of `languages/base.py`. `LANGUAGES` in `languages/__init__.py` is the registry. The page builds its language list from `GET /api/v1/languages`, so a new language needs no change to the JS. `web/README.md`, section "Add a language", has the steps.
+Each study language is a class in `tlhelper/languages/<name>/` that implements the `Language` protocol of `languages/base.py`. `LANGUAGES` in `languages/__init__.py` is the registry. The page builds its language list from `GET /api/v1/languages`, so a new language needs no change to the app. `web/README.md`, section "Add a language", has the steps.
 
 A language has a `"light"` variant (a spaCy model) and an optional `"heavy"` variant (classla for Croatian, a transformer for German). `StudySlot` in `languages/base.py` holds only one study model in memory at a time. A request for another language or variant drops the loaded model first. The English model stays outside the slot and is always loaded. Code that needs tags of a study language must go through the slot.
 
@@ -119,7 +118,7 @@ The app migrates rows from older table names at startup and leaves the old table
 
 ### Text of the page
 
-The UI text is in a Fluent file `ui.ftl` in each language folder. `english/ui.ftl` is the complete catalog. `static/js/i18n.js` has a fallback formatter for a failed load of `@fluent/bundle`, so the catalogs must not use Fluent attributes or functions. `tests/test_locales.py` checks this.
+The UI text is in a Fluent file `ui.ftl` in each language folder. `english/ui.ftl` is the complete catalog. `app/assets/i18n/ui.ftl` is a copy of the English catalog for the app, and `app/test/i18n/catalogs_test.dart` checks that it is equal. The app formats only the value of a message, so the catalogs must not use Fluent attributes. `tests/test_locales.py` checks this.
 
 ## tts architecture
 
@@ -131,6 +130,6 @@ The READMEs use a controlled, simplified English: short sentences, active voice,
 
 ## Pull requests
 
-A PR that changes what the page shows (`web/static/`, `ui.ftl`, or a route that the page reads) must have a screenshot in its description. Show the changed part at phone width (390px) and at desktop width. To take a screenshot, run the app and use `uv run playwright screenshot --viewport-size "390, 700" --wait-for-timeout 5000 <url> <file>.png` from `web/`.
+A PR that changes what the page shows (`web/app/`, `ui.ftl`, or a route that the page reads) must have a screenshot in its description. Show the changed part at phone width (390px) and at desktop width. To take a screenshot, run the app and use `uv run playwright screenshot --viewport-size "390, 700" --wait-for-timeout 5000 <url> <file>.png` from `web/`.
 
 The GitHub API cannot upload an image to a PR description. So commit the PNG files in `pr-screenshots/` on the PR branch, and delete them in the next commit. In the description, link each image by the SHA of the commit that adds it: `![phone](https://github.com/michaelboulton/langhelper/raw/<sha>/pr-screenshots/<file>.png)`. The ref `refs/pull/<N>/head` keeps that commit, so the link works after the merge, and the PNG files do not reach `main` in a squash merge.
