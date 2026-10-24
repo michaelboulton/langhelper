@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <pattern id="checks" width="128" height="128" patternUnits="userSpaceOnUse" shape-rendering="crispEdges">
+      <rect width="128" height="128" fill="#FFFFFF"/>
+      <rect width="64" height="64" fill="#FF0000"/>
+      <rect x="64" y="64" width="64" height="64" fill="#FF0000"/>
+    </pattern>
+  </defs>
+  <rect width="512" height="512" fill="url(#checks)"/>
+  <polygon points="0,0 512,0 0,512" fill="#171796"/>
+</svg>

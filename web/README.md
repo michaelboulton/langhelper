@@ -56,9 +56,13 @@ login. The API refuses texts over `MAX_TEXT_CHARS`.
 | `static/js/audio_lessons.js` | The script of the audio lessons tab: the courses, the player and the script of a lesson. It uses the functions of `breakdown.js` and `flashcards.js` |
 | `static/css/breakdown.css` | The style sheet of the page. Served under `/static`           |
 | `static/manifest.json`, `static/icon*.svg`, `static/icon*.png` | The web app manifest and the icons, for the install on a phone. See "Install on Android" |
+| `app/` | The Flutter app that replaces `static/`. See "The Flutter app" and `DART.md` |
+| `app/lib/main.dart` | The start of the app: the theme and the router |
+| `app/web/` | `index.html`, the manifest and the icons of the app. The manifest and the icons are copies of those in `static/` |
+| `app/assets/fonts/` | Noto Sans, Noto Sans Arabic and Noto Sans Hebrew, with their license `OFL.txt` |
 | `pyproject.toml` | Dependencies. Pins `torch` to the CPU-only wheel index of the root `pyproject.toml` |
 | `../uv.lock`     | Locked versions of the whole uv workspace. Update with `uv lock --upgrade` |
-| `Dockerfile`     | `python:3.12-slim` plus `uv sync --frozen`, runs as uid 1000. Its build context is the repository root |
+| `Dockerfile`     | A stage that builds the Flutter app, then `python:3.12-slim` plus `uv sync --frozen`, runs as uid 1000. Its build context is the repository root |
 | `entrypoint.sh`  | Makes sure that `/data` is writable, then execs uvicorn                 |
 | `../docker-compose.yml` | Local run with Docker Compose and the models in `.data/` at the repository root, with a llama.cpp service for the AI buttons and the `tts/` service for the "Listen" buttons |
 | `../example.env` | The keys for `docker-compose.yml`. Copy it to `.env`, which git ignores |
@@ -1160,7 +1164,8 @@ Set under `[env]` in `fly.toml`:
 - `MAX_TEXT_CHARS`: the longest text that the API accepts. Default `1000`.
 - `DATA_ROOT`: where the models and `lemmas.db` live. Default `/data`.
 - `STATIC_DIR`: the folder with the page, its script, and its style sheet.
-  Default: `static/` next to `tlhelper/`. The image sets `/app/static`.
+  Default: `static/` next to `tlhelper/`. The image sets `/app/static`. Set
+  `/app/flutter` for the Flutter app. See "The Flutter app".
 - `MODEL_URL`: a mirror for the model files. Default: clarin.si.
 - `DOWNLOAD_MODELS`: set to `0` to never download the models. Default `1`. The
   app always tries the models on disk first, with no network access.
@@ -1339,3 +1344,74 @@ The file differs from `docker-compose.yml` in these ways:
 Without compose, `podman build` and `podman run` take the same arguments as
 the Docker commands above, with `--userns=keep-id` and
 `--secret deepl_api_key` in place of `--env-file .env`.
+
+## The Flutter app
+
+`app/` is a Flutter web app that replaces `static/`, one part at a time.
+`DART.md` has the plan, and issue #24 tracks the parts. Now the app is a blank
+page with the title. `static/` stays the page of the app until the Flutter app
+has all the tabs.
+
+Install Flutter 3.47.5, the version of `FLUTTER_VERSION` in `Dockerfile`. Build
+the app from `app/`. The build takes about a minute:
+
+```bash
+flutter build web --wasm --no-web-resources-cdn --base-href /static/
+```
+
+Then serve the build in place of `static/`, from this folder:
+
+```bash
+STATIC_DIR=app/build/web DATA_ROOT=../.data uv run uvicorn tlhelper.app:app --port 8000 --no-access-log
+```
+
+The smoke test opens the build in Chromium. It checks that the app shows its
+title, that the page is cross-origin isolated, and that the browser sends no
+request outside the origin. It skips unless `STATIC_DIR` is a Flutter build.
+The other browser tests need the page of `static/`, so run them without
+`STATIC_DIR`:
+
+```bash
+STATIC_DIR=app/build/web uv run pytest tests/test_browser_app.py
+```
+
+The widget tests are in `app/test/`. Run them from `app/`. The `dart` job of
+CI runs them too:
+
+```bash
+flutter test
+```
+
+`app/.pre-commit-config.yaml` is a project of the prek workspace, so `prek run --all-files` at the repository root also runs its
+hooks in `app/`: `dart format`, `flutter pub get` and `flutter analyze`. They
+need `flutter` and `dart` on the `PATH`.
+
+How the parts fit:
+
+- `--base-href /static/`: `/static` serves the build, and `/` returns its
+  `index.html`. So `flutter_bootstrap.js`, `main.dart.wasm`, `canvaskit/`,
+  the manifest and the icons are under `/static/`. The manifest and the icons
+  have the names of those in `static/`, so `OPEN_PATHS` in `auth.py` stays.
+- `--no-web-resources-cdn`: the app loads CanvasKit and skwasm from the
+  server, not from Google.
+- The fonts: Flutter fetches a font from fonts.gstatic.com for a letter that
+  no bundled font has. The app bundles Noto Sans (the Latin letters with the
+  accent marks, such as ȁ and ȃ) and Noto Sans Arabic and Noto Sans Hebrew
+  (for the right-to-left languages of `LANGUAGES.md`).
+- A middleware in `app.py` sets `Cross-Origin-Opener-Policy: same-origin` and
+  `Cross-Origin-Embedder-Policy: credentialless` on each HTML response. The
+  page is then cross-origin isolated, and skwasm runs on more than one thread.
+  Without the headers, it runs on one thread.
+
+The image has both pages: the page of `static/` in `/app/static`, and the
+Flutter build in `/app/flutter`. `STATIC_DIR` chooses; the image sets
+`/app/static`. To try the Flutter app on Fly, set `STATIC_DIR = '/app/flutter'`
+under `[env]` in `fly.toml`.
+
+The first stage of `Dockerfile` downloads the Flutter archive and checks its
+SHA-256. The image `ghcr.io/cirruslabs/flutter` has no tag after 3.44.0. To
+change the version, take `version` and `sha256` from
+[releases_linux.json](https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json),
+set `FLUTTER_VERSION` and `FLUTTER_SHA256`, and install the same version
+locally. The root `.dockerignore` lets `web/app/` in, but not its `build/`,
+`.dart_tool/` and `test/goldens/`.

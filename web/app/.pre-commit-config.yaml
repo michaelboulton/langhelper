@@ -1,0 +1,23 @@
+# A prek workspace project: prek runs these hooks in web/app/ (README.md,
+# "The Flutter app").
+repos:
+  - repo: local
+    hooks:
+      - id: dart-format
+        name: dart format
+        entry: dart format
+        language: system
+        types: [dart]
+      # flutter analyze needs the packages of pubspec.lock.
+      - id: flutter-pub-get
+        name: flutter pub get
+        entry: flutter pub get
+        language: system
+        types_or: [dart, yaml]
+        pass_filenames: false
+      - id: flutter-analyze
+        name: flutter analyze
+        entry: flutter analyze
+        language: system
+        types_or: [dart, yaml]
+        pass_filenames: false

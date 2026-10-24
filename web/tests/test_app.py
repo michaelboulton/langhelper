@@ -146,6 +146,16 @@ def test_the_browser_asks_again_for_the_page_and_its_scripts(client):
     assert again.headers["cache-control"] == "no-cache"
 
 
+def test_the_page_is_cross_origin_isolated(client):
+    page = client.get("/")
+    assert page.headers["cross-origin-opener-policy"] == "same-origin"
+    assert page.headers["cross-origin-embedder-policy"] == "credentialless"
+    # Only the HTML: the other files do not need the headers.
+    script = client.get("/static/js/flashcards.js")
+    assert "cross-origin-opener-policy" not in script.headers
+    assert "cross-origin-opener-policy" not in client.get("/healthz").headers
+
+
 def test_classify_shape(client):
     result = classify(client)
     assert (result["type"], result["language"]) == ("heavy", "hr")

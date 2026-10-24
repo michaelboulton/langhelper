@@ -29,7 +29,36 @@ jobs:
           path: ${{ steps.uv-cache.outputs.dir }}
           key: uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
           restore-keys: uv-${{ runner.os }}-
+      # For the dart format and flutter analyze hooks of web/app.
+      - id: flutter-version
+        run: echo "version=$(sed -n 's/^ARG FLUTTER_VERSION=//p' web/Dockerfile)" >> "$GITHUB_OUTPUT"
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          channel: stable
+          cache: true
       - uses: j178/prek-action@1382ad72dea72f9d53832f2bcb65b3e87a947204 # v3.0.1
+
+  dart:
+    needs: prek
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web/app
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # The SDK of the image.
+      - id: flutter-version
+        working-directory: .
+        run: echo "version=$(sed -n 's/^ARG FLUTTER_VERSION=//p' web/Dockerfile)" >> "$GITHUB_OUTPUT"
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version: ${{ steps.flutter-version.outputs.version }}
+          channel: stable
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - run: flutter test
 
   tests:
     needs: prek
