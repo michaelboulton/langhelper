@@ -89,6 +89,11 @@ def test_the_code_names_messages_that_exist():
     # A complete id. An id that the page builds ends in "-": "upos-" + tag.
     named |= set(re.findall(r'\bt(?:Or)?\(\s*"([A-Za-z0-9_-]+[A-Za-z0-9_])"', page))
     named |= set(re.findall(r'data-l10n-[a-z]+="([A-Za-z0-9_-]+)"', page))
+    dart = "\n".join(
+        path.read_text(encoding="utf-8") for path in (ROOT / "app/lib").rglob("*.dart")
+    )
+    named |= set(re.findall(r"\bt(?:Or)?\(\s*'([A-Za-z0-9_-]+[A-Za-z0-9_])'", dart))
+    assert {"breakdown-title", "language-name-hr"} <= named
     assert named - english == set()
 
 

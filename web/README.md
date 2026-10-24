@@ -57,7 +57,9 @@ login. The API refuses texts over `MAX_TEXT_CHARS`.
 | `static/css/breakdown.css` | The style sheet of the page. Served under `/static`           |
 | `static/manifest.json`, `static/icon*.svg`, `static/icon*.png` | The web app manifest and the icons, for the install on a phone. See "Install on Android" |
 | `app/` | The Flutter app that replaces `static/`. See "The Flutter app" and `DART.md` |
-| `app/lib/main.dart` | The start of the app: the theme and the router |
+| `app/lib/main.dart` | The start of the app: the text of the locale, the theme and the router |
+| `app/lib/i18n/` | Loads the catalogs of the page text, and has `t()` and `tOr()`. See "The text of the app" |
+| `app/assets/i18n/ui.ftl` | A copy of `tlhelper/languages/english/ui.ftl`, for an app that gets no catalog from the server |
 | `app/lib/api/` | `models.dart` has the models of `tlhelper/schemas.py` that the page reads, and `client.dart` has the client of the API. `models.g.dart` is generated. See "The Flutter app" |
 | `app/test/api/` | A copy of `/openapi.json` and a saved response of each route that the page reads, for the tests of the models |
 | `app/web/` | `index.html`, the manifest and the icons of the app. The manifest and the icons are copies of those in `static/` |
@@ -981,6 +983,7 @@ lets a translator select a text by a number or by a grammar value.
 | `tlhelper/locales.py`                | Finds the files and serves them       |
 | `tlhelper/messages.py`               | `Problem` and the errors with a code  |
 | `static/js/i18n.js`                  | Loads the catalogs, and has `t()`     |
+| `app/lib/i18n/i18n.dart`             | The same for the Flutter app          |
 
 `GET /api/v1/locales` lists the languages, and
 `GET /api/v1/locales/{code}/ui.ftl` gives one file. The page gets the English
@@ -1351,8 +1354,8 @@ the Docker commands above, with `--userns=keep-id` and
 
 `app/` is a Flutter web app that replaces `static/`, one part at a time.
 `DART.md` has the plan, and issue #24 tracks the parts. Now the app is a blank
-page with the title. `static/` stays the page of the app until the Flutter app
-has all the tabs.
+page with the title in the language of the page. `static/` stays the page of
+the app until the Flutter app has all the tabs.
 
 Install Flutter 3.47.5, the version of `FLUTTER_VERSION` in `Dockerfile`. Build
 the app from `app/`. The build takes about a minute:
@@ -1369,7 +1372,9 @@ STATIC_DIR=app/build/web DATA_ROOT=../.data uv run uvicorn tlhelper.app:app --po
 
 The smoke test opens the build in Chromium. It checks that the app shows its
 title, that the page is cross-origin isolated, and that the browser sends no
-request outside the origin. It skips unless `STATIC_DIR` is a Flutter build.
+request outside the origin. It also checks that `?locale=hr` and a German
+browser show the title in their language. It skips unless `STATIC_DIR` is a
+Flutter build.
 The other browser tests need the page of `static/`, so run them without
 `STATIC_DIR`. The `tests` job of CI runs the smoke test against the build of
 the `dart` job:
@@ -1461,3 +1466,38 @@ Two parts of `app/test/api/` keep the models in step with the server:
   each one, and `tests/test_dart_api.py` checks that each one fits its
   Pydantic model. The speech info and the explain answer are written by hand,
   because they need a voice service and an AI service.
+
+### The text of the app
+
+The app has the text of the page in the same Fluent catalogs as `static/`
+(see "The language of the page"). `app/lib/i18n/i18n.dart` formats them with
+the Dart package [`fluent`](https://pub.dev/packages/fluent). Before the
+first frame, `main()` reads `GET /api/v1/locales` and chooses the locale as
+`static/js/i18n.js` does: `?locale=` of the address, then the choice that
+`shared_preferences` keeps under `langhelper.locale`, then the languages of
+the browser. On the web, `shared_preferences` adds the prefix `flutter.` to
+the key, so the app does not read the `classla.locale` choice of `static/`.
+The app then gets the catalog of that locale and the English one. The
+`direction` of the locale sets the `Directionality` of the whole app.
+
+A widget gets the text through `I18n.of(context)`. `t(id, args)` gives the
+message of the first catalog that has it. `tOr(id, fallback: ...)` gives the
+fallback when no catalog has the message, and `t()` then gives the id. The
+log names a missing id one time. `I18n.message` fits the `Messages` of the API
+client, for the messages of the errors.
+
+If the server gives no English catalog, the app uses its copy in
+`app/assets/i18n/ui.ftl`. A change to `tlhelper/languages/english/ui.ftl`
+needs the same change in the copy. From this folder:
+
+```bash
+cp tlhelper/languages/english/ui.ftl app/assets/i18n/ui.ftl
+```
+
+The Fluent runtime of Dart is not the one of JS. Its parser skips a message
+that it cannot read, with no error. So `app/test/i18n/catalogs_test.dart`
+checks each catalog of `tlhelper/languages/`: the parser must read each
+message, and each message must format with no error, once with each
+variable as a number and once as a text. It also checks that the copy equals
+the English catalog. `tests/test_locales.py` checks that each id in a `t()`
+or `tOr()` of `app/lib/` is in the English catalog.

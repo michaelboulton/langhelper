@@ -166,6 +166,8 @@ its schema, so a new key in `schemas.py` with no Dart field fails CI.
 
 ### 4. i18n
 
+Done (#29). README, "The text of the app", has the details.
+
 Load `/api/v1/locales` and `/api/v1/locales/{code}/ui.ftl`. Choose the locale
 as `i18n.js:91-160` does: `?locale=`, then the `shared_preferences` key
 `langhelper.locale`, then the browser locale. Set `Directionality` from
