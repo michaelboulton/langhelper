@@ -118,7 +118,7 @@ jobs:
         working-directory: web
       # STATIC_DIR swaps the page for the whole server, so the JS page tests
       # run without it.
-      - run: uv run --no-sync pytest tests/test_browser_app.py tests/flashcards/test_browser_cards_app.py
+      - run: uv run --no-sync pytest tests/test_browser_app.py tests/test_browser_audio_app.py tests/flashcards/test_browser_cards_app.py
         working-directory: web
         env:
           STATIC_DIR: app/build/web

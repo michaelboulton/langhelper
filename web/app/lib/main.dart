@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'api/client.dart';
+import 'audio_lessons/courses.dart';
+import 'audio_lessons/lesson_view.dart';
 import 'breakdown/breakdown_tab.dart';
 import 'flashcards/flashcards_tab.dart';
 import 'i18n/i18n.dart';
@@ -69,6 +71,33 @@ class LanghelperApp extends StatelessWidget {
               ),
             ],
           ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/audio',
+                builder: (context, _) => const CoursesView(),
+                routes: [
+                  GoRoute(
+                    path: ':course/:lesson',
+                    redirect: (context, state) =>
+                        int.tryParse(state.pathParameters['lesson']!) == null
+                        ? '/audio'
+                        : null,
+                    builder: (context, state) {
+                      final course = state.pathParameters['course']!;
+                      final number = int.parse(state.pathParameters['lesson']!);
+                      return LessonView(
+                        // A new lesson gets a new player.
+                        key: ValueKey((course, number)),
+                        course: course,
+                        number: number,
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
         ],
       ),
     ],
@@ -108,7 +137,7 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage>
     with SingleTickerProviderStateMixin {
   late final _tabs = TabController(
-    length: 3,
+    length: 4,
     vsync: this,
     initialIndex: widget.shell.currentIndex,
   );
@@ -152,7 +181,8 @@ class _HomePageState extends ConsumerState<HomePage>
         title: switch (shell.currentIndex) {
           0 => const BreakdownTitle(),
           1 => const FlashcardsTitle(),
-          _ => const ProgressTitle(),
+          progressTab => const ProgressTitle(),
+          _ => const AudioTitle(),
         },
         bottom: TabBar(
           controller: _tabs,
@@ -164,6 +194,7 @@ class _HomePageState extends ConsumerState<HomePage>
             Tab(text: i18n.t('tab-breakdown')),
             Tab(text: i18n.t('tab-cards')),
             Tab(text: i18n.t('tab-progress')),
+            Tab(text: i18n.t('tab-audio')),
           ],
         ),
       ),

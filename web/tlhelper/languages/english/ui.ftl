@@ -366,3 +366,6 @@ audio-pause = (pause, { $seconds } s)
 audio-speaker-narrator = Narrator:
 audio-speaker-actor-1 = You:
 audio-speaker-actor-2 = Other person:
+audio-back = Back 10 s
+audio-forward = Forward 10 s
+audio-speed = Speed:

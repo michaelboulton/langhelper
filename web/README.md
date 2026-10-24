@@ -1355,7 +1355,8 @@ the Docker commands above, with `--userns=keep-id` and
 `app/` is a Flutter web app that replaces `static/`, one part at a time.
 `DART.md` has the plan, and issue #24 tracks the parts. Now the app has the
 Breakdown tab, with the curves between the words and the Listen panel, the
-Flashcards tab, the "explain with AI" panel, and the Progress tab.
+Flashcards tab, the "explain with AI" panel, the Progress tab, and the Audio
+lessons tab.
 `static/` stays the page of the app until the Flutter app has all the tabs.
 
 Install Flutter 3.47.5, the version of `FLUTTER_VERSION` in `Dockerfile`. Build
@@ -1380,15 +1381,17 @@ service, it clicks each button of the Listen panel. A second test file,
 `tests/flashcards/test_browser_cards_app.py`, opens a deck in the Flashcards
 tab, answers a card with a picture and a clip, and rates a card with the
 keys. With a fake AI service, it asks a question about an answer, then opens
-the Progress tab. Both skip unless `STATIC_DIR` is a Flutter build. With
-`--screenshots=DIR`, they save a picture of the Breakdown tab, the Listen
-panel, the cards and the Progress tab at each width.
+the Progress tab. A third file, `tests/test_browser_audio_app.py`, opens a
+lesson of a small course and clicks the buttons of the player. They skip
+unless `STATIC_DIR` is a Flutter build. With `--screenshots=DIR`, they save a
+picture of the Breakdown tab, the Listen panel, the cards, the Progress tab,
+the list of courses and a lesson at each width.
 The other browser tests need the page of `static/`, so run them without
 `STATIC_DIR`. The `tests` job of CI runs both against the build of the
 `dart` job:
 
 ```bash
-STATIC_DIR=app/build/web uv run pytest tests/test_browser_app.py tests/flashcards/test_browser_cards_app.py
+STATIC_DIR=app/build/web uv run pytest tests/test_browser_app.py tests/test_browser_audio_app.py tests/flashcards/test_browser_cards_app.py
 ```
 
 The widget tests are in `app/test/`. Run them from `app/`. The `dart` job of
@@ -1692,3 +1695,37 @@ fixed numbers against the golden image `app/test/progress/goldens/charts.png`.
 After a change of the look, write the image again with
 `flutter test --update-goldens test/progress/progress_test.dart` in `app/`,
 and look at it before the commit.
+
+### The Audio lessons tab
+
+`app/lib/audio_lessons/` does what `static/js/audio_lessons.js` does (see
+"Audio lessons"). The address of the list is `/#/audio`, and the address of
+a lesson is `/#/audio/<course>/<lesson>`, so a lesson has a link of its own.
+
+| File | What it has |
+| ---- | ----------- |
+| `state.dart` | The list of courses and the script of a lesson, with `flutter_riverpod`. |
+| `courses.dart` | The title, the intro, and the courses with their lessons in order. |
+| `lesson_view.dart` | The title and the grammar step of a lesson, the note of its audio state, the player and the script. |
+| `lesson_player.dart` | The buttons and the seek bar of the player. |
+
+- The app reads the list of courses one time. An error shows at once, with
+  no retry, because a missing course does not come back on a retry.
+- A lesson with the audio state `none` has no player. A lesson with `stale`
+  or `none` shows the note of its state.
+- `just_audio` plays the mp3 of `/api/v1/audio-lessons/<course>/<lesson>.mp3`.
+  The route answers a `Range` request, so the seek bar of
+  `audio_video_progress_bar` can jump.
+- The buttons are back 10 s, play and pause, forward 10 s, and the speeds
+  0.75×, 1× and 1.25×. Back stops at the start, and forward stops at the
+  end. Each button has a tooltip, which is also its semantics label.
+- Space plays and pauses, and ← and → go back and forward 10 s. The keys
+  work on the whole lesson, also when a button has the focus.
+- The script has the name of each speaker and a line for each pause. The
+  lines of the narrator have the locale of English, and the lines of the
+  actors have the locale and the direction of the study language.
+- The player stops when the user goes back to the list or opens another
+  lesson. It keeps playing when the user opens another tab.
+
+The widget tests are in `app/test/audio_lessons/`. They use the
+`FakePlayer` of `app/test/fake_server.dart`.
