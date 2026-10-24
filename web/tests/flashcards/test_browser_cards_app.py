@@ -101,7 +101,9 @@ def test_a_card_with_a_picture_and_a_clip(
 def test_an_answered_card(
     browser, server, deck_dir, make_apkg, request, type_into, width
 ):
-    make_apkg(deck_dir / "basics.apkg", [("guid-coffee", "I drink coffee.", "Pijem kavu.")])
+    make_apkg(
+        deck_dir / "basics.apkg", [("guid-coffee", "I drink coffee.", "Pijem kavu.")]
+    )
     (deck_dir / "basics.toml").write_text(TOML, encoding="utf-8")
     decks.import_decks()
     context, page, errors = open_tab(browser, server, width)
