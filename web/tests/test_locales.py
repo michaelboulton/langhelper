@@ -37,7 +37,7 @@ def messages(code: str) -> dict[str, set[str]]:
     found = {}
     for entry in resource.body:
         if isinstance(entry, ast.Message):
-            # The small formatter of i18n.js has no attributes.
+            # The app formats only the value of a message (app/lib/i18n/).
             assert entry.attributes == [], entry.id.name
             assert entry.id.name not in found, f"{code}: {entry.id.name} is there twice"
             variables = Variables()
@@ -75,10 +75,6 @@ def test_the_code_names_messages_that_exist():
     python = "\n".join(
         path.read_text(encoding="utf-8") for path in (ROOT / "tlhelper").rglob("*.py")
     )
-    page = "\n".join(
-        path.read_text(encoding="utf-8")
-        for path in [*(ROOT / "static/js").glob("*.js"), ROOT / "static/index.html"]
-    )
     named = set(re.findall(r'Problem\(\s*"([a-z-]+)"', python))
     assert len(named) >= 10
     # The code of an error: a text like "ai-limit" is nothing else in the code.
@@ -86,12 +82,10 @@ def test_the_code_names_messages_that_exist():
         "error-" + code
         for code in re.findall(r'"((?:ai|translator|voice)-[a-z-]+|not-admin)"', python)
     }
-    # A complete id. An id that the page builds ends in "-": "upos-" + tag.
-    named |= set(re.findall(r'\bt(?:Or)?\(\s*"([A-Za-z0-9_-]+[A-Za-z0-9_])"', page))
-    named |= set(re.findall(r'data-l10n-[a-z]+="([A-Za-z0-9_-]+)"', page))
     dart = "\n".join(
         path.read_text(encoding="utf-8") for path in (ROOT / "app/lib").rglob("*.dart")
     )
+    # A complete id. An id that the app builds ends in "-": 'upos-' + tag.
     named |= set(
         re.findall(r"\b(?:t|tOr|CardsNote)\(\s*'([A-Za-z0-9_-]+[A-Za-z0-9_])'", dart)
     )
@@ -101,7 +95,7 @@ def test_the_code_names_messages_that_exist():
 
 
 @pytest.mark.parametrize("code", CODES)
-def test_the_ids_that_audio_lessons_js_builds(code):
+def test_the_ids_that_the_audio_lessons_tab_builds(code):
     built = {"audio-state-none", "audio-state-stale"}
     built |= {"audio-speaker-" + speaker.replace(" ", "-") for speaker in SPEAKERS}
     assert built - set(messages(code)) == set()

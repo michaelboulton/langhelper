@@ -98,7 +98,7 @@ def fake_token_endpoint(monkeypatch, claims):
     return posted
 
 
-def test_other_hosts_need_no_login(monkeypatch, tmp_path):
+def test_other_hosts_need_no_login(monkeypatch, tmp_path, app_build):
     monkeypatch.setattr(service, "DB_PATH", tmp_path / "lemmas.db")
     client = TestClient(service.app, follow_redirects=False)
     assert client.get("/").status_code == 200
@@ -117,7 +117,7 @@ def test_fly_host_redirects_the_page_and_refuses_the_api(fly):
     assert fly.get("/healthz").text == "ok"
 
 
-def test_fly_host_serves_the_manifest_and_icons_with_no_login(fly):
+def test_fly_host_serves_the_manifest_and_icons_with_no_login(fly, app_build):
     manifest = fly.get("/static/manifest.json")
     assert manifest.status_code == 200
     for icon in manifest.json()["icons"]:
@@ -143,7 +143,7 @@ def test_login_sends_a_pkce_challenge(fly):
     assert "openid" in query["scope"][0]
 
 
-def test_full_login(fly, monkeypatch, tmp_path):
+def test_full_login(fly, monkeypatch, tmp_path, app_build):
     monkeypatch.setattr(service, "DB_PATH", tmp_path / "lemmas.db")
     query = start_login(fly, next="/?x=1")
     posted = fake_token_endpoint(monkeypatch, good_claims(query["nonce"][0]))

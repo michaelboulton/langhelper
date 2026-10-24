@@ -5,8 +5,7 @@ import '../breakdown/form.dart' show textDirection;
 import '../breakdown/result.dart' show languageLocale;
 import '../breakdown/tags.dart' show chipText;
 
-/// The letters of a wrong answer: struck out in red. The color of the page
-/// of static/.
+/// The letters of a wrong answer: struck out in red.
 const deleteRed = Color(0xFFC0392B);
 
 /// The missing letters: on the green of ADJ.

@@ -28,7 +28,7 @@ three grammar problems](docs/breakdown.png)
 
 | Folder or file | Contents |
 | -------------- | -------- |
-| `web/` | The FastAPI app (`tlhelper`) and the page. See [web/README.md](web/README.md) |
+| `web/` | The FastAPI app (`tlhelper`) and the page, a Flutter app in `web/app/` with a build step. See [web/README.md](web/README.md) |
 | `tts/` | The text-to-speech service for the "Listen" buttons, with OmniVoice. See [tts/README.md](tts/README.md) |
 | `pyproject.toml`, `uv.lock` | The uv workspace of the two folders, with one set of locked versions |
 | `docker-compose.yml` | A local run of `web`, `tts` and a llama.cpp server for the AI buttons |
@@ -49,8 +49,10 @@ runs all three services on one machine and needs no login.
 
 ## Quick start
 
-You need [uv](https://docs.astral.sh/uv/). For the containers, you need Docker
-with the compose plugin.
+You need [uv](https://docs.astral.sh/uv/), and
+[Flutter](https://docs.flutter.dev/get-started/install) for the page. For the
+containers, you need Docker with the compose plugin, and no Flutter: the image
+builds the page.
 
 1. Install the dependencies of both folders into one `.venv` at the root:
 
@@ -68,9 +70,11 @@ with the compose plugin.
    GitHub Actions runs prek and then these tests on `main` and on each pull
    request, without the heavy models.
 
-3. Start the page at <http://localhost:8000/>, with no login:
+3. Build the page, then start it at <http://localhost:8000/>, with no login.
+   "Running locally" in `web/README.md` has the Flutter version:
 
    ```bash
+   (cd web/app && flutter build web --wasm --no-web-resources-cdn --base-href /static/)
    (cd web && DATA_ROOT=../.data uv run uvicorn tlhelper.app:app --port 8000 --no-access-log)
    ```
 

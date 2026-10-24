@@ -54,8 +54,7 @@ class ApiException implements Exception {
   final String code;
   final Map<String, Object?> params;
 
-  /// "The server returned 503." and the text of the error, as on the page
-  /// of static/.
+  /// "The server returned 503." and the text of the error.
   String message(Messages messages) {
     final server =
         messages('error-server', {'status': status}) ??

@@ -15,12 +15,12 @@ The app has no code for one of these languages. It only has the parts that are t
     - `slip_letters=0` makes one wrong sign a wrong answer.
     - `plain_letters` has the letters that people type in another way, for example "ss" for "ß".
 - A word can have the key `reading`, which says how to say the word. The page shows it under the word and in the detail panel. `Word` in `tlhelper/schemas.py` has the key.
-- The page sets `lang` on each line of words and on the answer diff, so the browser selects the font of the language.
-- `LanguageInfo.direction` is `"ltr"` or `"rtl"`, and it is in `/api/v1/languages`. The page sets it as `dir` on each text in the language.
-    - A line of words is a flex row, so the first word of a right-to-left sentence is on the right. The link lines use the measured positions, so they stay correct.
+- The page gives each line of words and the answer diff the `locale` of the language, so Flutter selects the font of the language from the bundled fonts.
+- `LanguageInfo.direction` is `"ltr"` or `"rtl"`, and it is in `/api/v1/languages`. The page sets it as the `TextDirection` of each text in the language.
+    - A line of words is a `Wrap`, so the first word of a right-to-left sentence is on the right. The link lines use the measured positions, so they stay correct.
     - The entry field follows the side that the user enters.
-    - A text in the middle of an English line goes into a `<bdi>` element (`bdi()` in `static/js/breakdown.js`). The punctuation around the text then stays in its place.
     - A right-to-left lemma is not italic.
+- The app bundles Noto Sans, Noto Sans Arabic and Noto Sans Hebrew in `app/assets/fonts/` (README.md, "The Flutter app").
 - One written token can be several words. The words then share `start_char` and `end_char`. The page does not use the positions, so each word gets its own chip.
 - The page does not send a text while an input method (IME) makes a word. An IME is the tool that makes kanji from Latin letters. The Enter key that accepts a word does not send a flashcard answer.
 - A long text with no spaces breaks at the edge of its box.
@@ -45,11 +45,12 @@ The app has no code for one of these languages. It only has the parts that are t
     - The summary of the app in `tlhelper/app.py` names the two languages.
 4. The names of the grammar features in the catalogs (`feat-*`, `featval-*`) are for Slavic and Germanic languages. The page shows a tag with no message as it is.
 5. A page in the language itself. The README section "The language of the page" has the steps. The plural forms and the formats of numbers and times come from the browser.
-    - For Arabic and Hebrew, `direction="rtl"` also becomes the `dir` of the page. `static/css/breakdown.css` then needs logical properties, for example `margin-inline-start` in place of `margin-left`.
-    - `i18n.js` turns off the isolation marks of Fluent (`useIsolating`), because the page has `<bdi>` elements for a text in another language. Look at the sentences that have a name or a number in them.
+    - For Arabic and Hebrew, `direction="rtl"` also becomes the `Directionality` of the whole app. A padding then needs `EdgeInsetsDirectional` in place of `EdgeInsets.only(left: ...)`.
+    - The Fluent formatter of the app puts no isolation marks around a variable (`useIsolating` is off, the default of the Dart package `fluent`). A right-to-left name in an English line can then move the punctuation around it. Turn the marks on in `app/lib/i18n/i18n.dart`, and look at the sentences that have a name or a number in them.
 6. The page shows a sentence only as separate words. For a script with no spaces, add one line with the sentence as the user wrote it.
 7. The default deck `separators` are `" / "` and `";"`. A deck in these scripts needs its own list in its TOML file.
-8. Browser tests use `fill()`, which does not use an IME. The guard has a test with a synthetic `keydown` event. A test with a real composition needs the `Input.imeSetComposition` command of the Chrome DevTools Protocol.
+8. The font. For a letter that no bundled font has, Flutter fetches a font from fonts.gstatic.com, and the browser tests forbid the network. Add the Noto font of the script to `app/assets/fonts/` and to the fallback fonts of the theme.
+9. Browser tests use `fill()`, which does not use an IME. The guard has a test with a synthetic `keydown` event. A test with a real composition needs the `Input.imeSetComposition` command of the Chrome DevTools Protocol.
 
 ## Japanese
 
@@ -91,7 +92,7 @@ Thai needs all of the work for Japanese that is not about kanji, and also a tagg
 3. The translator. Make sure that DeepL accepts `TH` with the key of this app. If it does not, write a translator for Amazon Translate or for Google. `tlhelper/translators/__init__.py` has a sketch of both.
 4. The grading rules: `Grading(spaces=False, marks="keep")`. A missing tone mark can be a slip, so `slip_letters=1` is a possible value. Thai users also type the vowel and the tone mark in the two possible orders, so normalize that order before the comparison.
 5. The reading of a word: `pythainlp.transliterate.romanize` gives a romanization. Put it into `word["reading"]`.
-6. The font. The size of 16px with a line height of 1.5 cuts the stacked marks of Thai. Give `:lang(th)` a larger font size and line height in `static/css/breakdown.css`.
+6. The font. The stacked marks of Thai need a larger line height than the Latin script. Give a text with the locale `th` a larger font size and line height in the widgets that show a text of the study language, for example the chips in `app/lib/breakdown/result.dart`.
 7. The gloss file. Build it from `https://kaikki.org/dictionary/Thai/`. The tagger splits compound words in its own way, so measure how many words get a gloss.
 8. `speech="th-TH"`. Some browsers have no Thai voice. The page already shows a message for a language with no voice.
 9. Thai text can have the zero-width space (U+200B) as a soft break. The grading removes it. Make sure that the tagger input does too.
@@ -107,8 +108,8 @@ The two languages go from right to left, and both have spaces. An input method i
     - Read `sentence.words`, and not the tokens, as `croatian/heavy.py` does. One token such as وبالكتاب gives the four words "and", "in", "the", and "book".
 2. The key of a gloss. `plain()` in `tlhelper/languages/glosses.py` removes only the five Croatian accent marks. Make the key function a part of the language, so that a language can remove its vowel marks.
 3. The grading rules: `Grading(marks="ignore")`. The tests in `tests/flashcards/test_grade.py` already have rows for these rules, for the two scripts.
-4. The font. Give `:lang(ar)` and `:lang(he)` a larger font size in `static/css/breakdown.css`. Never give Arabic text a letter spacing, because it breaks the joined letters.
-5. The answer diff marks single letters with a `<span>`. A current browser joins Arabic letters across the edge of a span. Look at the result in the browsers that you use.
+4. The font. Give a text with the locale `ar` or `he` a larger font size in the widgets that show a text of the study language. Never give Arabic text a letter spacing, because it breaks the joined letters.
+5. The answer diff marks single letters with a `TextSpan` of their own (`app/lib/flashcards/diff.dart`). Look at the result: the Arabic letters must stay joined across the edge of a span.
 6. A deck can have the direction marks U+200E and U+200F in its fields. The grading removes them. Make sure that the tagger input does too.
 
 ## Arabic
