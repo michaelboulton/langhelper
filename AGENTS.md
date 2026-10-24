@@ -34,7 +34,7 @@ uv run pytest tests/flashcards/test_store.py::test_x   # one test
 uv run pytest -k grade                                 # tests whose name matches
 ```
 
-Lint and format from the repository root with [prek](https://github.com/j178/prek). It runs `ruff check --fix` and `ruff format`:
+Lint and format from the repository root with [prek](https://github.com/j178/prek). It runs `ruff check --fix` and `ruff format`, and, through `web/app/.pre-commit-config.yaml`, `dart format` and `flutter analyze` in `web/app/` (they need Flutter on the `PATH`):
 
 ```bash
 prek run --all-files
@@ -69,7 +69,7 @@ Tests that need resources skip when the resources are missing:
 - The heavy German tests need `de_dep_news_trf`.
 - `test_the_clips_of_the_repo` needs the voice clips in `tts/omnivoice_server/voices/`.
 
-CI (`.github/workflows/tests.yml`) runs prek, then the tests of both members. It installs the heavy German model and caches the classla models in `.data/`, so `test_real_models` runs.
+CI (`.github/workflows/tests.yml`) runs prek, then the tests of both members. The `dart` job runs `flutter test` in `web/app/`. It installs the heavy German model and caches the classla models in `.data/`, so `test_real_models` runs.
 
 ## web architecture
 

@@ -141,12 +141,15 @@ Done (#26). README, "The Flutter app", has the commands.
 
 ### 2. CI
 
-`.github/workflows/tests.yml` gets a job with `subosito/flutter-action`, at
-`FLUTTER_VERSION` of the Dockerfile. It runs `flutter analyze`, `flutter test`
-and the web build, and uploads `app/build/web`. The `tests` job downloads the
-build, installs the Playwright Chromium, and runs the web tests with
-`STATIC_DIR` at the build, so the browser tests run and do not skip. prek gets
-a `dart format` hook.
+Partly done: the `dart` job of `.github/workflows/tests.yml` runs
+`flutter test` with `subosito/flutter-action` at `FLUTTER_VERSION` of the
+Dockerfile, and prek runs `dart format` and `flutter analyze`
+(`app/.pre-commit-config.yaml`).
+
+Still to do: the `dart` job runs the web build and uploads `app/build/web`.
+The `tests` job downloads the build, installs the Playwright Chromium, and
+runs the web tests with `STATIC_DIR` at the build, so the browser tests run
+and do not skip.
 
 ### 3. API client and models
 

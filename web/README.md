@@ -1375,6 +1375,17 @@ The other browser tests need the page of `static/`, so run them without
 STATIC_DIR=app/build/web uv run pytest tests/test_browser_app.py
 ```
 
+The widget tests are in `app/test/`. Run them from `app/`. The `dart` job of
+CI runs them too:
+
+```bash
+flutter test
+```
+
+`app/.pre-commit-config.yaml` is a project of the prek workspace, so `prek run --all-files` at the repository root also runs its
+hooks in `app/`: `dart format`, `flutter pub get` and `flutter analyze`. They
+need `flutter` and `dart` on the `PATH`.
+
 How the parts fit:
 
 - `--base-href /static/`: `/static` serves the build, and `/` returns its
