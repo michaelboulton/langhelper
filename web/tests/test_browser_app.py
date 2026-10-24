@@ -9,11 +9,25 @@ from pathlib import Path
 import pytest
 from playwright.sync_api import expect
 from tlhelper import app as service
+from tlhelper import translators
 
 pytestmark = pytest.mark.skipif(
     not (service.STATIC_DIR / "flutter_bootstrap.js").is_file(),
     reason="STATIC_DIR is not a Flutter build",
 )
+
+
+class FakeTranslator:
+    name = "fake"
+
+    def translate(self, text, source, target):
+        return {"Ona je je bila kod kuće.": "She was at home."}[text]
+
+
+@pytest.fixture(autouse=True)
+def translator(monkeypatch):
+    monkeypatch.setitem(translators.TRANSLATORS, "fake", FakeTranslator())
+    monkeypatch.setenv("TRANSLATOR", "fake")
 
 
 def test_the_app_loads_with_no_request_outside_the_origin(browser, server):
@@ -59,8 +73,11 @@ def test_the_breakdown_of_a_sentence(browser, server, request, width):
     page.get_by_role("heading", name="Croatian sentence breakdown").wait_for()
     # The first request waits for the load of the model.
     type_into(page.get_by_role("textbox", name="Time limit"), "60")
+    # The screenshot shows the curves to the translation.
+    page.get_by_role("checkbox", name="Translate to English").click()
     type_into(page.get_by_role("textbox").first, "Ona je je bila kod kuće.")
     page.get_by_role("button", name="chip: Ona PRON").wait_for()
+    page.get_by_role("button", name="chip: She PRON").wait_for()
     page.get_by_role("button", name="chip: je AUX").last.click()
     page.get_by_text("'je' repeats.").wait_for()
     if folder := request.config.getoption("--screenshots"):

@@ -1506,14 +1506,14 @@ or `tOr()` of `app/lib/` is in the English catalog.
 
 ### The Breakdown tab
 
-`app/lib/breakdown/` does what `static/js/breakdown.js` does, except the
-curves between the words (issue #31):
+`app/lib/breakdown/` does what `static/js/breakdown.js` does:
 
 | File | What it has |
 | ---- | ----------- |
 | `state.dart` | The state of the tab, with `flutter_riverpod`: the form, the requests, the answer and the selected word. `Models` reads `/api/v1/status`. |
 | `form.dart` | The language, the two sides, the text, the options, Cancel and Break down. |
 | `result.dart` | The chips, the sentences of each side, and the table of the selected word with its dictionary links. |
+| `links.dart` | The curves between the linked words of the two sides. |
 | `breakdown_tab.dart` | The title, the note of the models that the server loads, the status line and the two legends. |
 | `tags.dart` | The colour of each part of speech, the feature note, and the text of a problem. |
 
@@ -1549,3 +1549,27 @@ formatter, so each catalog has the message `list-or`.
 
 The widget tests are in `app/test/breakdown/`. `app/test/fake_server.dart`
 answers with the saved responses of `app/test/api/fixtures/`.
+
+### The link layer
+
+`LinkLayer` in `app/lib/breakdown/links.dart` draws the curves of
+"Links between the words". The breakdown uses it, and the flashcards will
+use it for the links of an answer.
+
+- `LinkLayer` is a `Stack`: a `CustomPaint` under the sentences. A curve
+  goes from the bottom centre of the upper chip to the top centre of the
+  lower chip, as `drawLinks` in `static/js/breakdown.js` does.
+- Each chip has the `GlobalKey` of its word (`chipKey`). After a frame, the
+  layer reads the place of each linked chip, and it draws again only when a
+  place changes.
+- The layer measures again after a change of its width, because the chips
+  then wrap in another place. It also measures again after the load of a
+  font, because the web app loads the fallback fonts after the first frame,
+  and the chips then change size.
+- A guess is a dashed curve. The curves of the selected word are thick.
+
+`app/test/breakdown/links_test.dart` checks the curves of two translated
+sentences against the golden image `app/test/breakdown/goldens/links.png`.
+After a change of the look, write the image again with
+`flutter test --update-goldens test/breakdown/links_test.dart` in `app/`,
+and look at it before the commit.
