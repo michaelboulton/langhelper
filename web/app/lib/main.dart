@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +9,8 @@ import 'api/client.dart';
 import 'breakdown/breakdown_tab.dart';
 import 'flashcards/flashcards_tab.dart';
 import 'i18n/i18n.dart';
+import 'progress/progress_tab.dart';
+import 'progress/state.dart';
 import 'providers.dart';
 
 Future<void> main() async {
@@ -57,6 +61,14 @@ class LanghelperApp extends StatelessWidget {
               ),
             ],
           ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/progress',
+                builder: (context, _) => const ProgressTab(),
+              ),
+            ],
+          ),
         ],
       ),
     ],
@@ -80,29 +92,49 @@ class LanghelperApp extends StatelessWidget {
   }
 }
 
+/// The index of the Progress branch of the router.
+const progressTab = 2;
+
 /// The title of the tab over the tabs, and the tab under them.
-class HomePage extends StatefulWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key, required this.shell});
 
   final StatefulNavigationShell shell;
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage>
+class _HomePageState extends ConsumerState<HomePage>
     with SingleTickerProviderStateMixin {
   late final _tabs = TabController(
-    length: 2,
+    length: 3,
     vsync: this,
     initialIndex: widget.shell.currentIndex,
   );
+
+  @override
+  void initState() {
+    super.initState();
+    _opened(widget.shell.currentIndex);
+  }
 
   @override
   void didUpdateWidget(HomePage old) {
     super.didUpdateWidget(old);
     // The Back button of the browser changes the tab too.
     _tabs.index = widget.shell.currentIndex;
+    if (old.shell.currentIndex != widget.shell.currentIndex) {
+      _opened(widget.shell.currentIndex);
+    }
+  }
+
+  /// The Progress tab shows the numbers of now each time that it opens.
+  void _opened(int tab) {
+    if (tab != progressTab) return;
+    // Not during the build.
+    final progress = ref.read(progressProvider.notifier);
+    unawaited(Future.microtask(progress.load));
   }
 
   @override
@@ -117,9 +149,11 @@ class _HomePageState extends State<HomePage>
     final shell = widget.shell;
     return Scaffold(
       appBar: AppBar(
-        title: shell.currentIndex == 0
-            ? const BreakdownTitle()
-            : const FlashcardsTitle(),
+        title: switch (shell.currentIndex) {
+          0 => const BreakdownTitle(),
+          1 => const FlashcardsTitle(),
+          _ => const ProgressTitle(),
+        },
         bottom: TabBar(
           controller: _tabs,
           // Scrolls sideways on a narrow screen.
@@ -129,6 +163,7 @@ class _HomePageState extends State<HomePage>
           tabs: [
             Tab(text: i18n.t('tab-breakdown')),
             Tab(text: i18n.t('tab-cards')),
+            Tab(text: i18n.t('tab-progress')),
           ],
         ),
       ),

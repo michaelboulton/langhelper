@@ -34,7 +34,15 @@ class FakeServer {
     Map<String, dynamic>? decks,
     List<Map<String, dynamic>>? next,
     Future<http.Response> Function(http.Request request)? answer,
+    Map<String, dynamic>? questions,
+    Future<http.Response> Function(http.Request request)? explain,
+    Map<String, dynamic>? users,
+    Future<http.Response> Function(http.Request request)? stats,
   }) : classify = classify ?? ((_) async => json(fixture('classify.json'))),
+       questions = questions ?? fixture('questions.json'),
+       explain = explain ?? ((_) async => json(fixture('explain.json'))),
+       users = users ?? fixture('users.json'),
+       stats = stats ?? ((_) async => json(fixture('stats.json'))),
        speech =
            speech ?? {'available': false, 'model': '', 'languages': <String>[]},
        speechAudio =
@@ -69,6 +77,24 @@ class FakeServer {
 
   /// The answer of POST /api/v1/cards/{id}/answer.
   Future<http.Response> Function(http.Request request) answer;
+
+  /// The body of GET /api/v1/explain/questions: no AI service by default.
+  Map<String, dynamic> questions;
+
+  /// The answer of both explain routes.
+  Future<http.Response> Function(http.Request request) explain;
+
+  /// The body of GET /api/v1/flashcards/users.
+  Map<String, dynamic> users;
+
+  /// The answer of GET /api/v1/flashcards/stats.
+  Future<http.Response> Function(http.Request request) stats;
+
+  /// The path and the body of each question to the AI, in order.
+  final explained = <(String, Map<String, dynamic>)>[];
+
+  /// The query of each request for the numbers, in order.
+  final statsQueries = <Map<String, String>>[];
 
   /// The bodies of the answers and of the ratings, in order.
   final answers = <Map<String, dynamic>>[];
@@ -120,6 +146,19 @@ class FakeServer {
           'rating': body['rating'],
           'next_due': '2026-10-26T09:00:00+00:00',
         });
+      case '/api/v1/explain/questions':
+        return json(questions);
+      case '/api/v1/explain' || '/api/v1/reviews/1/explain':
+        explained.add((
+          request.url.path,
+          jsonDecode(request.body) as Map<String, dynamic>,
+        ));
+        return explain(request);
+      case '/api/v1/flashcards/users':
+        return json(users);
+      case '/api/v1/flashcards/stats':
+        statsQueries.add(request.url.queryParameters);
+        return stats(request);
     }
     return json({'detail': 'Not Found'}, 404);
   }

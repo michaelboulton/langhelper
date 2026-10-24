@@ -8,6 +8,7 @@ environment:
 
 dependencies:
   audio_video_progress_bar: ^2.0.3
+  fl_chart: ^1.3.0
   fluent: ^2.0.4
   flutter:
     sdk: flutter

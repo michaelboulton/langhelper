@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../explain/explain_panel.dart';
 import '../i18n/i18n.dart';
 import '../listen/listen_panel.dart';
 import 'form.dart';
@@ -88,6 +89,7 @@ class BreakdownTab extends ConsumerWidget {
                     children: [BreakdownResult(), WordDetail()],
                   ),
                 ),
+                const BreakdownExplain(),
                 const BreakdownListen(),
                 const SizedBox(height: 16),
                 const UposLegend(),
@@ -97,6 +99,21 @@ class BreakdownTab extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The questions to the AI about the text in the study language. A
+/// translation that failed has no such text.
+class BreakdownExplain extends ConsumerWidget {
+  const BreakdownExplain({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final data = ref.watch(breakdownProvider.select((state) => state.result));
+    if (data == null || data.text.isEmpty) return const SizedBox.shrink();
+    return ExplainPanel(
+      target: SentenceTarget(text: data.text, language: data.language),
     );
   }
 }
