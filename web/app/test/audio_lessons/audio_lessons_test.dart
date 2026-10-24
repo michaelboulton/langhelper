@@ -128,6 +128,31 @@ void main() {
     expect(find.text('Where is the station?'), findsOne);
   });
 
+  testWidgets('a long script builds only the lines on the screen', (
+    tester,
+  ) async {
+    final lesson = fixture('audio_lesson.json');
+    final line = (lesson['lines'] as List).first as Map<String, dynamic>;
+    lesson['lines'] = [
+      for (var i = 0; i < 500; i++) line,
+      {...line, 'text': 'The last line.'},
+    ];
+    final server = FakeServer(audioLesson: (_) async => json(lesson));
+    await openLesson(tester, server);
+    expect(find.text('Is there meat in this dish?'), findsOne);
+    expect(find.text('The last line.'), findsNothing);
+    final script = find.ancestor(
+      of: find.text('Narrator:').first,
+      matching: find.byType(Scrollable),
+    );
+    await tester.scrollUntilVisible(
+      find.text('The last line.'),
+      2000,
+      scrollable: script.first,
+    );
+    expect(find.text('The last line.'), findsOne);
+  });
+
   testWidgets('a lesson at its address', (tester) async {
     final server = FakeServer(audioCourses: courses('ready'));
     await openTab(tester, server);

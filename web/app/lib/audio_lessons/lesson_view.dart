@@ -114,40 +114,49 @@ class _LessonViewState extends ConsumerState<LessonView> {
     final audio = _audio;
     final state = found?.$2.audio ?? AudioState.none;
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
-    final page = AudioPage(
-      children: [
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: TextButton.icon(
-            onPressed: () => context.go('/audio'),
-            icon: const Icon(Icons.arrow_back),
-            label: Text(i18n.t('audio-all-lessons')),
-          ),
-        ),
-        if (error != null)
-          AudioNote(text: i18n.errorText(error), error: true)
-        else if (lesson != null && courses.hasValue) ...[
-          Semantics(
-            header: true,
-            child: Text(
-              lesson.title,
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(lesson.grammar, style: TextStyle(color: muted)),
-          if (audio != null) LessonPlayer(audio: audio),
-          if (state != AudioState.ready)
-            AudioNote(text: i18n.t('audio-state-${state.name}')),
-          const SizedBox(height: 12),
-          SelectionArea(
-            child: _Script(
-              lines: lesson.lines,
-              language: found?.$1.language ?? '',
+    final ready = error == null && lesson != null && courses.hasValue;
+    // The SelectionArea is over the scroll view, so that it can hold the
+    // lazy list of the script. Only the script is selectable.
+    final page = SelectionArea(
+      child: AudioPage(
+        sliver: ready
+            ? _Script(lines: lesson.lines, language: found?.$1.language ?? '')
+            : null,
+        children: [
+          SelectionContainer.disabled(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: TextButton.icon(
+                    onPressed: () => context.go('/audio'),
+                    icon: const Icon(Icons.arrow_back),
+                    label: Text(i18n.t('audio-all-lessons')),
+                  ),
+                ),
+                if (error != null)
+                  AudioNote(text: i18n.errorText(error), error: true)
+                else if (ready) ...[
+                  Semantics(
+                    header: true,
+                    child: Text(
+                      lesson.title,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(lesson.grammar, style: TextStyle(color: muted)),
+                  if (audio != null) LessonPlayer(audio: audio),
+                  if (state != AudioState.ready)
+                    AudioNote(text: i18n.t('audio-state-${state.name}')),
+                  const SizedBox(height: 12),
+                ],
+              ],
             ),
           ),
         ],
-      ],
+      ),
     );
     if (audio == null) return page;
     return CallbackShortcuts(
@@ -165,6 +174,7 @@ class _LessonViewState extends ConsumerState<LessonView> {
 
 /// The lines of a lesson: the name of each speaker, and a line for each
 /// pause. The narrator speaks English, and the actors the study language.
+/// A sliver: only the lines on the screen are built.
 class _Script extends ConsumerWidget {
   const _Script({required this.lines, required this.language});
 
@@ -182,8 +192,7 @@ class _Script extends ConsumerWidget {
     final english = languages?.english;
     final study = languages?.study[language];
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return SliverList.list(
       children: [
         for (final line in lines)
           // One node for each line: else the SelectionArea merges the lines

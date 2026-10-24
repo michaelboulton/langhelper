@@ -1402,8 +1402,11 @@ page. The `tests` job of CI runs them all against the build of the `dart`
 job.
 
 Flutter draws on a canvas, so the tests cannot use CSS selectors or
-`get_by_text` on the page. `main.dart` turns on the semantics tree, and
-Flutter mirrors it into `flt-semantics` nodes with roles and labels. The tests
+`get_by_text` on the page. The browser context of the tests clicks the
+`flt-semantics-placeholder` of Flutter. This click turns on the semantics
+tree, as for a screen reader, and Flutter mirrors the tree into
+`flt-semantics` nodes with roles and labels. The app does not turn on the
+tree itself: an update of the tree on each frame makes a scroll slow. The tests
 find the widgets with `get_by_role` and `get_by_label`, as a screen reader
 does. The `note` fixture finds a text of the tree: a node of its own, or a
 part of the label of a group. A key widget has a label of its own: a chip is
