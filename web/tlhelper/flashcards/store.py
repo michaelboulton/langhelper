@@ -20,6 +20,8 @@ from ..settings import DATA_ROOT
 DB_PATH = DATA_ROOT / "flashcards.db"
 DAY = 86400
 STATS_DAYS = 90
+# An audio lesson is finished when the position is this near the end.
+FINISHED_WITHIN = 5.0
 
 TO_STUDY, TO_ENGLISH = "to_study", "to_english"
 # The user hears the clip of the answer field, and types the English or the
@@ -110,6 +112,19 @@ CREATE TABLE IF NOT EXISTS explanation (
     created_at REAL NOT NULL
 );
 CREATE INDEX IF NOT EXISTS explanation_user ON explanation (user_id, created_at);
+-- How far each user is through each audio lesson (tlhelper/audio_lessons).
+-- course is the name of the folder in DATA_ROOT/audio/. Times in seconds.
+CREATE TABLE IF NOT EXISTS audio_progress (
+    user_id TEXT NOT NULL,
+    course TEXT NOT NULL,
+    lesson INTEGER NOT NULL,
+    position REAL NOT NULL,
+    duration REAL NOT NULL,
+    -- The first time that the position was near the end. A later save that
+    -- jumps back keeps it.
+    finished_at REAL,
+    PRIMARY KEY (user_id, course, lesson)
+);
 """
 
 SCHEDULER = Scheduler()
@@ -493,6 +508,47 @@ def save_explanation(key: str, user: str, model: str, text: str) -> None:
             " created_at) VALUES (?, ?, ?, ?, ?)",
             (key, user, model, text, now().timestamp()),
         )
+
+
+# The audio lessons (tlhelper/audio_lessons)
+
+
+def progress_dict(row: sqlite3.Row) -> dict:
+    return {
+        "position": row["position"],
+        "duration": row["duration"],
+        "finished": row["finished_at"] is not None,
+    }
+
+
+def save_audio_progress(
+    user: str, course: str, lesson: int, position: float, duration: float
+) -> dict:
+    """Store the position of the user in a lesson. Returns position, duration
+    and finished. A position after the end counts as the end."""
+    position = min(position, duration)
+    finished = now().timestamp() if duration - position <= FINISHED_WITHIN else None
+    with _lock, db() as conn:
+        row = conn.execute(
+            "INSERT INTO audio_progress (user_id, course, lesson, position,"
+            " duration, finished_at) VALUES (?, ?, ?, ?, ?, ?)"
+            " ON CONFLICT (user_id, course, lesson) DO UPDATE SET"
+            " position = excluded.position, duration = excluded.duration,"
+            " finished_at = COALESCE(finished_at, excluded.finished_at)"
+            " RETURNING *",
+            (user, course, lesson, position, duration, finished),
+        ).fetchone()
+    return progress_dict(row)
+
+
+def audio_progress(user: str) -> dict[tuple[str, int], dict]:
+    """The progress of the user in each lesson that they started, by
+    (course, lesson)."""
+    with _lock, db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM audio_progress WHERE user_id = ?", (user,)
+        ).fetchall()
+    return {(row["course"], row["lesson"]): progress_dict(row) for row in rows}
 
 
 # The users

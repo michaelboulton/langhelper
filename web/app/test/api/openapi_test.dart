@@ -39,11 +39,13 @@ const models = <String, Map<String, String>>{
   'AudioCoursesResponse': AudioCoursesResponse.fields,
   'AudioLine': AudioLine.fields,
   'AudioLessonResponse': AudioLessonResponse.fields,
+  'AudioProgressResponse': AudioProgressResponse.fields,
   'ClassifyRequest': ClassifyRequest.fields,
   'AnswerRequest': AnswerRequest.fields,
   'RatingRequest': RatingRequest.fields,
   'ExplainRequest': ExplainRequest.fields,
   'ExplainSentenceRequest': ExplainSentenceRequest.fields,
+  'AudioProgressRequest': AudioProgressRequest.fields,
 };
 
 /// The schemas with no model: ApiException reads the errors, and the page

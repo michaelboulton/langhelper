@@ -700,7 +700,7 @@
           "audio lessons"
         ],
         "summary": "Courses",
-        "description": "The courses, by folder name, and their lessons in order. A course or a\nlesson that does not parse is left out, and the log has the error.",
+        "description": "The courses, by folder name, and their lessons in order, each with the\nprogress of the user. A course or a lesson that does not parse is left\nout, and the log has the error.",
         "operationId": "courses_api_v1_audio_lessons_get",
         "responses": {
           "200": {
@@ -809,6 +809,78 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AudioLessonResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/audio-lessons/{course}/{lesson}/progress": {
+      "put": {
+        "tags": [
+          "audio lessons"
+        ],
+        "summary": "Save Progress",
+        "description": "Save where the user is in a lesson. The lesson is finished the first\ntime that the position is within a few seconds of the end, and stays\nfinished.",
+        "operationId": "save_progress_api_v1_audio_lessons__course___lesson__progress_put",
+        "parameters": [
+          {
+            "name": "course",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Course"
+            }
+          },
+          {
+            "name": "lesson",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Lesson"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AudioProgressRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioProgressResponse"
                 }
               }
             }
@@ -1290,13 +1362,31 @@
             ],
             "title": "Audio",
             "description": "\"ready\": the mp3 is newer than the script. \"stale\": the script changed\nafter the mp3 was made. \"none\": the lesson has no mp3."
+          },
+          "position": {
+            "type": "number",
+            "title": "Position",
+            "description": "Where the user stopped, in seconds. 0 if the user never played the\nlesson."
+          },
+          "duration": {
+            "type": "number",
+            "title": "Duration",
+            "description": "The length of the mp3 in seconds, as the player of the user saw it. 0\nif the user never played the lesson."
+          },
+          "finished": {
+            "type": "boolean",
+            "title": "Finished",
+            "description": "The user once got to the end of the lesson."
           }
         },
         "type": "object",
         "required": [
           "number",
           "title",
-          "audio"
+          "audio",
+          "position",
+          "duration",
+          "finished"
         ],
         "title": "AudioLesson"
       },
@@ -1364,6 +1454,54 @@
           "seconds"
         ],
         "title": "AudioLine"
+      },
+      "AudioProgressRequest": {
+        "properties": {
+          "position": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Position",
+            "description": "Where the player is, in seconds."
+          },
+          "duration": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Duration",
+            "description": "The length of the mp3 in seconds, as the player sees it."
+          }
+        },
+        "type": "object",
+        "required": [
+          "position",
+          "duration"
+        ],
+        "title": "AudioProgressRequest"
+      },
+      "AudioProgressResponse": {
+        "properties": {
+          "position": {
+            "type": "number",
+            "title": "Position",
+            "description": "In seconds. A position after the end is the end."
+          },
+          "duration": {
+            "type": "number",
+            "title": "Duration",
+            "description": "The length of the mp3 in seconds, as in the request."
+          },
+          "finished": {
+            "type": "boolean",
+            "title": "Finished",
+            "description": "The user once got to within a few seconds of the end."
+          }
+        },
+        "type": "object",
+        "required": [
+          "position",
+          "duration",
+          "finished"
+        ],
+        "title": "AudioProgressResponse"
       },
       "ClassifyRequest": {
         "properties": {

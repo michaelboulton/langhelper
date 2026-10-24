@@ -153,7 +153,10 @@ void main() {
     final courses = AudioCoursesResponse.fromJson(
       fixture('audio_lessons.json'),
     );
-    expect(courses.courses.single.lessons.first.audio, AudioState.none);
+    final [started, notStarted] = courses.courses.single.lessons;
+    expect(started.audio, AudioState.none);
+    expect((started.position, started.finished), (30.5, true));
+    expect((notStarted.duration, notStarted.finished), (0, false));
   });
 
   test('the request bodies', () {

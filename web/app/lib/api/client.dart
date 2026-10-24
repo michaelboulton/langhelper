@@ -381,6 +381,18 @@ class AudioLessonsApi {
         ),
       );
 
+  Future<AudioProgressResponse> saveProgress(
+    String course,
+    int number,
+    AudioProgressRequest request,
+  ) async => AudioProgressResponse.fromJson(
+    await _api._json(
+      'PUT',
+      '/audio-lessons/${Uri.encodeComponent(course)}/$number/progress',
+      body: request.toJson(),
+    ),
+  );
+
   /// The mp3 of a lesson, for the player. The route answers a Range request.
   Uri audio(String course, int number) => _api._uri(
     '/audio-lessons/${Uri.encodeComponent(course)}/$number.mp3',

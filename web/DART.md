@@ -274,8 +274,8 @@ for the user `local`, as the flashcards do. This part of the backend needs no
 Flutter, and can come first.
 
 - `flashcards.db` gets the table
-  `audio_progress(user, course, lesson, position, duration, finished_at)`,
-  with the key `(user, course, lesson)`. Positions are in seconds.
+  `audio_progress(user_id, course, lesson, position, duration, finished_at)`,
+  with the key `(user_id, course, lesson)`. Positions are in seconds.
 - `PUT /api/v1/audio-lessons/{course}/{lesson}/progress` takes
   `{position, duration}` for `current_user`. It sets `finished_at` the first
   time that the position is near the end, and keeps it after that.
