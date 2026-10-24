@@ -1,21 +1,12 @@
-"""The Audio lessons tab of the Flutter build in app/, in Chromium. It skips
-unless STATIC_DIR is that build (README.md, "The Flutter app"):
+"""The Audio lessons tab of the Flutter app in a real browser. The browser
+fixtures are in conftest.py."""
 
-STATIC_DIR=app/build/web uv run pytest tests/test_browser_audio_app.py
-"""
-
+import os
 import re
-from pathlib import Path
 
 import pytest
 from playwright.sync_api import expect
-from tlhelper import app as service
 from tlhelper.audio_lessons import routes
-
-pytestmark = pytest.mark.skipif(
-    not (service.STATIC_DIR / "flutter_bootstrap.js").is_file(),
-    reason="STATIC_DIR is not a Flutter build",
-)
 
 LESSON = """\
 # Is there meat in this dish?
@@ -44,44 +35,26 @@ def audio_root(tmp_path, monkeypatch):
     (course / "01.mp3").write_bytes(SILENT_MP3)
     (course / "02.txt").write_text(LESSON.replace("meat", "fish"), encoding="utf-8")
     monkeypatch.setattr(routes, "AUDIO_ROOT", tmp_path / "audio")
+    return course
 
 
-def open_tab(browser, server, width):
-    # Tall, so that --screenshots shows the whole tab.
-    context = browser.new_context(
-        base_url=server, viewport={"width": width, "height": 1000}
-    )
-    page = context.new_page()
-    errors = []
-    page.on("pageerror", lambda exc: errors.append(str(exc)))
+def open_tab(new_page, width):
+    page = new_page(width=width, height=1000)
     page.goto("/#/audio")
     page.get_by_role("heading", name="Italian").wait_for()
-    return context, page, errors
+    return page
 
 
-def note(page, text):
-    """A text of the semantics tree: a node of its own, or the aria-label of
-    the group that Flutter merges it into."""
-    return (
-        page.get_by_label(text)
-        .or_(page.locator("flt-semantics").get_by_text(text))
-        .first
-    )
-
-
-def screenshot(request, page, name):
-    if folder := request.config.getoption("--screenshots"):
-        # The canvas paints a moment after the semantics tree changes.
-        page.wait_for_timeout(1000)
-        page.screenshot(path=Path(folder) / f"{name}.png")
+def player_button(page, name):
+    return page.get_by_role("button", name=name, exact=True)
 
 
 @pytest.mark.parametrize("width", [390, 1280])
-def test_the_courses_and_a_lesson(browser, server, request, width):
-    context, page, errors = open_tab(browser, server, width)
+def test_the_courses_and_a_lesson(new_page, note, screenshot, width):
+    page = open_tab(new_page, width)
     expect(page.get_by_role("tab", name="Audio lessons")).to_be_visible()
     page.get_by_role("button", name="Is there fish in this dish?").wait_for()
-    screenshot(request, page, f"audio-courses-{width}")
+    screenshot(page, f"audio-courses-{width}")
 
     with page.expect_response(re.compile(r"/audio-lessons/it-course/1\.mp3$")):
         page.get_by_role("button", name="Is there meat in this dish?").click()
@@ -94,22 +67,33 @@ def test_the_courses_and_a_lesson(browser, server, request, width):
         each.wait_for()
     boxes = [each.bounding_box()["y"] for each in tops]
     assert boxes == sorted(boxes)
-    # The tooltip of a hovered button adds its text to the label.
-    page.mouse.move(0, 0)
+    # Each button of the player has its name, also while its tooltip shows.
     for name in ("Back 10 s", "Play", "Forward 10 s"):
-        expect(page.get_by_role("button", name=name, exact=True)).to_be_visible()
-    page.get_by_role("button", name="Play", exact=True).click()
+        player_button(page, name).hover()
+        expect(player_button(page, name)).to_be_visible()
+    player_button(page, "Play").click()
+    player_button(page, "Pause").wait_for()
     page.get_by_role("button", name="1.25×").click()
-    page.get_by_role("button", name="Back 10 s").click()
+    player_button(page, "Back 10 s").click()
     page.mouse.move(0, 0)
-    screenshot(request, page, f"audio-lesson-{width}")
+    screenshot(page, f"audio-lesson-{width}")
 
     page.get_by_role("button", name="All lessons").click()
     page.get_by_role("button", name="Is there fish in this dish?").click()
     note(page, "This lesson has no sound yet.").wait_for()
-    expect(page.get_by_role("button", name="Play", exact=True)).to_have_count(0)
-    assert errors == []
-    context.close()
+    expect(player_button(page, "Play")).to_have_count(0)
+
+
+def test_a_lesson_with_an_old_sound(new_page, audio_root, note):
+    # The mp3 is older than its script.
+    stale = LESSON.replace("meat", "milk")
+    (audio_root / "03.txt").write_text(stale, encoding="utf-8")
+    (audio_root / "03.mp3").write_bytes(SILENT_MP3)
+    os.utime(audio_root / "03.mp3", ns=(1, 1))
+    page = open_tab(new_page, 1280)
+    page.get_by_role("button", name="Is there milk in this dish?").click()
+    note(page, re.compile("^The script changed after the sound was made")).wait_for()
+    expect(player_button(page, "Play")).to_be_visible()
 
 
 def is_save(request):
@@ -117,35 +101,32 @@ def is_save(request):
 
 
 @pytest.mark.parametrize("width", [390, 1280])
-def test_the_progress_of_the_lessons(browser, server, request, width):
-    context = browser.new_context(
-        base_url=server, viewport={"width": width, "height": 1000}
-    )
+def test_the_progress_of_the_lessons(
+    browser, server, new_page, note, screenshot, width
+):
     # Lesson 1 at 12 s of 30 s, and lesson 2 finished.
+    request = browser.new_context(base_url=server).request
     for lesson, position in ((1, 12.0), (2, 30.0)):
-        response = context.request.put(
+        response = request.put(
             f"/api/v1/audio-lessons/it-course/{lesson}/progress",
             data={"position": position, "duration": 30.0},
         )
         assert response.ok
-    context.close()
+    request.dispose()
 
-    context, page, errors = open_tab(browser, server, width)
+    page = open_tab(new_page, width)
     note(page, "40%").wait_for()
     note(page, "Finished").wait_for()
-    screenshot(request, page, f"audio-progress-{width}")
+    screenshot(page, f"audio-progress-{width}")
 
     # Continue opens the first lesson that is not finished.
     with page.expect_response(re.compile(r"/audio-lessons/it-course/1\.mp3$")):
         page.get_by_role("button", name="Continue").click()
     assert page.url.endswith("/#/audio/it-course/1")
-    page.get_by_role("button", name="Play", exact=True).click()
-    page.mouse.move(0, 0)
+    player_button(page, "Play").click()
     page.wait_for_timeout(1500)
     with page.expect_request(is_save) as saved:
-        page.get_by_role("button", name="Pause", exact=True).click()
+        player_button(page, "Pause").click()
     # The player started at the saved position.
     body = saved.value.post_data_json
     assert 12 < body["position"] < 20
-    assert errors == []
-    context.close()

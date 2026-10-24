@@ -453,11 +453,14 @@ class _RatingButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = Text(I18n.of(context).t('rating-button-$rating'));
-    return Semantics(
-      selected: current,
-      child: current
-          ? FilledButton(onPressed: onPressed, child: label)
-          : OutlinedButton(onPressed: onPressed, child: label),
+    // One node, so that the button itself is the selected one.
+    return MergeSemantics(
+      child: Semantics(
+        selected: current,
+        child: current
+            ? FilledButton(onPressed: onPressed, child: label)
+            : OutlinedButton(onPressed: onPressed, child: label),
+      ),
     );
   }
 }

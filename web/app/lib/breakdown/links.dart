@@ -96,12 +96,20 @@ class _LinkLayerState extends State<LinkLayer> {
     return LayoutBuilder(
       builder: (context, constraints) {
         _measureSoon();
+        final curves = IgnorePointer(
+          child: CustomPaint(painter: LinkPainter(_lines, color)),
+        );
         return Stack(
           children: [
             Positioned.fill(
-              child: IgnorePointer(
-                child: CustomPaint(painter: LinkPainter(_lines, color)),
-              ),
+              // The number of curves, for the browser tests.
+              child: _lines.isEmpty
+                  ? curves
+                  : Semantics(
+                      container: true,
+                      label: 'links: ${_lines.length}',
+                      child: curves,
+                    ),
             ),
             widget.child,
           ],

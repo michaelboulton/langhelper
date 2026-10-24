@@ -1,11 +1,10 @@
-"""tlhelper/audio_lessons/routes.py, and the audio lessons tab in a real
-browser. The browser fixtures are in conftest.py."""
+"""tlhelper/audio_lessons/routes.py. test_browser_audio.py has the tab in a
+real browser."""
 
 import os
 
 import pytest
 from fastapi.testclient import TestClient
-from playwright.sync_api import expect
 from tlhelper import app as service
 from tlhelper.audio_lessons import routes
 from tlhelper.flashcards import store
@@ -204,30 +203,3 @@ def test_bad_progress(audio_root, client):
         response = put_progress(client, "it-course/1", position, duration)
         assert response.status_code == 422, (position, duration)
     assert store.audio_progress("local") == {}
-
-
-def test_the_tab(page, audio_root):
-    page.goto("/#audio")
-    lessons = page.locator("#audio-courses li button")
-    expect(lessons).to_have_count(3)
-    lessons.nth(2).click()
-    expect(page.locator("#audio-player")).to_be_hidden()
-    expect(page.locator("#audio-note")).to_have_text("This lesson has no sound yet.")
-    page.locator("#audio-back").click()
-    lessons.nth(1).click()
-    expect(page.locator("#audio-player")).to_be_visible()
-    expect(page.locator("#audio-note")).to_contain_text("script changed")
-    page.locator("#audio-back").click()
-    lessons.nth(0).click()
-    expect(page.locator("#audio-lesson-title")).to_have_text(
-        "Is there meat in this dish?"
-    )
-    expect(page.locator("#audio-player")).to_have_attribute(
-        "src", "/api/v1/audio-lessons/it-course/1.mp3"
-    )
-    expect(page.locator("#audio-note")).to_be_hidden()
-    lines = page.locator("#audio-script p")
-    expect(lines).to_have_count(4)
-    expect(lines.nth(0)).to_have_text('Narrator: How do you say "is there"?')
-    expect(lines.nth(1)).to_have_text("(pause, 3 s)")
-    expect(lines.nth(2).locator("span")).to_have_attribute("lang", "it")

@@ -30,7 +30,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.8 /uv /usr/local/bin/uv
 
 WORKDIR /app
 
-# Dependencies first, so a change to tlhelper/ or static/ does not reinstall
+# Dependencies first, so a change to tlhelper/ or app/ does not reinstall
 # torch. The root pyproject.toml pins torch to the CPU-only wheel index. uv
 # reads the pyproject.toml of each workspace member, so tts/ needs its file too.
 COPY pyproject.toml uv.lock /app/
@@ -43,10 +43,8 @@ COPY web/decks/ /app/decks/
 COPY web/entrypoint.sh /app/
 # With the data files of the languages (accents.db, glosses.db).
 COPY web/tlhelper/ /app/tlhelper/
-# STATIC_DIR chooses the page: /app/static (the JS page) or /app/flutter
-# (README.md, "The Flutter app").
-COPY web/static/ /app/static/
-COPY --from=app /src/app/build/web /app/flutter/
+# The page: the Flutter build (README.md, "The Flutter app").
+COPY --from=app /src/app/build/web /app/static/
 RUN chmod +x /app/entrypoint.sh
 
 # Non-root. Fly mounts the volume with the uid/gid of USER, so /data is writable.
