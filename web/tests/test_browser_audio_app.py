@@ -110,3 +110,42 @@ def test_the_courses_and_a_lesson(browser, server, request, width):
     expect(page.get_by_role("button", name="Play", exact=True)).to_have_count(0)
     assert errors == []
     context.close()
+
+
+def is_save(request):
+    return request.method == "PUT" and request.url.endswith("/it-course/1/progress")
+
+
+@pytest.mark.parametrize("width", [390, 1280])
+def test_the_progress_of_the_lessons(browser, server, request, width):
+    context = browser.new_context(
+        base_url=server, viewport={"width": width, "height": 1000}
+    )
+    # Lesson 1 at 12 s of 30 s, and lesson 2 finished.
+    for lesson, position in ((1, 12.0), (2, 30.0)):
+        response = context.request.put(
+            f"/api/v1/audio-lessons/it-course/{lesson}/progress",
+            data={"position": position, "duration": 30.0},
+        )
+        assert response.ok
+    context.close()
+
+    context, page, errors = open_tab(browser, server, width)
+    note(page, "40%").wait_for()
+    note(page, "Finished").wait_for()
+    screenshot(request, page, f"audio-progress-{width}")
+
+    # Continue opens the first lesson that is not finished.
+    with page.expect_response(re.compile(r"/audio-lessons/it-course/1\.mp3$")):
+        page.get_by_role("button", name="Continue").click()
+    assert page.url.endswith("/#/audio/it-course/1")
+    page.get_by_role("button", name="Play", exact=True).click()
+    page.mouse.move(0, 0)
+    page.wait_for_timeout(1500)
+    with page.expect_request(is_save) as saved:
+        page.get_by_role("button", name="Pause", exact=True).click()
+    # The player started at the saved position.
+    body = saved.value.post_data_json
+    assert 12 < body["position"] < 20
+    assert errors == []
+    context.close()

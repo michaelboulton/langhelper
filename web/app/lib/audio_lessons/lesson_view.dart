@@ -34,10 +34,20 @@ class _LessonViewState extends ConsumerState<LessonView> {
   /// Null for a lesson with no mp3, and until the list of courses loads.
   LessonAudio? _audio;
 
+  /// Read here, because the last save comes after the dispose.
+  late final AudioCourses _courses;
+
+  /// Saves the position when the browser tab hides or closes.
+  late final AppLifecycleListener _lifecycle;
+
+  LessonId get _id => (course: widget.course, number: widget.number);
+
   @override
   void initState() {
     super.initState();
-    // The list of courses has the audio state of the lesson.
+    _courses = ref.read(audioCoursesProvider.notifier);
+    _lifecycle = AppLifecycleListener(onHide: () => _audio?.saveNow());
+    // The list of courses has the audio state and the progress of the lesson.
     ref.listenManual(audioCoursesProvider, (_, next) {
       if (next.value case final courses?) _start(_lesson(courses));
     }, fireImmediately: true);
@@ -45,6 +55,7 @@ class _LessonViewState extends ConsumerState<LessonView> {
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     unawaited(_audio?.dispose());
     super.dispose();
   }
@@ -61,12 +72,19 @@ class _LessonViewState extends ConsumerState<LessonView> {
 
   void _start((AudioCourse, AudioLesson)? found) {
     if (_audio != null || found == null) return;
-    if (found.$2.audio == AudioState.none) return;
-    final audio = _audio = LessonAudio(ref.read(newPlayerProvider)());
-    unawaited(_load(audio));
+    final lesson = found.$2;
+    if (lesson.audio == AudioState.none) return;
+    final courses = _courses;
+    final id = _id;
+    final audio = _audio = LessonAudio(
+      ref.read(newPlayerProvider)(),
+      save: (position, duration) =>
+          unawaited(courses.save(id, position, duration)),
+    );
+    unawaited(_load(audio, fromSeconds(lesson.position)));
   }
 
-  Future<void> _load(LessonAudio audio) async {
+  Future<void> _load(LessonAudio audio, Duration start) async {
     final uri = ref
         .read(apiProvider)
         .audioLessons
@@ -79,15 +97,14 @@ class _LessonViewState extends ConsumerState<LessonView> {
     }
     if (!mounted) return;
     setState(() => audio.duration = duration);
+    audio.start(start);
   }
 
   @override
   Widget build(BuildContext context) {
     final i18n = I18n.of(context);
     final courses = ref.watch(audioCoursesProvider);
-    final script = ref.watch(
-      audioLessonProvider((course: widget.course, number: widget.number)),
-    );
+    final script = ref.watch(audioLessonProvider(_id));
     final found = switch (courses.value) {
       final list? => _lesson(list),
       null => null,
