@@ -1354,8 +1354,8 @@ the Docker commands above, with `--userns=keep-id` and
 
 `app/` is a Flutter web app that replaces `static/`, one part at a time.
 `DART.md` has the plan, and issue #24 tracks the parts. Now the app has the
-Breakdown tab, with no curves between the words. `static/` stays the page of
-the app until the Flutter app has all the tabs.
+Breakdown tab, with the curves between the words and the Listen panel.
+`static/` stays the page of the app until the Flutter app has all the tabs.
 
 Install Flutter 3.47.5, the version of `FLUTTER_VERSION` in `Dockerfile`. Build
 the app from `app/`. The build takes about a minute:
@@ -1374,9 +1374,10 @@ The smoke test opens the build in Chromium. It checks that the app shows its
 title, that the page is cross-origin isolated, and that the browser sends no
 request outside the origin. It also checks that `?locale=hr` and a German
 browser show the title in their language, and it types a sentence into the
-Breakdown tab at a phone width and at a desktop width. It skips unless
+Breakdown tab at a phone width and at a desktop width. With a fake voice
+service, it clicks each button of the Listen panel. It skips unless
 `STATIC_DIR` is a Flutter build. With `--screenshots=DIR`, it saves a picture
-of the Breakdown tab at each width.
+of the Breakdown tab and of the Listen panel at each width.
 The other browser tests need the page of `static/`, so run them without
 `STATIC_DIR`. The `tests` job of CI runs the smoke test against the build of
 the `dart` job:
@@ -1514,7 +1515,7 @@ or `tOr()` of `app/lib/` is in the English catalog.
 | `form.dart` | The language, the two sides, the text, the options, Cancel and Break down. |
 | `result.dart` | The chips, the sentences of each side, and the table of the selected word with its dictionary links. |
 | `links.dart` | The curves between the linked words of the two sides. |
-| `breakdown_tab.dart` | The title, the note of the models that the server loads, the status line and the two legends. |
+| `breakdown_tab.dart` | The title, the note of the models that the server loads, the status line, the Listen panel of the texts, and the two legends. |
 | `tags.dart` | The colour of each part of speech, the feature note, and the text of a problem. |
 
 How the form sends:
@@ -1573,3 +1574,33 @@ sentences against the golden image `app/test/breakdown/goldens/links.png`.
 After a change of the look, write the image again with
 `flutter test --update-goldens test/breakdown/links_test.dart` in `app/`,
 and look at it before the commit.
+
+### The Listen panel
+
+`app/lib/listen/` does what `static/js/listen.js` does (see "Listen"). The
+Breakdown tab shows the panel under the breakdown, and the flashcards will
+use it too.
+
+- The app reads `GET /api/v1/speech` one time. With no voice service, or
+  with no text in a language of the service, the panel does not show.
+- The panel has one button for each text, with the name of its language:
+  the text that the user entered, and its English translation.
+- A click gets the mp3 with `GET /api/v1/speech/audio`, so the browser cache
+  answers a repeat. The buttons are disabled while the request runs. The
+  time limit is 190 s, a little more than the 180 s of
+  `TLHELPER_VOICE_TIMEOUT`.
+- `just_audio` plays the mp3 from memory, as a `data:` address. Under the
+  buttons are a play and pause button and a seek bar from
+  `audio_video_progress_bar`. The note names the model of the
+  `X-Voice-Model` header.
+- A new breakdown with the same texts, such as a second click on Break
+  down, keeps the sound on the panel. New texts remove it.
+
+The seek bar is not the `Slider` of Flutter. The `Slider` always shows an
+overlay for its value indicator, and on the web that overlay is a node of
+the semantics tree over the whole page. Playwright then cannot click the
+other buttons.
+
+`player.dart` has the `Player` interface. The widget tests in
+`app/test/listen/` use the `FakePlayer` of `app/test/fake_server.dart`,
+because `just_audio` needs a platform plugin.

@@ -86,6 +86,10 @@ class I18n {
     return null;
   }
 
+  /// The text of a failed request.
+  String errorText(Object error) =>
+      error is ApiException ? error.message(message) : '$error';
+
   static I18n of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<I18nScope>()!.i18n;
 }

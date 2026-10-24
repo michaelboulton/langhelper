@@ -210,6 +210,8 @@ the stack repaints on resize. The breakdown and the card view both use it
 
 ### 7. Listen panel
 
+Done (#32). README, "The Listen panel", has the details.
+
 It replaces `listen.js`. Read `/api/v1/speech` one time. With no voice
 service, or no text that the service can read, the panel does not show. Each
 readable text (the entry, its translation) gets a button with the name of its
