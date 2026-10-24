@@ -195,6 +195,8 @@ cannot read the old keys. The saved settings reset one time.
 
 ### 6. Link layer: the curves
 
+Done (#31). README, "The link layer", has the details.
+
 `LinkLayer` is a `Stack`: the sentences (a `Column` of `Wrap`s of chips, each
 chip with a `GlobalKey`) and a
 `Positioned.fill(IgnorePointer(CustomPaint(painter: LinkPainter)))`. After

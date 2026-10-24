@@ -6,6 +6,7 @@ import '../api/client.dart' show codedMessage;
 import '../api/models.dart' hide Locale;
 import '../i18n/i18n.dart';
 import 'form.dart' show textDirection;
+import 'links.dart';
 import 'state.dart';
 import 'tags.dart';
 
@@ -182,6 +183,7 @@ class SentenceRow extends ConsumerWidget {
           children: [
             for (final word in sentence.words)
               WordChip(
+                key: chipKey(word),
                 word: word,
                 info: info,
                 selected: identical(word, selected),
@@ -258,9 +260,30 @@ class BreakdownResult extends ConsumerWidget {
       });
       rows.add(note('$label $text'));
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: rows,
+    // A link is [study index, English index], over all the sentences.
+    final studyWords = [for (final each in study.sentences) ...each.words];
+    final englishWords = [for (final each in english.sentences) ...each.words];
+    List<ChipLink> chipLinks(List<Link> pairs, {required bool guess}) => [
+      for (final pair in pairs)
+        if ((
+              studyWords.elementAtOrNull(pair.study),
+              englishWords.elementAtOrNull(pair.english),
+            )
+            case (final studyWord?, final englishWord?))
+          top == study
+              ? (upper: studyWord, lower: englishWord, guess: guess)
+              : (upper: englishWord, lower: studyWord, guess: guess),
+    ];
+    return LinkLayer(
+      links: [
+        ...chipLinks(translation?.links ?? const [], guess: false),
+        ...chipLinks(translation?.guesses ?? const [], guess: true),
+      ],
+      selected: state.selected?.word,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: rows,
+      ),
     );
   }
 }
