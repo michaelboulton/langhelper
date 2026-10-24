@@ -100,6 +100,7 @@ or Dart team.
 | JSON models | `json_serializable`, `json_annotation` | The standard code generator for JSON. |
 | State | `flutter_riverpod` | `AsyncValue` holds the load, error and cancel states of the many requests. |
 | Settings | `shared_preferences` | From the Flutter team. |
+| Links | `url_launcher` | From the Flutter team. Opens the dictionary links in a new tab, and in the browser of a native app. |
 | UI text | `fluent` | A Dart runtime of Project Fluent, for the `.ftl` files of the backend. `fluent_flutter` is newer (0.1), and is the fallback. |
 | Sound | `just_audio` | A Flutter Favorite. Seek, speed and a position stream, on the web too. |
 | Seek bar | `audio_video_progress_bar` | A ready bar with the position, the buffer and seek. |
@@ -176,6 +177,8 @@ fallback. A unit test formats every message id of the three catalogs with
 `package:fluent`, to catch syntax it does not support.
 
 ### 5. Breakdown tab
+
+Done (#30). README, "The Breakdown tab", has the details.
 
 The form: language dropdown, source radios, text field with a 500 ms debounce
 and Ctrl/Cmd+Enter through `CallbackShortcuts`, heavy, nonstandard, translate,

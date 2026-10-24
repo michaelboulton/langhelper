@@ -178,6 +178,7 @@ problem-hr-genitive-adjective = '{ $word }' verlangt ein Substantiv im Genitiv (
 problem-preposition-case = Die Präposition '{ $word }' verlangt hier den { $wantName }, aber diese Form ist { $gotName }.
 problem-preposition-cases = Die Präposition '{ $word }' verlangt { $want }, aber diese Form ist { $gotName }.
 problem-case-in-list = den { $caseName }
+list-or = { $items } oder { $last }
 problem-agreement = Stimmt nicht mit '{ $noun }' überein: diese Form ist { $mineName }, aber das Substantiv ist { $theirsName } ({ $feat ->
     [Case] Kasus
     [Gender] Genus

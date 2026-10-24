@@ -178,6 +178,7 @@ problem-hr-genitive-adjective = « { $word } » richiede un nome al genitivo (pu
 problem-preposition-case = La preposizione « { $word } » richiede qui il { $wantName }, ma questa forma è al { $gotName }.
 problem-preposition-cases = La preposizione « { $word } » richiede { $want }, ma questa forma è al { $gotName }.
 problem-case-in-list = il { $caseName }
+list-or = { $items } o { $last }
 problem-agreement = Non concorda con « { $noun } »: questa forma è { $mineName }, ma il nome è { $theirsName } ({ $feat ->
     [Case] caso
     [Gender] genere

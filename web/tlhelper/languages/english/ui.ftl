@@ -204,6 +204,9 @@ problem-preposition-case = The preposition '{ $word }' takes the { $wantName } h
 # problem-case-in-list with "or" between them.
 problem-preposition-cases = The preposition '{ $word }' takes { $want }, but this form is { $gotName }.
 problem-case-in-list = the { $caseName }
+# A list with "or" before the last item, for the Flutter app.
+# $items: the other items, with commas between them.
+list-or = { $items } or { $last }
 # $mine and $theirs: values of the feature $feat (Case, Gender or Number).
 problem-agreement = Does not agree with '{ $noun }': this form is { $mineName }, but the noun is { $theirsName } ({ $feat ->
     [Case] case

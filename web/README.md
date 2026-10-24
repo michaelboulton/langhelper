@@ -1353,8 +1353,8 @@ the Docker commands above, with `--userns=keep-id` and
 ## The Flutter app
 
 `app/` is a Flutter web app that replaces `static/`, one part at a time.
-`DART.md` has the plan, and issue #24 tracks the parts. Now the app is a blank
-page with the title in the language of the page. `static/` stays the page of
+`DART.md` has the plan, and issue #24 tracks the parts. Now the app has the
+Breakdown tab, with no curves between the words. `static/` stays the page of
 the app until the Flutter app has all the tabs.
 
 Install Flutter 3.47.5, the version of `FLUTTER_VERSION` in `Dockerfile`. Build
@@ -1373,8 +1373,10 @@ STATIC_DIR=app/build/web DATA_ROOT=../.data uv run uvicorn tlhelper.app:app --po
 The smoke test opens the build in Chromium. It checks that the app shows its
 title, that the page is cross-origin isolated, and that the browser sends no
 request outside the origin. It also checks that `?locale=hr` and a German
-browser show the title in their language. It skips unless `STATIC_DIR` is a
-Flutter build.
+browser show the title in their language, and it types a sentence into the
+Breakdown tab at a phone width and at a desktop width. It skips unless
+`STATIC_DIR` is a Flutter build. With `--screenshots=DIR`, it saves a picture
+of the Breakdown tab at each width.
 The other browser tests need the page of `static/`, so run them without
 `STATIC_DIR`. The `tests` job of CI runs the smoke test against the build of
 the `dart` job:
@@ -1501,3 +1503,49 @@ message, and each message must format with no error, once with each
 variable as a number and once as a text. It also checks that the copy equals
 the English catalog. `tests/test_locales.py` checks that each id in a `t()`
 or `tOr()` of `app/lib/` is in the English catalog.
+
+### The Breakdown tab
+
+`app/lib/breakdown/` does what `static/js/breakdown.js` does, except the
+curves between the words (issue #31):
+
+| File | What it has |
+| ---- | ----------- |
+| `state.dart` | The state of the tab, with `flutter_riverpod`: the form, the requests, the answer and the selected word. `Models` reads `/api/v1/status`. |
+| `form.dart` | The language, the two sides, the text, the options, Cancel and Break down. |
+| `result.dart` | The chips, the sentences of each side, and the table of the selected word with its dictionary links. |
+| `breakdown_tab.dart` | The title, the note of the models that the server loads, the status line and the two legends. |
+| `tags.dart` | The colour of each part of speech, the feature note, and the text of a problem. |
+
+How the form sends:
+
+- A change of the form sends `POST /api/v1/classify` 500 ms after the last
+  change, with `track: false`. A form that gives the same request as the
+  last one sends nothing.
+- Ctrl+Enter, Cmd+Enter and the Break down button send at once, with
+  `track: true`, so only they count the lemmas.
+- A newer request cancels the older one. The Cancel button and the time
+  limit cancel the request too.
+- While a request with the large models runs, and after a time-out, the tab
+  reads `/api/v1/status` each second until the server has loaded the
+  models.
+
+The tab keeps the form in `shared_preferences`: `langhelper.entry` has the
+side, the language, the text and the two options as JSON, and
+`langhelper.heavy` has the choice of the large models. On the web,
+`shared_preferences` adds the prefix `flutter.` to each key, so the app does
+not read the `classla.entry` and `classla.heavy` settings of `static/`. The
+settings reset one time. The saved text goes into the text field only when
+the list of languages loads, and only if the user has typed nothing.
+
+The chips and the table are in a `SelectionArea`, so a drag selects their
+text for a copy. A tap on a chip selects the word. Each chip has the
+semantics label `chip: <word> <upos>`, for the browser tests and for a
+screen reader.
+
+`static/js/breakdown.js` writes the list of the cases of a problem ("the
+accusative or the locative") with `Intl.ListFormat`. Dart has no such
+formatter, so each catalog has the message `list-or`.
+
+The widget tests are in `app/test/breakdown/`. `app/test/fake_server.dart`
+answers with the saved responses of `app/test/api/fixtures/`.
