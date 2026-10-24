@@ -137,7 +137,9 @@ class _ListenPanelState extends ConsumerState<ListenPanel> {
       margin: const EdgeInsets.only(top: 16),
       padding: const EdgeInsets.only(top: 12),
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant)),
+        border: Border(
+          top: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -13,8 +13,7 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import '../api/fixtures.dart';
 import '../fake_server.dart';
 
-Finder button(String language) =>
-    find.widgetWithText(OutlinedButton, language);
+Finder button(String language) => find.widgetWithText(OutlinedButton, language);
 
 bool enabled(WidgetTester tester, String language) =>
     tester.widget<OutlinedButton>(button(language)).onPressed != null;
@@ -59,7 +58,11 @@ void main() {
 
   testWidgets('no text that the service reads: no panel', (tester) async {
     final server = FakeServer(
-      speech: {'available': true, 'model': 'm', 'languages': ['fr']},
+      speech: {
+        'available': true,
+        'model': 'm',
+        'languages': ['fr'],
+      },
     );
     await breakDown(tester, server);
     expect(find.text('Listen:'), findsNothing);
@@ -77,7 +80,11 @@ void main() {
 
   testWidgets('only the languages of the service', (tester) async {
     final server = FakeServer(
-      speech: {'available': true, 'model': 'm', 'languages': ['en']},
+      speech: {
+        'available': true,
+        'model': 'm',
+        'languages': ['en'],
+      },
     );
     await breakDown(tester, server);
     expect(button('Croatian'), findsNothing);
