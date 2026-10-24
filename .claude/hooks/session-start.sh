@@ -1,6 +1,6 @@
 #!/bin/bash
 # SessionStart hook for Claude Code cloud sessions of langhelper, registered in
-# .claude/settings.json. It installs fd, rg, the Flutter SDK of
+# .claude/settings.json. It installs fd, rg, rtk, the Flutter SDK of
 # web/Dockerfile, the LFS files, the uv workspace, prek, and a Playwright
 # Chromium under the name that uv.lock wants.
 set -euo pipefail
@@ -17,6 +17,7 @@ trap 'rm -rf "$TMP"' EXIT
 
 FD_VERSION=10.3.0
 RG_VERSION=15.1.0
+RTK_VERSION=1.0.1
 
 persist() {
   if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
@@ -34,6 +35,12 @@ if ! command -v rg >/dev/null; then
   curl -fsSL "https://github.com/BurntSushi/ripgrep/releases/download/${RG_VERSION}/ripgrep-${RG_VERSION}-x86_64-unknown-linux-musl.tar.gz" \
     | tar -xz -C "$TMP"
   install -m 755 "$TMP/ripgrep-${RG_VERSION}-x86_64-unknown-linux-musl/rg" "$BIN/rg"
+fi
+# rtk: the PreToolUse hook of .claude/settings.json runs `rtk hook claude`.
+if ! command -v rtk >/dev/null; then
+  curl -fsSL "https://github.com/rtk-ai/rtk/releases/download/v${RTK_VERSION}/rtk-x86_64-unknown-linux-musl.tar.gz" \
+    | tar -xz -C "$TMP" rtk
+  install -m 755 "$TMP/rtk" "$BIN/rtk"
 fi
 
 # Flutter: the version and the SHA-256 of web/Dockerfile, so the session
