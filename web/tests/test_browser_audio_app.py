@@ -132,7 +132,7 @@ def test_the_progress_of_the_lessons(browser, server, request, width):
 
     context, page, errors = open_tab(browser, server, width)
     note(page, "40%").wait_for()
-    expect(page.get_by_label("Finished")).to_be_visible()
+    note(page, "Finished").wait_for()
     screenshot(request, page, f"audio-progress-{width}")
 
     # Continue opens the first lesson that is not finished.
@@ -140,6 +140,7 @@ def test_the_progress_of_the_lessons(browser, server, request, width):
         page.get_by_role("button", name="Continue").click()
     assert page.url.endswith("/#/audio/it-course/1")
     page.get_by_role("button", name="Play", exact=True).click()
+    page.mouse.move(0, 0)
     page.wait_for_timeout(1500)
     with page.expect_request(is_save) as saved:
         page.get_by_role("button", name="Pause", exact=True).click()
