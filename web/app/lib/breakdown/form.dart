@@ -144,20 +144,20 @@ class _BreakdownFormState extends ConsumerState<BreakdownForm> {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             if (state.hasVariant('heavy'))
-              _CheckboxLabel(
+              CheckboxLabel(
                 label: i18n.t('option-heavy'),
                 value: state.heavy,
                 onChanged: notifier.setHeavy,
               ),
             if (state.useHeavy && state.hasVariant('nonstandard'))
-              _CheckboxLabel(
+              CheckboxLabel(
                 label: i18n.t('option-nonstandard'),
                 value: state.nonstandard,
                 // An English text always gets its translation, and DeepL
                 // writes the standard language.
                 onChanged: english ? null : notifier.setNonstandard,
               ),
-            _CheckboxLabel(
+            CheckboxLabel(
               label: i18n.t('option-translate'),
               value: state.translate,
               onChanged: english ? null : notifier.setTranslate,
@@ -259,8 +259,9 @@ class _RadioLabel extends StatelessWidget {
 }
 
 /// A checkbox with its label. With no [onChanged], it is greyed out.
-class _CheckboxLabel extends StatelessWidget {
-  const _CheckboxLabel({
+class CheckboxLabel extends StatelessWidget {
+  const CheckboxLabel({
+    super.key,
     required this.label,
     required this.value,
     required this.onChanged,

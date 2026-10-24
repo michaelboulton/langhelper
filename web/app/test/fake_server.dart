@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
@@ -9,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:langhelper_app/api/client.dart';
+import 'package:langhelper_app/flashcards/voices.dart';
 import 'package:langhelper_app/i18n/i18n.dart';
 import 'package:langhelper_app/listen/player.dart';
 import 'package:langhelper_app/main.dart';
@@ -29,6 +31,9 @@ class FakeServer {
     this.languagesReady,
     Map<String, dynamic>? speech,
     Future<http.Response> Function(http.Request request)? speechAudio,
+    Map<String, dynamic>? decks,
+    List<Map<String, dynamic>>? next,
+    Future<http.Response> Function(http.Request request)? answer,
   }) : classify = classify ?? ((_) async => json(fixture('classify.json'))),
        speech =
            speech ?? {'available': false, 'model': '', 'languages': <String>[]},
@@ -38,7 +43,10 @@ class FakeServer {
              mp3,
              200,
              headers: {'x-voice-model': 'k2-fsa/OmniVoice'},
-           ));
+           )),
+       decks = decks ?? fixture('decks.json'),
+       next = next ?? [fixture('next.json'), fixture('next_done.json')],
+       answer = answer ?? ((_) async => json(fixture('answer.json')));
 
   /// The answer of POST /api/v1/classify.
   Future<http.Response> Function(http.Request request) classify;
@@ -51,6 +59,26 @@ class FakeServer {
 
   /// The answer of GET /api/v1/speech/audio.
   Future<http.Response> Function(http.Request request) speechAudio;
+
+  /// The body of GET /api/v1/decks.
+  Map<String, dynamic> decks;
+
+  /// The answers of GET /api/v1/decks/{id}/next, in order. The last one
+  /// stays.
+  List<Map<String, dynamic>> next;
+
+  /// The answer of POST /api/v1/cards/{id}/answer.
+  Future<http.Response> Function(http.Request request) answer;
+
+  /// The bodies of the answers and of the ratings, in order.
+  final answers = <Map<String, dynamic>>[];
+  final ratings = <Map<String, dynamic>>[];
+
+  /// The query of each request for a card, in order.
+  final nextQueries = <Map<String, String>>[];
+
+  /// The voices of the browser.
+  final voices = FakeVoices();
 
   /// The bodies of the classify requests, in order.
   final classified = <Map<String, dynamic>>[];
@@ -76,6 +104,22 @@ class FakeServer {
       case '/api/v1/speech/audio':
         spoken.add(request.url.queryParameters);
         return speechAudio(request);
+      case '/api/v1/decks':
+        return json(decks);
+      case '/api/v1/decks/1/next':
+        nextQueries.add(request.url.queryParameters);
+        final index = min(nextQueries.length, next.length) - 1;
+        return json(next[index]);
+      case '/api/v1/cards/1/answer':
+        answers.add(jsonDecode(request.body) as Map<String, dynamic>);
+        return answer(request);
+      case '/api/v1/reviews/1/rating':
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        ratings.add(body);
+        return json({
+          'rating': body['rating'],
+          'next_due': '2026-10-26T09:00:00+00:00',
+        });
     }
     return json({'detail': 'Not Found'}, 404);
   }
@@ -96,13 +140,23 @@ I18n english() => I18n(
 class FakePlayer implements Player {
   /// The sounds, in order.
   final loaded = <Uint8List>[];
+
+  /// The sounds on the server, in order.
+  final uris = <Uri>[];
   final _playing = StreamController<bool>.broadcast();
   bool _isPlaying = false;
   int plays = 0;
+  bool disposed = false;
 
   @override
   Future<Duration?> load(Uint8List mp3) async {
     loaded.add(mp3);
+    return const Duration(seconds: 2);
+  }
+
+  @override
+  Future<Duration?> loadUri(Uri uri) async {
+    uris.add(uri);
     return const Duration(seconds: 2);
   }
 
@@ -129,7 +183,33 @@ class FakePlayer implements Player {
   Stream<Duration> get position => const Stream.empty();
 
   @override
-  Future<void> dispose() => _playing.close();
+  Future<void> dispose() {
+    disposed = true;
+    return _playing.close();
+  }
+}
+
+/// Voices of a browser that keep what the app asks of them.
+class FakeVoices implements BrowserVoices {
+  @override
+  bool available = true;
+
+  /// What the voices say before the start, if not null.
+  SpeakFailure? failure;
+
+  /// The texts and their tags, in order.
+  final spoken = <(String, String)>[];
+
+  @override
+  Future<void> speak(
+    String text, {
+    required String language,
+    required String tag,
+    required void Function(SpeakFailure failure) onError,
+  }) async {
+    if (failure case final failure?) throw failure;
+    spoken.add((text, tag));
+  }
 }
 
 /// The app on [server], in [i18n] (English by default).
@@ -141,6 +221,7 @@ Widget appOn(FakeServer server, {I18n? i18n}) => ProviderScope(
       server.players.add(player);
       return player;
     }),
+    browserVoicesProvider.overrideWithValue(server.voices),
   ],
   child: LanghelperApp(i18n: i18n ?? english()),
 );
