@@ -196,7 +196,19 @@ def new_context(
     context.route(
         lambda url: not url.startswith(f"{server}/"), lambda route: route.abort()
     )
+    context.route("**/static/flutter_bootstrap.js", _single_threaded)
     return context
+
+
+def _single_threaded(route):
+    """skwasm on one thread: on more threads, the page crashes now and then
+    (README.md, "The browser tests")."""
+    response = route.fetch()
+    body = response.text().replace(
+        "_flutter.loader.load({",
+        "_flutter.loader.load({config: {forceSingleThreadedSkwasm: true},",
+    )
+    route.fulfill(response=response, body=body)
 
 
 def _type_into(field, text):

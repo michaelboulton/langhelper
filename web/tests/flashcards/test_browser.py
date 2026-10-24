@@ -278,11 +278,22 @@ def test_a_language_from_right_to_left(page, deck_dir, make_apkg, type_into):
     # The first word of a right-to-left line is on the right.
     first = page.get_by_role("button", name=re.compile("^chip: Pijem ")).first
     second = page.get_by_role("button", name="chip: kavu NOUN").first
-    assert first.bounding_box()["x"] > second.bounding_box()["x"]
+    assert left_of(second, first)
     # The English line is from left to right.
     english = page.get_by_role("button", name="chip: I PRON")
     drink = page.get_by_role("button", name="chip: drink VERB")
-    assert english.bounding_box()["x"] < drink.bounding_box()["x"]
+    assert left_of(english, drink)
+
+
+def left_of(left, right):
+    """True once left is to the left of right. The chips change size when the
+    fonts load, and the semantics tree gets their new places some frames
+    later."""
+    for _ in range(50):
+        if left.bounding_box()["x"] < right.bounding_box()["x"]:
+            return True
+        left.page.wait_for_timeout(100)
+    return False
 
 
 def test_the_accent_note_follows_the_language_of_the_deck(

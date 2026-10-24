@@ -1414,6 +1414,16 @@ The browser context of each test has no network: a request outside the
 server fails, and a failed request is an error of the page. At the end of a
 test, each page must have no errors in its console.
 
+The browser tests run skwasm on one thread. `new_context` in
+`tests/conftest.py` changes `flutter_bootstrap.js` on its way to the
+browser, and gives `forceSingleThreadedSkwasm: true` to the loader. On more
+than one thread, the headless Chromium of Playwright crashed about one page in
+ten: 4 crashes in 38 tests on a local run, and one or two in each CI run, as
+"Target crashed" or the wasm trap "operation does not support unaligned
+accesses". On one thread, 76 tests in four local runs had no crash. The page
+is still cross-origin isolated, and a real browser still runs skwasm on more
+than one thread.
+
 | File | What it opens |
 | ---- | ------------- |
 | `tests/test_browser_app.py` | The app: no request outside the origin, cross-origin isolation, the locale of the address and of the browser, and the dark theme. |
