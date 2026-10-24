@@ -114,6 +114,8 @@ class CardsStatusLine extends ConsumerWidget {
         error,
       ),
     };
+    // A live region that starts empty never gets its label in the browser.
+    if (text.isEmpty) return const SizedBox.shrink();
     return Semantics(
       liveRegion: true,
       child: Text(

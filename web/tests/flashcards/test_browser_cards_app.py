@@ -124,6 +124,10 @@ def test_an_answered_card(
     page.keyboard.press("3")
     note(page, re.compile("Good: this card comes back")).wait_for()
 
+    # Headless Chromium has speechSynthesis, but no voices.
+    page.get_by_role("button", name="Read it aloud").click()
+    note(page, "This browser has no voices, so it cannot read a text aloud.").wait_for()
+
     # "Next card" has the focus.
     page.get_by_role("button", name="Next card").focus()
     page.keyboard.press("Enter")
