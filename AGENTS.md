@@ -14,7 +14,7 @@ The repository is one uv workspace. The root `pyproject.toml` lists the members,
 Other documents in `web/`:
 
 - `LANGUAGES.md`: the extra work for a study language with a non-Latin script or no spaces.
-- `DART.md`: a plan to move `static/` to Flutter. Nothing in it exists yet.
+- `DART.md`: the plan to move `static/` to a Flutter app in `web/app/`. The move is in progress. Issue [#24](https://github.com/michaelboulton/langhelper/issues/24) tracks it, and each of its sub-issues is one part. Before a change to `static/`, `web/app/` or a route that the page reads, read #24 and its sub-issues: they say which parts are done, and what each next part needs. `static/` stays the page that the app serves until the sub-issue that deletes it is done.
 - `scripts/README.md`: admin tools that are not in the image.
 
 To plan an audio course ("a course of 20 lessons of Italian, with flashcards"), follow `.claude/skills/audio-course/SKILL.md`. It writes a `plan.sh` of the commands for the user to run.
