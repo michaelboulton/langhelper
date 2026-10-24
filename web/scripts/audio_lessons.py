@@ -90,8 +90,8 @@ pause: <seconds>
 - Teach few new words, about 10 to 15, and use the time to say them again and again in new sentences. The learner makes sentences that nobody said before, from the words that they know.
 - After an actor gives an answer, a short pause often lets the learner repeat it.
 - The narrator puts each request in the situation of the dialogue, such as "Ask her whether there is meat in it." or "He says no. Tell him that you want fish.", more often than "Say ...".
-- Build up a long word from its end, one part at a time: an actor says the last syllable and a pause lets the learner repeat it, then the last two syllables, and so on to the whole word.
-- Each spoken line has at least two letters. A word or a sound of one letter, such as "e" in Italian, goes in a short phrase, such as "pane e vino".
+- Build up a long word from its end, one part at a time: an actor says the last part and a pause lets the learner repeat it, then a longer part, and so on to the whole word.
+- Each spoken line has at least three letters. A part of a word has at least three letters, such as "amo" of "imamo", not "mo". A word of one or two letters, such as "e" in Italian, goes in a short phrase, such as "pane e vino".
 - Ask again for the words of the earlier lessons and the new words of this lesson at growing intervals: after a few lines, then after more lines, then near the end.
 - When a new word has a sound that an English speaker easily hears as another sound, such as one of two letters that differ only by a mark (č and ć in Croatian, è and é in Italian, a and â in French, o and ö in Finnish), the narrator says so when it teaches the word: listen to that sound, and say it as a native speaker does. Then an actor says the word again, and a pause lets the learner repeat it.
 
@@ -203,11 +203,12 @@ def parse_answer(text: str) -> script.Script:
     match = HEADING.search(text)
     lesson = script.parse(text[match.start() :] if match else text, "the answer")
     for line in lesson.lines:
-        # The voice service fails on a text of one letter, such as "e".
-        if isinstance(line, script.Line) and sum(map(str.isalnum, line.text)) < 2:
+        # The voice service can make no audio for a text of two letters, such
+        # as "mo" in a Croatian voice.
+        if isinstance(line, script.Line) and sum(map(str.isalnum, line.text)) < 3:
             raise script.ScriptError(
                 f"the answer: {line.speaker} says only {line.text!r}, and a line"
-                " needs at least two letters"
+                " needs at least three letters"
             )
     return lesson
 

@@ -41,7 +41,7 @@ actor 1: C'è carne?
 actor 2: No, non c'è carne.
 narrator: How do you say "is there"?
 pause: 3
-actor 1: c'è
+actor 1: c'è carne
 """
 ANSWER_2 = """\
 # The football team
@@ -246,8 +246,9 @@ def test_the_name_and_the_language_come_from_the_course_file(
         ANSWER_1.replace("actor 2", "actor 3"),
         HEAD,
         ANSWER_1 + "actor 2: e\n",
+        ANSWER_1 + "actor 2: mo\n",
     ],
-    ids=["text", "speaker", "no lines", "one letter"],
+    ids=["text", "speaker", "no lines", "one letter", "two letters"],
 )
 def test_a_bad_answer_is_asked_again_and_then_stops(
     course, scripted, fake_lemmas, answer
