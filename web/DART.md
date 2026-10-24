@@ -268,6 +268,9 @@ Each button has a `Semantics` label.
 
 ### 11. Audio lesson progress
 
+Done (#36, #37). README, "The progress in a lesson" and "The Audio lessons
+tab", has the details.
+
 The server keeps how far each user is through each lesson, so the progress
 follows the user to another device and to a native app. A local run keeps it
 for the user `local`, as the flashcards do. This part of the backend needs no

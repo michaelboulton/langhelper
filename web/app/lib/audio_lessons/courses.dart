@@ -116,16 +116,32 @@ class _Course extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final i18n = I18n.of(context);
     final lessons = [...course.lessons]
       ..sort((a, b) => a.number.compareTo(b.number));
+    final next = nextLesson(lessons);
     return Padding(
       padding: const EdgeInsets.only(top: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Semantics(
-            header: true,
-            child: Text(course.name, style: theme.textTheme.titleLarge),
+          Wrap(
+            spacing: 16,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Semantics(
+                header: true,
+                child: Text(course.name, style: theme.textTheme.titleLarge),
+              ),
+              if (next != null)
+                FilledButton.tonalIcon(
+                  onPressed: () =>
+                      context.go(lessonPath(course.id, next.number)),
+                  icon: const Icon(Icons.play_arrow),
+                  label: Text(i18n.t('audio-continue')),
+                ),
+            ],
           ),
           const SizedBox(height: 4),
           for (final lesson in lessons)
@@ -146,10 +162,65 @@ class _Course extends StatelessWidget {
                     child: Text(lesson.title),
                   ),
                 ),
+                _LessonProgress(lesson: lesson),
               ],
             ),
         ],
       ),
+    );
+  }
+}
+
+/// A ✓ for a finished lesson, and a bar with the percentage for a lesson
+/// that the user started. Nothing for a lesson that the user never played.
+class _LessonProgress extends StatelessWidget {
+  const _LessonProgress({required this.lesson});
+
+  final AudioLesson lesson;
+
+  @override
+  Widget build(BuildContext context) {
+    final i18n = I18n.of(context);
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    if (lesson.finished) {
+      return Semantics(
+        label: i18n.t('audio-finished'),
+        child: const ExcludeSemantics(
+          child: Text(
+            '✓',
+            style: TextStyle(
+              color: Color(0xFF2E7D32),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      );
+    }
+    if (lesson.position <= 0 || lesson.duration <= 0) {
+      return const SizedBox.shrink();
+    }
+    final fraction = (lesson.position / lesson.duration).clamp(0.0, 1.0);
+    // A started lesson shows at least 1 %, and 100 % only when finished.
+    final percent = (fraction * 100).floor().clamp(1, 99);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ExcludeSemantics(
+          child: SizedBox(
+            width: 64,
+            child: LinearProgressIndicator(
+              value: fraction,
+              minHeight: 4,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          i18n.t('audio-percent', {'percent': '$percent'}),
+          style: TextStyle(color: muted),
+        ),
+      ],
     );
   }
 }

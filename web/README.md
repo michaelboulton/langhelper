@@ -1726,10 +1726,10 @@ a lesson is `/#/audio/<course>/<lesson>`, so a lesson has a link of its own.
 
 | File | What it has |
 | ---- | ----------- |
-| `state.dart` | The list of courses and the script of a lesson, with `flutter_riverpod`. |
-| `courses.dart` | The title, the intro, and the courses with their lessons in order. |
+| `state.dart` | The list of courses with the progress of the user, the saves of a position, and the script of a lesson, with `flutter_riverpod`. |
+| `courses.dart` | The title, the intro, and the courses with their lessons in order, the progress of each lesson and the Continue button. |
 | `lesson_view.dart` | The title and the grammar step of a lesson, the note of its audio state, the player and the script. |
-| `lesson_player.dart` | The buttons and the seek bar of the player. |
+| `lesson_player.dart` | The buttons and the seek bar of the player, the start at the saved position, and the saves. |
 
 - The app reads the list of courses one time. An error shows at once, with
   no retry, because a missing course does not come back on a retry.
@@ -1748,6 +1748,24 @@ a lesson is `/#/audio/<course>/<lesson>`, so a lesson has a link of its own.
   actors have the locale and the direction of the study language.
 - The player stops when the user goes back to the list or opens another
   lesson. It keeps playing when the user opens another tab.
+
+The progress of the user comes from the server (see "The progress in a
+lesson"):
+
+- In the list, a lesson that the user started has a thin bar and the
+  percentage. A finished lesson has a ✓. A started lesson shows at least
+  1 %, and never 100 %, because only the server marks a lesson finished.
+- Each course has a Continue button. It opens the first lesson, in order,
+  that is not finished. When all the lessons are finished, the course has
+  no Continue button.
+- The player starts at the saved position. A saved position 5 s or less
+  from the end (`finishedWithin` in `lesson_player.dart`, the same as
+  `FINISHED_WITHIN` of the server) starts the lesson again from the start.
+- The player saves the position with `PUT .../progress` every 10 s while it
+  plays, on pause, at the end, when the user leaves the lesson, and when the
+  browser tab hides. It does not save a position that it saved already.
+- Each answer of a save changes the lesson in the list, so the list shows
+  the new progress with no new read.
 
 The widget tests are in `app/test/audio_lessons/`. They use the
 `FakePlayer` of `app/test/fake_server.dart`.

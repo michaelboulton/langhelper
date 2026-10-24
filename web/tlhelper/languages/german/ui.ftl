@@ -323,3 +323,6 @@ audio-speaker-actor-2 = Andere Person:
 audio-back = 10 s zurück
 audio-forward = 10 s vor
 audio-speed = Tempo:
+audio-continue = Weiter
+audio-finished = Fertig
+audio-percent = { $percent } %

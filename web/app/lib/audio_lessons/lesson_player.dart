@@ -14,19 +14,71 @@ const skipStep = Duration(seconds: 10);
 /// The speeds of the speed buttons.
 const speeds = [0.75, 1.0, 1.25];
 
-/// What the buttons and the keys of a lesson do to its [player].
+/// The time between two saves of the position while a lesson plays.
+const saveEvery = Duration(seconds: 10);
+
+/// A saved position this near the end starts the lesson again. The same as
+/// `FINISHED_WITHIN` in `tlhelper/flashcards/store.py`.
+const finishedWithin = Duration(seconds: 5);
+
+/// What the buttons and the keys of a lesson do to its [player], and the
+/// saves of its position.
 class LessonAudio {
-  LessonAudio(this.player) {
-    _playing = player.playing.listen((playing) => isPlaying = playing);
+  LessonAudio(this.player, {this.save}) {
+    _playing = player.playing.listen(_onPlaying);
   }
 
   final Player player;
+
+  /// Saves the position in the lesson and the length of the mp3.
+  final void Function(Duration position, Duration duration)? save;
 
   /// The length of the mp3. Null until it loads.
   Duration? duration;
   bool isPlaying = false;
   double speed = 1;
   late final StreamSubscription<bool> _playing;
+  Timer? _timer;
+
+  /// The position of the last save, or of the start.
+  Duration? _saved;
+
+  /// Saves every 10 s while the lesson plays, and on pause and at the end.
+  void _onPlaying(bool playing) {
+    final was = isPlaying;
+    isPlaying = playing;
+    if (playing) {
+      _timer ??= Timer.periodic(saveEvery, (_) => saveNow());
+    } else {
+      _timer?.cancel();
+      _timer = null;
+      if (was) saveNow();
+    }
+  }
+
+  /// Saves the position, if the mp3 has loaded and the position changed
+  /// after the last save.
+  void saveNow() {
+    final duration = this.duration;
+    if (duration == null || duration <= Duration.zero) return;
+    final position = player.currentPosition;
+    if (position == _saved) return;
+    _saved = position;
+    save?.call(position, duration);
+  }
+
+  /// Starts the lesson at the saved [position], after the mp3 loads. A
+  /// position at the end starts the lesson again from the start.
+  void start(Duration position) {
+    final end = duration;
+    if (position <= Duration.zero ||
+        (end != null && position >= end - finishedWithin)) {
+      _saved = Duration.zero;
+      return;
+    }
+    _saved = position;
+    player.seek(position);
+  }
 
   void playPause() => isPlaying ? player.pause() : player.play();
 
@@ -43,7 +95,14 @@ class LessonAudio {
     player.setSpeed(value);
   }
 
-  Future<void> dispose() => Future.wait([player.dispose(), _playing.cancel()]);
+  /// Saves the position, then stops the player.
+  Future<void> dispose() async {
+    _timer?.cancel();
+    saveNow();
+    // The cancel stops the events at once, before the player stops.
+    final cancel = _playing.cancel();
+    await Future.wait([player.dispose(), cancel]);
+  }
 }
 
 /// The player of a lesson: back 10 s, play or pause, forward 10 s, the

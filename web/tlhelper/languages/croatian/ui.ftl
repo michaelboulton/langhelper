@@ -326,3 +326,6 @@ audio-speaker-actor-2 = Druga osoba:
 audio-back = 10 s natrag
 audio-forward = 10 s naprijed
 audio-speed = Brzina:
+audio-continue = Nastavi
+audio-finished = Završeno
+audio-percent = { $percent } %

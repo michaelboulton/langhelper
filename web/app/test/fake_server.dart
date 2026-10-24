@@ -105,6 +105,12 @@ class FakeServer {
   /// The path of each request for a lesson, in order.
   final lessons = <String>[];
 
+  /// The path and the body of each save of a position, in order.
+  final saves = <(String, Map<String, dynamic>)>[];
+
+  /// The length of the sounds of the players.
+  Duration soundLength = const Duration(seconds: 2);
+
   /// The path and the body of each question to the AI, in order.
   final explained = <(String, Map<String, dynamic>)>[];
 
@@ -176,6 +182,14 @@ class FakeServer {
         return stats(request);
       case '/api/v1/audio-lessons':
         return audioCourses(request);
+      case final path
+          when path.startsWith('/api/v1/audio-lessons/') &&
+              path.endsWith('/progress'):
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        saves.add((path, body));
+        final position = body['position'] as num;
+        final duration = body['duration'] as num;
+        return json({...body, 'finished': duration - position <= 5});
       case final path when path.startsWith('/api/v1/audio-lessons/'):
         lessons.add(path);
         return audioLesson(request);
@@ -297,7 +311,7 @@ Widget appOn(FakeServer server, {I18n? i18n}) => ProviderScope(
   overrides: [
     apiProvider.overrideWithValue(server.api),
     newPlayerProvider.overrideWithValue(() {
-      final player = FakePlayer();
+      final player = FakePlayer()..length = server.soundLength;
       server.players.add(player);
       return player;
     }),
