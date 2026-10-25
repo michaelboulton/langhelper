@@ -173,8 +173,11 @@ class _HomePageState extends ConsumerState<HomePage>
   Widget build(BuildContext context) {
     final i18n = I18n.of(context);
     final shell = widget.shell;
+    // In line with the column of the tabs.
+    final side = pageSide(MediaQuery.sizeOf(context).width);
     return Scaffold(
       appBar: AppBar(
+        titleSpacing: side,
         title: switch (shell.currentIndex) {
           0 => const BreakdownTitle(),
           1 => const FlashcardsTitle(),
@@ -186,6 +189,8 @@ class _HomePageState extends ConsumerState<HomePage>
           // Scrolls sideways on a narrow screen.
           isScrollable: true,
           tabAlignment: TabAlignment.start,
+          // Each tab has 16 px of padding before its label.
+          padding: EdgeInsets.only(left: side - 16),
           onTap: shell.goBranch,
           tabs: [
             Tab(text: i18n.t('tab-breakdown')),
