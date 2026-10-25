@@ -105,4 +105,7 @@ this from the root:
 fly deploy . --config web/fly.toml --dockerfile web/Dockerfile --ha=false
 ```
 
+A plain `fly deploy` in `web/` fails with `"/web/app": not found`, because
+it uses `web/` as the build context.
+
 After a change to a `pyproject.toml`, run `uv lock` at the root.

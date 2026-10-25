@@ -1111,6 +1111,10 @@ fly volumes create model_data -r ord -s 2 --config web/fly.toml   # first time o
 
 ## 2. Deploy
 
+Run these from the repository root too. A plain `fly deploy` in `web/` uses
+`web/` as the build context, and the build fails with
+`"/web/app": not found` or `"/uv.lock": not found`.
+
 ```bash
 fly deploy . --config web/fly.toml --dockerfile web/Dockerfile --ha=false   # --ha=false: one machine, not Fly's default of two
 fly logs --config web/fly.toml                     # shows "Application startup complete."
