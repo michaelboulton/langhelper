@@ -103,7 +103,7 @@ class BreakdownState {
     this.heavy = false,
     this.nonstandard = false,
     this.translate = false,
-    this.timeout = 5,
+    this.timeout = 15,
     this.sending = false,
     this.status = const Idle(),
     this.result,

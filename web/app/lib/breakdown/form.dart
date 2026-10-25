@@ -63,7 +63,7 @@ class _BreakdownFormState extends ConsumerState<BreakdownForm> {
     final seconds = int.tryParse(text) ?? 0;
     ref
         .read(breakdownProvider.notifier)
-        .setTimeout(seconds > 0 ? seconds.clamp(1, 600) : 5);
+        .setTimeout(seconds > 0 ? seconds.clamp(1, 600) : 15);
   }
 
   @override
