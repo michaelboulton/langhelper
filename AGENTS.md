@@ -51,7 +51,11 @@ uv run python tests/shot.py "Ovo je rečenica." --translate --out shot.png   # o
 uv run pytest tests/test_locales.py                    # check the Fluent catalogs
 uv run python -m tlhelper.build_glosses --language de kaikki.org-dictionary-German.jsonl   # rebuild a glosses.db
 uv run python -m tlhelper.flashcards.make_toml decks/x.apkg --language hr --name "X"      # write the .toml of a deck
+uv run python -m tlhelper.flashcards.inspect_deck notes decks/x.apkg   # the note types, the filled fields, example notes
+uv run python -m tlhelper.flashcards.inspect_deck cards decks/x.apkg   # the cards of the import, with the .toml (--direction, --prompt-media, --grep)
 ```
+
+To look inside a deck package, use `inspect_deck`, not a one-off script. If it lacks a view that you need, add an option or a command to it.
 
 Both Dockerfiles use the repository root as the build context, because they need the root `pyproject.toml` and `uv.lock`. One root `.dockerignore` serves both. From the root:
 
