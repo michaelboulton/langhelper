@@ -39,7 +39,7 @@ login. The API refuses texts over `MAX_TEXT_CHARS`.
 | `tlhelper/languages/german/` | `checks.py`: the grammar checks of a German text            |
 | `tlhelper/languages/french/` | `checks.py`: the grammar checks of a French text            |
 | `tlhelper/languages/italian/` | `checks.py`: the grammar checks of an Italian text          |
-| `tlhelper/flashcards/` | The flashcards. `apkg.py` reads an Anki deck, and `decks.py` imports the decks. `store.py` keeps the progress of each user and the schedule. `grade.py` grades a typed answer, and `routes.py` is the API. `make_deck.py` makes a deck from a text file, and `make_toml.py` writes the `.toml` of a deck |
+| `tlhelper/flashcards/` | The flashcards. `apkg.py` reads an Anki deck, and `decks.py` imports the decks. `store.py` keeps the progress of each user and the schedule. `grade.py` grades a typed answer, and `routes.py` is the API. `make_deck.py` makes a deck from a text file, `make_toml.py` writes the `.toml` of a deck, and `inspect_deck.py` shows the notes and the cards of a deck |
 | `decks/`         | The decks that go in the image. The section "Flashcards" describes the files |
 | `scripts/`       | Local tools for the admin, not in the image. `lessons.py` makes a deck of flashcards from the lessons of a course with the AI service. See `scripts/README.md` |
 | `tlhelper/build_glosses.py` | Builds the data files below from the kaikki.org export. Not in the image |
@@ -465,6 +465,18 @@ If the `.toml` is there already, the script stops, and `--force` replaces it.
 If the package has more than one Anki deck, the script also prints the tree.
 `--subdecks`, `--to-english-notetype` and `--lines` set the keys for such a
 package.
+
+To look inside a package before and after you write its `.toml`, use this
+script:
+
+```bash
+uv run python -m tlhelper.flashcards.inspect_deck notes decks/mydeck.apkg   # the note types, the filled fields, example notes
+uv run python -m tlhelper.flashcards.inspect_deck cards decks/mydeck.apkg   # the cards of the import, with the .toml
+```
+
+`notes` takes `--notetype`, `--grep` and `--width`. `cards` takes
+`--direction`, `--prompt-media` and `--grep`. Both take `--limit`, and
+`--limit 0` prints all.
 
 In Anki, the field names are under "Browse", then "Fields". The export type is
 "Anki Deck Package (.apkg)". The app reads the new format of Anki (compressed
