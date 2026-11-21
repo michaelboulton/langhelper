@@ -151,8 +151,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(textFieldKey), 'Ona je bila kod kuće.');
     await tester.pump(debounceTime);
-    await tester.pump(const Duration(seconds: 5));
-    expect(find.textContaining('No answer after 5 s.'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 15));
+    expect(find.textContaining('No answer after 15 s.'), findsOneWidget);
   });
 
   testWidgets('a chip row with a problem, and the table of a word', (
