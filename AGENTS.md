@@ -68,14 +68,14 @@ fly deploy . --config web/fly.toml --dockerfile web/Dockerfile --ha=false   # de
 
 Tests that need resources skip when the resources are missing:
 
-- `test_real_models` needs the classla models in `.data/` at the repository root.
+- `test_real_models` needs the classla and Stanza models in `.data/` at the repository root. The heavy Italian tests need the Stanza models.
 - The browser tests need the Flutter build in `STATIC_DIR` (default `web/app/build/web`) and the Playwright Chromium. The tests of `test_app.py` and `test_auth.py` that read the page need the build too. Their browser has no network. They find the widgets through the semantics tree with `get_by_role` and `get_by_label`, because Flutter draws on a canvas. `web/README.md`, "The browser tests", has the details. A Claude Code cloud container has a Chromium in `/opt/pw-browsers`, but it can be an older build than the version that `uv.lock` pins. Then each browser test skips with `Executable doesn't exist at /opt/pw-browsers/chromium_headless_shell-<N>`. Do not run `playwright install`. Instead, link the build that is there under the name that Playwright wants, in a folder of your own, and set `PLAYWRIGHT_BROWSERS_PATH` to that folder. For example: `ln -s /opt/pw-browsers/chromium_headless_shell-1243 <dir>/chromium_headless_shell-1248`, then `PLAYWRIGHT_BROWSERS_PATH=<dir> uv run pytest ...`.
 - DeepL and the AI service are fakes in the tests, so the tests need no key.
 - The `tts/` tests use a fake model and need no build of `libomnivoice.so`.
 - The heavy German tests need `de_dep_news_trf`.
 - `test_the_clips_of_the_repo` needs the voice clips in `tts/omnivoice_server/voices/`.
 
-CI (`.github/workflows/tests.yml`) runs prek, then the tests of both members. The `dart` job runs `flutter test` and the web build in `web/app/`. The tests job downloads that build and installs the Playwright Chromium, so the browser tests run. It installs the heavy German model and caches the classla models in `.data/`, so `test_real_models` runs.
+CI (`.github/workflows/tests.yml`) runs prek, then the tests of both members. The `dart` job runs `flutter test` and the web build in `web/app/`. The tests job downloads that build and installs the Playwright Chromium, so the browser tests run. It installs the heavy German model and caches the classla and Stanza models in `.data/`, so `test_real_models` and the heavy Italian tests run.
 
 ## web architecture
 
@@ -83,7 +83,7 @@ CI (`.github/workflows/tests.yml`) runs prek, then the tests of both members. Th
 
 Each study language is a class in `tlhelper/languages/<name>/` that implements the `Language` protocol of `languages/base.py`. `LANGUAGES` in `languages/__init__.py` is the registry. The page builds its language list from `GET /api/v1/languages`, so a new language needs no change to the app. `web/README.md`, section "Add a language", has the steps.
 
-A language has a `"light"` variant (a spaCy model) and an optional `"heavy"` variant (classla for Croatian, a transformer for German). `StudySlot` in `languages/base.py` holds only one study model in memory at a time. A request for another language or variant drops the loaded model first. The English model stays outside the slot and is always loaded. Code that needs tags of a study language must go through the slot.
+A language has a `"light"` variant (a spaCy model) and an optional `"heavy"` variant (classla for Croatian, a transformer for German, Stanza for Italian). `StudySlot` in `languages/base.py` holds only one study model in memory at a time. A request for another language or variant drops the loaded model first. The English model stays outside the slot and is always loaded. Code that needs tags of a study language must go through the slot.
 
 The grammar checks are in `checks.py` or `grammar.py` of each language. They only see the tags, so each check documents its limits in the README. A check adds an English sentence to `problems` and a Fluent key with its parameters to `problem_messages`.
 
@@ -110,6 +110,7 @@ All persistent state is under `DATA_ROOT` (`/data` on Fly, `.data/` at the repos
 - `lemmas.db`: the lemma counts and the translation cache (`translator_cache`).
 - `flashcards.db`: the imported decks and cards, the FSRS state of each user, the review log, and the cache of AI answers (`explanation`).
 - `classla_resources/`: the heavy Croatian models, downloaded on first use.
+- `stanza_resources/`: the heavy Italian models (Stanza), downloaded on first use.
 - `decks/`: more flashcard decks. A deck in this folder wins over a deck with the same stem in `web/decks/`.
 
 The app migrates rows from older table names at startup and leaves the old tables unchanged. The deck import runs at startup and skips an unchanged deck. Increase `IMPORT_VERSION` in `flashcards/decks.py` when a change to the import must read every deck again.

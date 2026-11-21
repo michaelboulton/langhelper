@@ -6,20 +6,13 @@ import os
 
 import classla
 
-from ...settings import DATA_ROOT
-from ..base import STUDY, ModelsMissing
+from ...settings import DATA_ROOT, DOWNLOAD_MODELS
+from ..base import STUDY, ModelsMissing, parse_feats
 from . import grammar
 
 # clarin.si is the only public host and its speed varies a lot. Point this at a
 # mirror that serves the same paths (<MODEL_URL>/11356/1829/...zip) if needed.
 MODEL_URL = os.environ.get("MODEL_URL", "default")
-# Set to 0 to never download: classify then returns 503 if the models are not
-# already under DATA_ROOT. docker-compose.yml does this for local runs.
-DOWNLOAD_MODELS = os.environ.get("DOWNLOAD_MODELS", "1").lower() not in (
-    "0",
-    "false",
-    "no",
-)
 MODEL_DIR = DATA_ROOT / "classla_resources"
 
 LANG = "hr"
@@ -69,13 +62,6 @@ def load_pipeline(model_type: str) -> classla.Pipeline:
         dir=str(MODEL_DIR),
         use_gpu=False,
     )
-
-
-def parse_feats(feats: str | None) -> dict[str, str]:
-    """Turn 'Case=Nom|Gender=Fem' into {'Case': 'Nom', 'Gender': 'Fem'}."""
-    if not feats or feats == "_":
-        return {}
-    return dict(pair.split("=", 1) for pair in feats.split("|") if "=" in pair)
 
 
 def lexicon(pipeline) -> grammar.Lexicon | None:
