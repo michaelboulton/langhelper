@@ -1,5 +1,5 @@
-"""Italian: tagged by spaCy (it_core_news_md), with grammar checks (checks.py).
-It has only the light model."""
+"""Italian, with grammar checks (checks.py). The light model is spaCy
+it_core_news_md, and the heavy one is Stanza (heavy.py)."""
 
 from pathlib import Path
 from typing import ClassVar
@@ -7,7 +7,7 @@ from typing import ClassVar
 from ..base import STUDY, LanguageInfo
 from ..glosses import GlossFile
 from ..spacy_words import SpacyTagger
-from . import checks
+from . import checks, heavy
 
 GLOSSES_PATH = Path(__file__).with_name("glosses.db")
 
@@ -20,7 +20,7 @@ class Italian:
         # A adjective, RD definite article, E_RD preposition with an article.
         tag_name="ISDT tag",
         placeholder="Il gatto nero dorme sul divano.",
-        variants=("light",),
+        variants=("light", "heavy"),
         speech="it-IT",
         dictionary_links=(
             ("WordReference: {lemma}", "https://www.wordreference.com/iten/{lemma}"),
@@ -65,6 +65,8 @@ class Italian:
     def analyze(
         self, text: str, *, variant: str = "light", check: bool = True
     ) -> list[dict]:
+        if variant == "heavy":
+            return heavy.words(text, check)
         return self.taggers[variant].words(text, check)
 
     def glosses(self, text: str, lemma: str, upos: str) -> dict[str, int]:

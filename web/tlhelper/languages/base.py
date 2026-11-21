@@ -54,6 +54,13 @@ class ModelsMissing(Exception):
     pass
 
 
+def parse_feats(feats: str | None) -> dict[str, str]:
+    """Turn 'Case=Nom|Gender=Fem' into {'Case': 'Nom', 'Gender': 'Fem'}."""
+    if not feats or feats == "_":
+        return {}
+    return dict(pair.split("=", 1) for pair in feats.split("|") if "=" in pair)
+
+
 def release_memory() -> None:
     """Python frees a dropped model, but glibc keeps most of those pages for
     the process. malloc_trim gives them back. Measured after a switch from a

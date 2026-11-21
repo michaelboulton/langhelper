@@ -151,6 +151,9 @@ The volume at `/data` holds these things:
   models of Croatian. The standard models download on the first request that
   sets `heavy`. The nonstandard models download on the first request that sets
   `nonstandard`. The spaCy models are in the image and not on the volume.
+- `stanza_resources/`, the downloaded Stanza models, which are the heavy
+  models of Italian. They download from Hugging Face on the first Italian
+  request that sets `heavy`.
 - `lemmas.db`, a SQLite file with one row for each language, lemma and part of
   speech: `language_lemma_counts(language, lemma, upos, count, last_seen)`. A
   file from before German has the table `lemma_counts`. The app copies its rows
@@ -819,11 +822,12 @@ each language only needs glosses to English.
 | Croatian | spaCy `hr_core_news_md` | classla, standard and nonstandard         | MULTEXT-East  | Pitch accents, `accents.db`  |
 | German   | spaCy `de_core_news_md` | spaCy `de_dep_news_trf`                   | STTS          | `glosses.db`                 |
 | French   | spaCy `fr_core_news_md` | None                                      | None          | `glosses.db`                 |
-| Italian  | spaCy `it_core_news_md` | None                                      | ISDT          | `glosses.db`                 |
+| Italian  | spaCy `it_core_news_md` | Stanza, the combined UD treebanks         | ISDT          | `glosses.db`                 |
 | English  | spaCy `en_core_web_sm`  | None                                      | Penn Treebank | Only as the other side       |
 
 classla only has models for South Slavic languages, so German, French and
-Italian use spaCy.
+Italian use spaCy for the light models. spaCy has no Italian transformer
+model, so the heavy Italian model is Stanza, the project that classla forks.
 
 ### Light and heavy models
 
@@ -846,6 +850,7 @@ gives the value to the page.
 | German heavy          | 391 MB       | None          | 550 MB  | 1.5 s  |
 | French light          | 44 MB        | None          | 400 MB  | 2.7 s  |
 | Italian light         | 52 MB        | None          | 250 MB  | 0.7 s  |
+| Italian heavy         | None         | 326 MB        | 600 MB  | 2.7 s  |
 | English               | 12 MB        | None          | 70 MB   | 0.5 s  |
 
 The memory and the load times are from a laptop, and the Fly machine has
@@ -923,14 +928,20 @@ The gloss keys have no grave or acute accent (`glosses.py`), so `à` and `a` are
 one key. The part of speech in the key keeps most of those words apart
 (`a|ADP` for `à`, `avoir|AUX` for `a`).
 
-Italian has only a light model. Its tags are the ISDT set of the Italian
-Stanford Dependency Treebank (`S` noun, `A` adjective, `RD` definite article,
-`E_RD` preposition with an article, `PC` clitic pronoun), and its parse labels
-are Universal Dependencies. A preposition with an article (`sul`, `della`) is
-one word with a lemma of two words (`su il`, `di il`), and an elision (`l'`,
-`un'`, `c'`) is a word of its own. The model reads a capitalized verb at the
-start of a sentence badly: "Sto mangiando" makes `Sto` a name, and "Io sto
-mangiando" does not.
+The tags of both Italian models are the ISDT set of the Italian Stanford
+Dependency Treebank (`S` noun, `A` adjective, `RD` definite article, `E`
+preposition, `PC` clitic pronoun), and their parse labels are Universal
+Dependencies. An elision (`l'`, `un'`, `c'`) is a word of its own.
+
+The light model keeps a preposition with an article (`sul`, `della`) as one
+word with the tag `E_RD` and a lemma of two words (`su il`, `di il`). It reads
+a capitalized verb at the start of a sentence badly: "Sto mangiando" makes
+`Sto` a name, and "Io sto mangiando" does not.
+
+The heavy model is Stanza, with the models of the combined Italian UD
+treebanks. It splits `sul` into the words `su` and `il`, and both words have
+the characters of `sul`. Stanza reads the gender and the number of a noun from
+the noun itself, not from its article.
 
 `languages/italian/checks.py` has these checks:
 
@@ -940,11 +951,12 @@ mangiando" does not.
 | Repeat    | `Io io mangio.`          | The same check as for the other languages                 |
 | Agreement | `una piccolo gatto`      | An article (`det`) or an adjective (`amod`), before or after the noun, does not have the gender or the number of the noun |
 
-As in French, spaCy reads the gender of a noun from its article, so "il casa"
-passes, and "il gatti" passes because the model then drops the number of the
-noun. The check finds the error when another word shows the gender or the
-number ("la piccolo casa", "una macchina rosse"). An adjective after `essere`
-("la casa è grande") is not checked.
+As in French, the light model reads the gender of a noun from its article, so
+"il casa" passes, and "il gatti" passes because the model then drops the
+number of the noun. The check finds the error when another word shows the
+gender or the number ("la piccolo casa", "una macchina rosse"). The heavy model
+flags "il casa", "il gatti", and the article inside "della ragazzo". With
+either model, an adjective after `essere` ("la casa è grande") is not checked.
 
 The Italian glosses come from Wiktionary in the same way:
 
@@ -1118,7 +1130,7 @@ ignores. Then change `app` and the OIDC values in the copy to your own:
 ```bash
 cp web/example.fly.toml web/fly.toml           # first time only
 fly apps create my-deployment-example          # first time only; use your own name, and put it in fly.toml
-fly volumes create model_data -r ord -s 2 --config web/fly.toml   # first time only; the models take 1.1 GB
+fly volumes create model_data -r ord -s 2 --config web/fly.toml   # first time only; the models take 1.5 GB
 ```
 
 ## 2. Deploy
@@ -1138,8 +1150,9 @@ thread. A classify request that arrives early waits until they are ready.
 
 The first request with `heavy` for Croatian downloads the classla models from
 clarin.si to the volume. If that takes more than a few minutes, read "If the
-model download is slow" above. Later requests only load the models from the
-volume.
+model download is slow" above. The first request with `heavy` for Italian
+downloads the Stanza models from Hugging Face. Later requests only load the
+models from the volume.
 
 ## 3. Turn on the login
 
@@ -1190,7 +1203,7 @@ Set under `[env]` in `fly.toml`:
 - `STATIC_DIR`: the folder with the build of the Flutter app. Default:
   `app/build/web` next to `tlhelper/`. The image sets `/app/static`. See "The
   Flutter app".
-- `MODEL_URL`: a mirror for the model files. Default: clarin.si.
+- `MODEL_URL`: a mirror for the classla model files. Default: clarin.si.
 - `DOWNLOAD_MODELS`: set to `0` to never download the models. Default `1`. The
   app always tries the models on disk first, with no network access.
 - `OIDC_ISSUER`: the address of the OIDC provider. Set to the Pocket ID app in

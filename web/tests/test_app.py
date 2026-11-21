@@ -23,11 +23,13 @@ from tlhelper import translators
 from tlhelper.languages import ENGLISH, LANGUAGES
 from tlhelper.languages.base import STUDY
 from tlhelper.languages.croatian import accents, heavy, light
+from tlhelper.languages.italian import heavy as italian_heavy
 from tlhelper.translators import deepl
 
 CROATIAN, GERMAN = LANGUAGES["hr"], LANGUAGES["de"]
 
 REAL_MODELS = Path(__file__).parents[2] / ".data" / "classla_resources"
+STANZA_MODELS = REAL_MODELS.with_name("stanza_resources")
 
 
 def word(id, text, lemma, upos, xpos, feats, start):
@@ -284,7 +286,7 @@ def test_languages_endpoint(client, monkeypatch):
     assert croatian_info["variants"] == ["light", "heavy", "nonstandard"]
     assert german_info["variants"] == ["light", "heavy"]
     assert french_info["variants"] == ["light"]
-    assert italian_info["variants"] == ["light"]
+    assert italian_info["variants"] == ["light", "heavy"]
     assert body["english"]["variants"] == ["light"]
     assert (croatian_info["has_accents"], german_info["has_accents"]) == (True, False)
     assert german_info["dictionary_links"][0] == [
@@ -762,9 +764,14 @@ def test_download_off_gives_503_and_no_download(tmp_path, monkeypatch):
 @pytest.mark.skipif(
     find_spec("de_dep_news_trf") is None, reason="de_dep_news_trf is not installed"
 )
+@pytest.mark.skipif(
+    not (STANZA_MODELS / "it").exists(),
+    reason="the Stanza models are not in .data/ at the repository root",
+)
 def test_real_models(tmp_path, monkeypatch):
     monkeypatch.setattr(service, "DB_PATH", tmp_path / "lemmas.db")
     monkeypatch.setattr(heavy, "MODEL_DIR", REAL_MODELS)
+    monkeypatch.setattr(italian_heavy, "MODEL_DIR", STANZA_MODELS)
     STUDY.drop()
     client = TestClient(service.app)
 
@@ -830,7 +837,7 @@ def test_real_models(tmp_path, monkeypatch):
     words = french["sentences"][0]["words"]
     assert [w["text"] for w in words if w["problems"]] == ["une"]
     italian = classify(client, text="Ho una piccolo gatto.", language="it")
-    assert italian["type"] == "light"
+    assert italian["type"] == "heavy"
     words = italian["sentences"][0]["words"]
     assert [w["text"] for w in words if w["problems"]] == ["una"]
     classify(client, text="Pijem kavu.")
