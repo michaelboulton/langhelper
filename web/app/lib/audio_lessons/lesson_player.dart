@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../flashcards/browser.dart'
     if (dart.library.js_interop) '../flashcards/browser_web.dart';

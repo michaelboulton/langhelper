@@ -22,7 +22,7 @@ import uvicorn
 from playwright.sync_api import Error, expect, sync_playwright
 from scripts import lessons
 from tlhelper import app as service
-from tlhelper import explain
+from tlhelper import explain, speech
 from tlhelper.flashcards import decks, store
 
 # flutter build web --wasm --no-web-resources-cdn --base-href /static/
@@ -57,6 +57,41 @@ def deck_dir(tmp_path, monkeypatch):
     monkeypatch.setattr(decks, "DECK_DIRS", [folder])
     monkeypatch.setattr(store, "DB_PATH", tmp_path / "flashcards.db")
     return folder
+
+
+# A silent MPEG-1 layer III frame (128 kbit/s, 44.1 kHz, 417 bytes), a few
+# times: the browser plays it with no error.
+SILENT_MP3 = (b"\xff\xfb\x90\x00" + b"\x00" * 413) * 8
+
+
+class FakeSynthesizer:
+    name = "fake"
+
+    def __init__(self):
+        self.calls = []
+        self.mp3 = SILENT_MP3
+
+    def available(self):
+        return True
+
+    def model(self):
+        return "fake-voice"
+
+    def languages(self):
+        return ["hr", "en"]
+
+    def synthesize(self, text, language):
+        self.calls.append((text, language))
+        return self.mp3
+
+
+@pytest.fixture
+def voice(monkeypatch):
+    """A fake voice service, with the texts that it read in `calls`."""
+    fake = FakeSynthesizer()
+    monkeypatch.setitem(speech.SYNTHESIZERS, "fake", fake)
+    monkeypatch.setenv("TLHELPER_VOICE_BACKEND", "fake")
+    return fake
 
 
 class ScriptedBackend:
@@ -222,6 +257,18 @@ def _single_threaded(route):
         "_flutter.loader.load({config: {forceSingleThreadedSkwasm: true},",
     )
     route.fulfill(response=response, body=body)
+
+
+def _text_field(page, name=None):
+    # Only the semantics tree: a focused field adds Flutter's hidden
+    # <input class="transparentTextEditing">, also a textbox, outside it.
+    return page.locator("flt-semantics").get_by_role("textbox", name=name)
+
+
+@pytest.fixture
+def text_field():
+    """text_field(page, name=None): the text fields of the Flutter app."""
+    return _text_field
 
 
 def _type_into(field, text):

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:langhelper_app/api/models.dart';
@@ -401,8 +401,11 @@ void main() {
       expect(player.plays, 1);
       expect(find.text('k2-fsa/OmniVoice read this.'), findsOne);
 
-      // Again: the sound is there.
-      await tap(tester, button('Read it aloud'));
+      // The player bar of the Listen panel replaces the button, and plays
+      // the same sound again.
+      expect(button('Read it aloud'), findsNothing);
+      await tap(tester, find.byTooltip('Pause'));
+      await tap(tester, find.byTooltip('Play'));
       expect(server.spoken, hasLength(1));
       expect(player.plays, 2);
     });

@@ -49,10 +49,16 @@ def answer_as(user, rating):
     store.answer(user, card["id"], rating, "", None)
 
 
+def text_field(page):
+    """The text fields of the app, as the text_field fixture of
+    tests/conftest.py gives them."""
+    return page.locator("flt-semantics").get_by_role("textbox")
+
+
 def answer(page, type_into, text):
     """Send an answer, and wait for its result. The answer runs the light
     models, so the first one takes a moment."""
-    type_into(page.get_by_role("textbox"), text)
+    type_into(text_field(page), text)
     page.get_by_role("button", name="Check").click()
     page.get_by_role("button", name="Next card").wait_for(timeout=60_000)
 
@@ -135,7 +141,7 @@ def test_the_flow_of_a_card(
     expect(page.get_by_role("button", name="Next card")).to_have_count(0)
 
     # One wrong letter: Hard.
-    type_into(page.get_by_role("textbox"), "Pijem kafu.")
+    type_into(text_field(page), "Pijem kafu.")
     page.keyboard.press("Enter")
     page.get_by_role("button", name="Next card").wait_for(timeout=60_000)
     page.get_by_role("button", name="chip: kafu NOUN").wait_for()
@@ -162,6 +168,30 @@ def test_the_flow_of_a_card(
     note(page, "No more cards for now.").wait_for()
     expect(page.get_by_role("button", name="Next card")).to_have_count(0)
     assert page.url.endswith("/#/cards")
+
+
+@pytest.mark.parametrize("width", [390, 1280])
+def test_read_it_aloud_plays_again_after_the_end(
+    new_page, deck_dir, make_apkg, note, voice, screenshot, width
+):
+    # About 2 s: long enough to see the Pause button of a second play.
+    voice.mp3 = SILENT_MP3[:417] * 80
+    add_deck(deck_dir, make_apkg, COFFEE)
+    page = new_page(width=width)
+    open_tab(page)
+    deck_button(page).click()
+    page.get_by_role("button", name="I do not know").click()
+    page.get_by_role("button", name="Read it aloud").click(timeout=60_000)
+    note(page, "fake-voice read this.").wait_for()
+    # The player bar takes the place of the button.
+    expect(page.get_by_role("button", name="Read it aloud")).to_have_count(0)
+    play = page.get_by_role("button", name="Play", exact=True)
+    play.wait_for(timeout=10_000)
+    play.click()
+    page.get_by_role("button", name="Pause", exact=True).wait_for()
+    play.wait_for(timeout=10_000)
+    assert voice.calls == [("Pijem kavu.", "hr")]
+    screenshot(page, f"read-aloud-{width}")
 
 
 def test_no_questions_to_the_ai_with_no_key(page, deck_dir, make_apkg, backend):
@@ -210,7 +240,7 @@ def test_a_question_to_the_ai(
     ]
     for each in questions:
         expect(page.get_by_role("button", name=each)).to_be_visible()
-    type_into(page.get_by_role("textbox"), "why not kafu?")
+    type_into(text_field(page), "why not kafu?")
     why.click()
     note(page, "<b>kavu</b> is the\naccusative.").wait_for()
     note(page, "fake-model wrote this. It can be wrong.").wait_for()
@@ -225,7 +255,7 @@ def test_the_breakdown_has_only_the_questions_about_a_sentence(
     page, backend, type_into
 ):
     page.goto("/")
-    type_into(page.get_by_role("textbox").first, "Idemo na kavu.")
+    type_into(text_field(page).first, "Idemo na kavu.")
     page.get_by_role("button", name="chip: kavu NOUN").wait_for(timeout=60_000)
     expect(page.get_by_role("button", name="Explain the grammar")).to_be_visible()
     expect(page.get_by_role("button", name="Why is my answer wrong?")).to_have_count(0)
