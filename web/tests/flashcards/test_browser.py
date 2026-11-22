@@ -164,6 +164,30 @@ def test_the_flow_of_a_card(
     assert page.url.endswith("/#/cards")
 
 
+@pytest.mark.parametrize("width", [390, 1280])
+def test_read_it_aloud_plays_again_after_the_end(
+    new_page, deck_dir, make_apkg, note, voice, screenshot, width
+):
+    # About 2 s: long enough to see the Pause button of a second play.
+    voice.mp3 = SILENT_MP3[:417] * 80
+    add_deck(deck_dir, make_apkg, COFFEE)
+    page = new_page(width=width)
+    open_tab(page)
+    deck_button(page).click()
+    page.get_by_role("button", name="I do not know").click()
+    page.get_by_role("button", name="Read it aloud").click(timeout=60_000)
+    note(page, "fake-voice read this.").wait_for()
+    # The player bar takes the place of the button.
+    expect(page.get_by_role("button", name="Read it aloud")).to_have_count(0)
+    play = page.get_by_role("button", name="Play", exact=True)
+    play.wait_for(timeout=10_000)
+    play.click()
+    page.get_by_role("button", name="Pause", exact=True).wait_for()
+    play.wait_for(timeout=10_000)
+    assert voice.calls == [("Pijem kavu.", "hr")]
+    screenshot(page, f"read-aloud-{width}")
+
+
 def test_no_questions_to_the_ai_with_no_key(page, deck_dir, make_apkg, backend):
     backend.key = False
     add_deck(deck_dir, make_apkg, COFFEE)

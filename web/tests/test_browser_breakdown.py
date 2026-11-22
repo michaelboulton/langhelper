@@ -1,12 +1,12 @@
 """The Breakdown tab and the Listen panel of the Flutter app in a real
 browser, with the real light models, a fake translator and a fake voice
-service. The browser fixtures are in conftest.py."""
+service. The browser fixtures and the fake voice are in conftest.py."""
 
 import re
 
 import pytest
 from playwright.sync_api import expect
-from tlhelper import speech, translators
+from tlhelper import translators
 
 TITLE = "Croatian sentence breakdown"
 
@@ -22,43 +22,10 @@ class FakeTranslator:
         }[text]
 
 
-# A silent MPEG-1 layer III frame (128 kbit/s, 44.1 kHz, 417 bytes), a few
-# times: the browser plays it with no error.
-SILENT_MP3 = (b"\xff\xfb\x90\x00" + b"\x00" * 413) * 8
-
-
-class FakeSynthesizer:
-    name = "fake"
-
-    def __init__(self):
-        self.calls = []
-
-    def available(self):
-        return True
-
-    def model(self):
-        return "fake-voice"
-
-    def languages(self):
-        return ["hr", "en"]
-
-    def synthesize(self, text, language):
-        self.calls.append((text, language))
-        return SILENT_MP3
-
-
 @pytest.fixture(autouse=True)
 def translator(monkeypatch):
     monkeypatch.setitem(translators.TRANSLATORS, "fake", FakeTranslator())
     monkeypatch.setenv("TRANSLATOR", "fake")
-
-
-@pytest.fixture
-def voice(monkeypatch):
-    fake = FakeSynthesizer()
-    monkeypatch.setitem(speech.SYNTHESIZERS, "fake", fake)
-    monkeypatch.setenv("TLHELPER_VOICE_BACKEND", "fake")
-    return fake
 
 
 @pytest.fixture

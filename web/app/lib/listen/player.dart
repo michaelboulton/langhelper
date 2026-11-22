@@ -56,6 +56,9 @@ class JustAudioPlayer implements Player {
   Future<void> _play() async {
     try {
       if (_player.processingState == ProcessingState.completed) {
+        // At the end, `playing` stays true, so play() would do nothing, and
+        // on the web a seek does not restart the paused <audio> element.
+        await _player.pause();
         await _player.seek(Duration.zero);
       }
       // play() completes when the sound stops.
