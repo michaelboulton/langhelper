@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).parents[1]))
 import pytest
 from conftest import (
     APP_BUILD,
+    _text_field,
     _type_into,
     new_context,
     start_server,
@@ -33,10 +34,10 @@ def breakdown(page, text, translate):
     page.goto("/")
     page.get_by_role("heading", name=re.compile("sentence breakdown$")).wait_for()
     # The first request waits for the load of the light models.
-    _type_into(page.get_by_role("textbox", name="Time limit"), "60")
+    _type_into(_text_field(page, "Time limit"), "60")
     if translate:
         page.get_by_role("checkbox", name="Translate to English").click()
-    _type_into(page.get_by_role("textbox").first, text)
+    _type_into(_text_field(page).first, text)
     chip = page.get_by_role("button", name=re.compile("^chip: ")).first
     chip.wait_for(timeout=60_000)
     if translate:

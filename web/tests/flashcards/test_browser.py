@@ -49,10 +49,16 @@ def answer_as(user, rating):
     store.answer(user, card["id"], rating, "", None)
 
 
+def text_field(page):
+    """The text fields of the app, as the text_field fixture of
+    tests/conftest.py gives them."""
+    return page.locator("flt-semantics").get_by_role("textbox")
+
+
 def answer(page, type_into, text):
     """Send an answer, and wait for its result. The answer runs the light
     models, so the first one takes a moment."""
-    type_into(page.get_by_role("textbox"), text)
+    type_into(text_field(page), text)
     page.get_by_role("button", name="Check").click()
     page.get_by_role("button", name="Next card").wait_for(timeout=60_000)
 
@@ -135,7 +141,7 @@ def test_the_flow_of_a_card(
     expect(page.get_by_role("button", name="Next card")).to_have_count(0)
 
     # One wrong letter: Hard.
-    type_into(page.get_by_role("textbox"), "Pijem kafu.")
+    type_into(text_field(page), "Pijem kafu.")
     page.keyboard.press("Enter")
     page.get_by_role("button", name="Next card").wait_for(timeout=60_000)
     page.get_by_role("button", name="chip: kafu NOUN").wait_for()
@@ -234,7 +240,7 @@ def test_a_question_to_the_ai(
     ]
     for each in questions:
         expect(page.get_by_role("button", name=each)).to_be_visible()
-    type_into(page.get_by_role("textbox"), "why not kafu?")
+    type_into(text_field(page), "why not kafu?")
     why.click()
     note(page, "<b>kavu</b> is the\naccusative.").wait_for()
     note(page, "fake-model wrote this. It can be wrong.").wait_for()
@@ -249,7 +255,7 @@ def test_the_breakdown_has_only_the_questions_about_a_sentence(
     page, backend, type_into
 ):
     page.goto("/")
-    type_into(page.get_by_role("textbox").first, "Idemo na kavu.")
+    type_into(text_field(page).first, "Idemo na kavu.")
     page.get_by_role("button", name="chip: kavu NOUN").wait_for(timeout=60_000)
     expect(page.get_by_role("button", name="Explain the grammar")).to_be_visible()
     expect(page.get_by_role("button", name="Why is my answer wrong?")).to_have_count(0)

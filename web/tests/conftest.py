@@ -259,6 +259,18 @@ def _single_threaded(route):
     route.fulfill(response=response, body=body)
 
 
+def _text_field(page, name=None):
+    # Only the semantics tree: a focused field adds Flutter's hidden
+    # <input class="transparentTextEditing">, also a textbox, outside it.
+    return page.locator("flt-semantics").get_by_role("textbox", name=name)
+
+
+@pytest.fixture
+def text_field():
+    """text_field(page, name=None): the text fields of the Flutter app."""
+    return _text_field
+
+
 def _type_into(field, text):
     field.click()
     expect(field).to_be_focused()

@@ -29,7 +29,7 @@ def translator(monkeypatch):
 
 
 @pytest.fixture
-def breakdown(type_into):
+def breakdown(type_into, text_field):
     """breakdown(page, text, last, english=False, translate=False): enter a
     text and wait for the chip "chip: <last>" of its breakdown."""
 
@@ -37,12 +37,12 @@ def breakdown(type_into):
         page.goto("/")
         page.get_by_role("heading", name=TITLE).wait_for()
         # The first request waits for the load of the light models.
-        type_into(page.get_by_role("textbox", name="Time limit"), "60")
+        type_into(text_field(page, "Time limit"), "60")
         if english:
             page.get_by_role("radio", name=re.compile("^I enter English")).click()
         if translate:
             page.get_by_role("checkbox", name="Translate to English").click()
-        type_into(page.get_by_role("textbox").first, text)
+        type_into(text_field(page).first, text)
         page.get_by_role("button", name=f"chip: {last}").wait_for(timeout=60_000)
 
     return enter
