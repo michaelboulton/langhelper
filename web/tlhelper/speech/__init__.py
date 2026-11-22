@@ -33,6 +33,17 @@ ElevenLabs (elevenlabs.py), a paid service
     4. TLHELPER_VOICE_MODEL, if set, names the model. Default:
        eleven_multilingual_v2.
 
+Amazon Polly (polly.py), a paid service
+    botocore sends one SynthesizeSpeech call. The text of the user goes to
+    AWS. Polly has no Croatian voice, so the page has buttons for German,
+    French, Italian and English only.
+    1. Set TLHELPER_VOICE_BACKEND to "polly".
+    2. Set AWS_REGION. With no region or no credentials, the page has no
+       buttons.
+    3. Give botocore the credentials: a role, or AWS_ACCESS_KEY_ID and
+       AWS_SECRET_ACCESS_KEY as secrets.
+    4. TLHELPER_VOICE_MODEL, if set, names the engine. Default: neural.
+
 To add a synthesizer
     1. Write a module here with a class that fits base.Synthesizer.
     2. Raise base.SpeechError for every failure, with a message that the
@@ -48,11 +59,12 @@ import os
 from .base import SpeechError, Synthesizer
 from .elevenlabs import ElevenLabsSpeech
 from .openai import OpenAISpeech
+from .polly import PollySpeech
 
 __all__ = ["SYNTHESIZERS", "SpeechError", "Synthesizer", "current"]
 
 SYNTHESIZERS: dict[str, Synthesizer] = {
-    each.name: each for each in (OpenAISpeech(), ElevenLabsSpeech())
+    each.name: each for each in (OpenAISpeech(), ElevenLabsSpeech(), PollySpeech())
 }
 DEFAULT = "openai"
 

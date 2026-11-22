@@ -5,6 +5,7 @@ description = "Sentence breakdown (part of speech, lemma, morphology) and gramma
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "authlib",
+    "botocore",
     "classla",
     "click",
     "de-core-news-md",
