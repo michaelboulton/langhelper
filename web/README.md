@@ -1860,7 +1860,9 @@ How the card works:
 - "Read it aloud" uses the voice service of the server when
   `/api/v1/speech` has the language. Otherwise it uses `flutter_tts`, which
   uses the voices of the browser, for a language with a `speech` tag. If neither
-  can read the language, the button does not show.
+  can read the language, the button does not show. After the sound of the
+  voice service loads, the player bar of the Listen panel takes the place of
+  the button, so its play button reads the text again.
 
 The widget tests are in `app/test/flashcards/`. They check the diff against
 the golden image `app/test/flashcards/goldens/diff.png`. After a change of

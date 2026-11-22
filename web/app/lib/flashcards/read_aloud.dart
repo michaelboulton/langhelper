@@ -6,7 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/client.dart';
 import '../api/models.dart';
 import '../i18n/i18n.dart';
-import '../listen/listen_panel.dart' show listenTimeout, speechInfoProvider;
+import '../listen/listen_panel.dart'
+    show PlayerBar, listenTimeout, speechInfoProvider;
 import '../listen/player.dart';
 import '../providers.dart';
 import 'state.dart';
@@ -28,8 +29,10 @@ class ReadAloud extends ConsumerStatefulWidget {
 }
 
 class _ReadAloudState extends ConsumerState<ReadAloud> {
-  /// The sound of the voice service, after the first click.
+  /// The sound of the voice service, after the first click. Its player bar
+  /// then takes the place of the button.
   Player? _player;
+  Duration? _duration;
   bool _working = false;
 
   @override
@@ -43,11 +46,6 @@ class _ReadAloudState extends ConsumerState<ReadAloud> {
   }
 
   Future<void> _fromServer(SpeechInfoResponse voice) async {
-    // The same text again: the sound is there.
-    if (_player case final player?) {
-      player.play();
-      return;
-    }
     setState(() => _working = true);
     _note(const CardsNote('listen-working'));
     try {
@@ -57,12 +55,20 @@ class _ReadAloudState extends ConsumerState<ReadAloud> {
           .audio(widget.text, widget.info.code, timeout: listenTimeout);
       if (!mounted) return;
       final player = ref.read(newPlayerProvider)();
-      await player.load(audio.bytes);
+      final Duration? duration;
+      try {
+        duration = await player.load(audio.bytes);
+      } on Object {
+        unawaited(player.dispose());
+        rethrow;
+      }
       if (!mounted) {
         unawaited(player.dispose());
         return;
       }
       _player = player;
+      _duration = duration;
+      // After a click, so the browser allows it.
       player.play();
       _note(
         CardsNote(
@@ -120,6 +126,9 @@ class _ReadAloudState extends ConsumerState<ReadAloud> {
         voice.languages.contains(widget.info.code);
     if (!server && (widget.info.speech.isEmpty || !browser.available)) {
       return const SizedBox.shrink();
+    }
+    if (_player case final player?) {
+      return PlayerBar(player: player, duration: _duration);
     }
     return OutlinedButton(
       onPressed: _working
