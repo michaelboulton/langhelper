@@ -1385,7 +1385,7 @@ Set as a secret:
 ## Running locally
 
 With [uv](https://docs.astral.sh/uv/), from this folder (`web/`). First build
-the page. Install Flutter 3.47.5, the version of `FLUTTER_VERSION` in
+the page. Install Flutter 3.50.1, the version of `FLUTTER_VERSION` in
 `Dockerfile`, and build the app in `app/`. The build takes about a minute, and
 goes to `app/build/web`:
 

@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:langhelper_app/i18n/i18n.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';

@@ -5,8 +5,8 @@
 # The SHA-256 is that of the archive in
 # https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json
 FROM debian:trixie-slim AS app
-ARG FLUTTER_VERSION=3.47.5
-ARG FLUTTER_SHA256=2132e990f236f8d22e7c6314b29a191a95b10d7cbcfec9b4e2e303d996652cbb
+ARG FLUTTER_VERSION=3.50.1
+ARG FLUTTER_SHA256=4ad17fc8462fbcef2ba19ff4a78c0a16b7147fde1add8578e267ea62cdb92678
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl git unzip xz-utils \
     && rm -rf /var/lib/apt/lists/*

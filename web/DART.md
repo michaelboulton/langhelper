@@ -13,7 +13,7 @@ tokens stay in `flutter_secure_storage`. An audio lesson plays with the screen
 off through `audio_service`, with lock-screen controls. The UI code does not
 change.
 
-Local toolchain today: Flutter 3.47.5, Dart 3.13.4. `flutter doctor` lacks
+Local toolchain today: Flutter 3.50.1, Dart 3.14.0. `flutter doctor` lacks
 the Android SDK, Chrome and the Linux desktop libraries; none of them is
 needed for `flutter build web`. `CHROME_EXECUTABLE` can point at Playwright's
 Chromium for `flutter run -d chrome`.
