@@ -23,6 +23,16 @@ The speech API of OpenAI (openai.py), the default synthesizer
     4. TLHELPER_VOICE_TIMEOUT (default 180) is the most seconds for one
        request. A CPU reads a long text slowly.
 
+ElevenLabs (elevenlabs.py), a paid service
+    POST https://api.elevenlabs.io/v1/text-to-speech/{voice_id} returns the
+    sound. The text of the user goes to ElevenLabs.
+    1. Set TLHELPER_VOICE_BACKEND to "elevenlabs".
+    2. Set TLHELPER_VOICE_API_KEY to the key, as a secret.
+    3. Set TLHELPER_VOICE_ID to the id of a voice of the account. With no
+       key or no id, the page has no buttons.
+    4. TLHELPER_VOICE_MODEL, if set, names the model. Default:
+       eleven_multilingual_v2.
+
 To add a synthesizer
     1. Write a module here with a class that fits base.Synthesizer.
     2. Raise base.SpeechError for every failure, with a message that the
@@ -36,11 +46,14 @@ To add a synthesizer
 import os
 
 from .base import SpeechError, Synthesizer
+from .elevenlabs import ElevenLabsSpeech
 from .openai import OpenAISpeech
 
 __all__ = ["SYNTHESIZERS", "SpeechError", "Synthesizer", "current"]
 
-SYNTHESIZERS: dict[str, Synthesizer] = {each.name: each for each in (OpenAISpeech(),)}
+SYNTHESIZERS: dict[str, Synthesizer] = {
+    each.name: each for each in (OpenAISpeech(), ElevenLabsSpeech())
+}
 DEFAULT = "openai"
 
 
