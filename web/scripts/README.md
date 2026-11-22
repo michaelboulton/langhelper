@@ -75,8 +75,9 @@ A lesson is a markdown file or the address of a web page. Its key is the stem
 of the path (`03` for `lessons/03.md` and for `https://site/2014/03.html`), so
 a lesson that is in the course already is skipped: a run can repeat the whole
 list, or give only the new lesson. Its number is its position in the course.
-Its title is the first heading of the text, else the title of the page, else
-the key; `--title KEY=TITLE` sets it.
+Its title is the first heading of the text without the marks of bold and
+italic, else the title of the page, else the key; `--title KEY=TITLE` sets
+it.
 
 The app sees the new files at its next start and imports them again. A card
 keeps its guid between two runs (it comes from the key of the lesson and the
