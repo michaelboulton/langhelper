@@ -160,10 +160,34 @@ void main() {
     await tester.pump(debounceTime);
     await tester.pumpAndSettle();
     expect(server.classified, hasLength(3));
+    expect(server.players.single.disposed, isTrue);
     expect(button('Croatian'), findsOneWidget);
     expect(find.text('k2-fsa/OmniVoice read this.'), findsNothing);
     expect(find.byTooltip('Pause'), findsNothing);
     expect(find.byTooltip('Play'), findsNothing);
+  });
+
+  testWidgets('each click plays its own sound in a new player', (tester) async {
+    final server = FakeServer(
+      speech: fixture('speech.json'),
+      speechAudio: (request) async => http.Response.bytes(
+        utf8.encode(request.url.queryParameters['language']!),
+        200,
+      ),
+    );
+    await breakDown(tester, server);
+    await tapListen(tester, 'Croatian');
+    await tester.pumpAndSettle();
+    await tapListen(tester, 'English');
+    await tester.pumpAndSettle();
+    expect(server.spoken.map((each) => each['language']), ['hr', 'en']);
+    final [first, second] = server.players;
+    expect(first.loaded, [utf8.encode('hr')]);
+    expect(first.disposed, isTrue);
+    expect(second.loaded, [utf8.encode('en')]);
+    expect(second.plays, 1);
+    expect(second.disposed, isFalse);
+    expect(find.byTooltip('Pause'), findsOneWidget);
   });
 
   testWidgets('no sound after the time limit', (tester) async {

@@ -65,7 +65,8 @@ class _ListenPanelState extends ConsumerState<ListenPanel> {
     // The same texts again (an automatic send) keep the sound on the panel.
     if (listEquals(_key(old.targets), _key(widget.targets))) return;
     _texts++;
-    _player?.pause();
+    unawaited(_player?.dispose());
+    _player = null;
     _loaded = false;
     _duration = null;
     _working = false;
@@ -92,9 +93,22 @@ class _ListenPanelState extends ConsumerState<ListenPanel> {
           .speech
           .audio(target.text, target.info.code, timeout: listenTimeout);
       if (!mounted || texts != _texts) return;
-      final player = _player ??= ref.read(newPlayerProvider)();
-      final duration = await player.load(audio.bytes);
-      if (!mounted || texts != _texts) return;
+      // A new player for each sound: the web player keeps playing its first
+      // source after a second load.
+      final player = ref.read(newPlayerProvider)();
+      final Duration? duration;
+      try {
+        duration = await player.load(audio.bytes);
+      } on Object {
+        unawaited(player.dispose());
+        rethrow;
+      }
+      if (!mounted || texts != _texts) {
+        unawaited(player.dispose());
+        return;
+      }
+      unawaited(_player?.dispose());
+      _player = player;
       // After a click, so the browser allows it.
       player.play();
       _loaded = true;
