@@ -1,14 +1,17 @@
 """The "Listen" routes with a fake synthesizer, and the OpenAI-shaped
 synthesizer with a fake requests."""
 
+import io
 from types import SimpleNamespace
 
 import pytest
+from botocore.exceptions import ClientError, NoCredentialsError, ReadTimeoutError
 from fastapi.testclient import TestClient
 from scripts import check_voices
 from tlhelper import app as service
 from tlhelper import speech
 from tlhelper.speech import openai as backend
+from tlhelper.speech import polly
 
 MP3 = b"\xff\xfb\x90\x00" + b"\x00" * 100
 AUDIO = "/api/v1/speech/audio"
@@ -408,6 +411,99 @@ def test_elevenlabs_http_error(eleven, monkeypatch):
     with pytest.raises(speech.SpeechError, match="HTTP 401") as failed:
         eleven.synthesize("Bok", "hr")
     assert failed.value.code == "voice-http"
+
+
+# Amazon Polly
+
+
+class FakePolly:
+    def __init__(self):
+        self.calls = []
+        self.error = None
+
+    def synthesize_speech(self, **kwargs):
+        self.calls.append(kwargs)
+        if self.error:
+            raise self.error
+        return {"AudioStream": io.BytesIO(MP3)}
+
+
+@pytest.fixture
+def aws(monkeypatch):
+    """The client of Polly, as a fake: no network and no key."""
+    fake = FakePolly()
+    monkeypatch.setenv("TLHELPER_VOICE_BACKEND", "polly")
+    monkeypatch.setenv("AWS_REGION", "eu-central-1")
+    monkeypatch.delenv("AWS_DEFAULT_REGION", raising=False)
+    monkeypatch.delenv("TLHELPER_VOICE_MODEL", raising=False)
+    monkeypatch.setattr(
+        polly, "session", lambda: SimpleNamespace(get_credentials=lambda: object())
+    )
+    monkeypatch.setattr(polly, "client", lambda: fake)
+    return fake
+
+
+def test_polly_synthesize(aws, monkeypatch):
+    assert speech.current().synthesize("Guten Tag.", "de") == MP3
+    assert aws.calls == [
+        {
+            "Text": "Guten Tag.",
+            "OutputFormat": "mp3",
+            "VoiceId": "Vicki",
+            "Engine": "neural",
+        }
+    ]
+    # TLHELPER_VOICE_MODEL names the engine, and a named voice replaces the
+    # voice of the language.
+    monkeypatch.setenv("TLHELPER_VOICE_MODEL", "generative")
+    speech.current().synthesize("Buongiorno.", "it", voice="Adriano")
+    assert aws.calls[-1]["VoiceId"] == "Adriano"
+    assert aws.calls[-1]["Engine"] == "generative"
+
+
+def test_polly_has_no_croatian(client, aws):
+    assert client.get("/api/v1/speech").json() == {
+        "available": True,
+        "model": "polly-neural",
+        "languages": ["de", "fr", "it", "en"],
+    }
+    response = client.get(AUDIO, params={"text": "Dobar dan.", "language": "hr"})
+    assert response.status_code == 422
+    assert response.json()["code"] == "voice-language"
+    assert aws.calls == []
+
+
+def test_polly_without_a_region_or_credentials(aws, monkeypatch):
+    monkeypatch.setattr(
+        polly, "session", lambda: SimpleNamespace(get_credentials=lambda: None)
+    )
+    assert not speech.current().available()
+    monkeypatch.delenv("AWS_REGION")
+    assert not speech.current().available()
+    with pytest.raises(speech.SpeechError, match="AWS_REGION") as failed:
+        speech.current().synthesize("Hallo", "de")
+    assert failed.value.code == "voice-no-service"
+    assert aws.calls == []
+
+
+@pytest.mark.parametrize(
+    "error, code",
+    [
+        (
+            ClientError(
+                {"ResponseMetadata": {"HTTPStatusCode": 403}}, "SynthesizeSpeech"
+            ),
+            "voice-http",
+        ),
+        (ReadTimeoutError(endpoint_url="https://polly"), "voice-timeout"),
+        (NoCredentialsError(), "voice-no-service"),
+    ],
+)
+def test_polly_errors(aws, error, code):
+    aws.error = error
+    with pytest.raises(speech.SpeechError) as failed:
+        speech.current().synthesize("Hallo", "de")
+    assert failed.value.code == code
 
 
 def test_the_environment_selects_the_synthesizer(monkeypatch):

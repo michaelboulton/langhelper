@@ -704,8 +704,9 @@ The voice service is [`tts/`](../tts/) in this repo: a small
 server around omnivoice.cpp, the ggml port of OmniVoice, a text-to-speech
 model for 600 languages that runs on the CPU. `docker-compose.yml` runs it as the `voice` service next to the
 page. The Fly app has no voice service by default, so the page there has no
-such row, as it has no AI buttons without a key. A paid service, ElevenLabs,
-gives it one: see "Set up ElevenLabs".
+such row, as it has no AI buttons without a key. A paid service, ElevenLabs
+or Amazon Polly, gives it one: see "Set up ElevenLabs" and "Set up Amazon
+Polly".
 
 The text goes to the voice service, so the page makes a request only after a
 click. The server keeps no sound. The mp3 is a `GET` with the text and the
@@ -749,6 +750,109 @@ The app has no limit on the clicks of one user.
    the language code.
 
 `TLHELPER_VOICE_URL` has no effect with this backend.
+
+### Set up Amazon Polly
+
+Amazon Polly is a paid service of AWS. The text of the user goes to AWS, and
+each click on a new text costs characters of the account. Polly has no
+Croatian voice, so the page has "Listen" buttons only for German, French,
+Italian and English. The voices are Vicki, Lea, Bianca and Joanna.
+
+1. Set `TLHELPER_VOICE_BACKEND` to `polly`.
+2. Set `AWS_REGION` to a region that has the engine, such as `eu-central-1`.
+3. Give the app its AWS credentials. See "Limit a leaked voice credential"
+   for the role and the policy. With no region or no credentials, the page
+   has no buttons.
+4. `TLHELPER_VOICE_MODEL` names the engine: `standard`, `neural` (the
+   default), `long-form` or `generative`. The four voices have the `neural`
+   and the `generative` engine.
+
+`TLHELPER_VOICE_URL` and `TLHELPER_VOICE_API_KEY` have no effect with this
+backend. The app uses `botocore`, the part of the AWS SDK that finds the
+credentials and signs the request.
+
+### Limit a leaked voice credential
+
+A credential of a paid voice service is in the environment of the app. Give
+it only the permission to read a text aloud, so that a person who finds it
+can do nothing else.
+
+For AWS, make a principal for this app only, with no console login, and
+attach only this policy. Use the region of `AWS_REGION`:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "polly:SynthesizeSpeech",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": { "aws:RequestedRegion": "eu-central-1" }
+      }
+    }
+  ]
+}
+```
+
+Polly has no condition key for the engine or the voice, and IAM has no limit
+on the cost. So a leaked credential can still call the `generative` engine,
+which costs the most. Make an AWS Budgets alert for Polly, to learn of this
+early.
+
+On Fly, use a role, not an access key. A role gives credentials that stop
+after a short time, so the app holds no long-lived key:
+
+1. In IAM, add an OpenID Connect provider with the URL
+   `https://oidc.fly.io/<org-slug>` and the audience `sts.amazonaws.com`.
+2. Make a role with the policy above. Its trust policy lets only the
+   Machines of this app take the role:
+
+   ```json
+   {
+     "Version": "2012-10-17",
+     "Statement": [
+       {
+         "Effect": "Allow",
+         "Principal": {
+           "Federated": "arn:aws:iam::<account>:oidc-provider/oidc.fly.io/<org-slug>"
+         },
+         "Action": "sts:AssumeRoleWithWebIdentity",
+         "Condition": {
+           "StringEquals": {
+             "oidc.fly.io/<org-slug>:aud": "sts.amazonaws.com"
+           },
+           "StringLike": {
+             "oidc.fly.io/<org-slug>:sub": "<org-slug>:<app>:*"
+           }
+         }
+       }
+     ]
+   }
+   ```
+
+3. Set `AWS_ROLE_ARN` to the ARN of the role, under `[env]` in `fly.toml`.
+   Fly then gives each Machine a token, and `botocore` exchanges it for the
+   credentials.
+
+Where no role is possible (podman, a local run), make an IAM user with the
+policy above and one access key:
+
+- Give the key as `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`. With
+  podman, put both in a credentials file, make the file a podman secret, and
+  set `AWS_SHARED_CREDENTIALS_FILE` to its path under `/run/secrets/`.
+- If the server has a fixed address, add the condition
+  `"IpAddress": { "aws:SourceIp": "<address>/32" }` to the policy. The key
+  then works only from that server.
+- Replace the key at regular intervals, and delete the old one.
+
+For ElevenLabs, make an API key for this app only, with these restrictions:
+
+- Only the permission for text to speech (`text_to_speech` in the API).
+- A credit quota (`character_limit` in the API): the most characters for
+  each month. Requests fail after that number.
+- An IP allowlist, if the server has a fixed address.
 
 ### Speech API
 
@@ -1248,15 +1352,23 @@ Set under `[env]` in `fly.toml`:
   buttons. Default: none, and then the page has no such buttons. The compose
   file sets it. See "Set up the voice service".
 - `TLHELPER_VOICE_MODEL`: the model of the voice service. Default: the first
-  one that the service lists, or `eleven_multilingual_v2` for ElevenLabs.
+  one that the service lists, or `eleven_multilingual_v2` for ElevenLabs. For
+  Amazon Polly, it is the engine, default `neural`.
 - `TLHELPER_VOICE_ID`: the id of the ElevenLabs voice. Default: none. The
   `elevenlabs` backend needs it.
 - `TLHELPER_VOICE_TIMEOUT`: the most seconds for one request to the voice
   service. Default `180`.
 - `TLHELPER_VOICE_BACKEND`: the name of the speech backend: `openai` (the
-  default) or `elevenlabs`.
+  default), `elevenlabs` or `polly`.
+- `AWS_REGION`: the AWS region for the `polly` backend. Default: none, and
+  then `AWS_DEFAULT_REGION`. The backend needs one of them.
+- `AWS_ROLE_ARN`: the role that the `polly` backend takes on Fly. Default:
+  none. See "Limit a leaked voice credential".
 
 Set as a secret:
+
+- `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`: the access key for the
+  `polly` backend, where the app has no role. Default: none.
 
 - `TLHELPER_AI_API_KEY`: the key for the AI service. Default: none, and then
   the page has no "explain with AI" buttons.

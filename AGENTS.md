@@ -95,7 +95,7 @@ Three packages have the same shape: an interface in `base.py`, an implementation
 | ------- | --------- | ----------- |
 | `tlhelper/translators/` | `Translator` (DeepL) | `TRANSLATOR` |
 | `tlhelper/explain/` | `Backend` (OpenAI SDK, `claude -p`) | `TLHELPER_AI_BACKEND` |
-| `tlhelper/speech/` | `Synthesizer` (OpenAI speech API, ElevenLabs) | `TLHELPER_VOICE_BACKEND` |
+| `tlhelper/speech/` | `Synthesizer` (OpenAI speech API, ElevenLabs, Amazon Polly) | `TLHELPER_VOICE_BACKEND` |
 
 The page hides the AI buttons when no AI key is set, and it hides the Listen buttons when `TLHELPER_VOICE_URL` is not set. The explain prompts are templates in `explain/questions.py`. The page sends only the id of a question and the text of the user, and the server fills in the rest from the review or the card.
 
