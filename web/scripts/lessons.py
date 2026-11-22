@@ -207,6 +207,7 @@ def load_course(path: Path) -> Course:
 def save_course(path: Path, course: Course) -> None:
     """The file is complete or not there: a run that dies keeps the file."""
     partial = path.with_suffix(".json.tmp")
+    path.parent.mkdir(parents=True, exist_ok=True)
     partial.write_text(course.model_dump_json(indent=2) + "\n", encoding="utf-8")
     partial.replace(path)
 
@@ -236,7 +237,8 @@ def clean_name(text: str) -> str:
 
 def heading_of(markdown: str) -> str:
     match = HEADING.search(markdown)
-    return one_line(match.group(1)) if match else ""
+    # The marks of bold and italic, such as markdownify writes for <em>.
+    return one_line(re.sub(r"[*_]+", "", match.group(1))) if match else ""
 
 
 def cut(text: str, limit: int = MAX_LESSON_CHARS) -> tuple[str, bool]:

@@ -405,6 +405,21 @@ def test_a_web_page_becomes_markdown(monkeypatch):
     assert lessons.read_lesson("https://site.test/2014/03.html")[0] == "03"
 
 
+def test_the_first_run_makes_the_folder_of_the_course(course, scripted, fake_lemmas):
+    scripted(ANSWER_1)
+    nested = course.parent / "new" / "course"
+    first_run(nested, str(course.parent / "01.md"))
+    assert nested.with_suffix(".apkg").exists()
+
+
+def test_a_title_has_no_emphasis_marks():
+    assert (
+        lessons.heading_of("# Lesson One / *Lezione uno*\n")
+        == "Lesson One / Lezione uno"
+    )
+    assert lessons.heading_of("## **Bold** and _italic_\n") == "Bold and italic"
+
+
 def test_a_title_cannot_hold_a_deck_separator(course, scripted, fake_lemmas):
     (course.parent / "01.md").write_text("# A::B\n\ntext\n", encoding="utf-8")
     scripted(ANSWER_1)
