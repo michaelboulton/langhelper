@@ -29,6 +29,11 @@ if [ -z "${TLHELPER_AI_API_KEY:-}" ] && [ -r "$TLHELPER_AI_API_KEY_FILE" ]; then
     TLHELPER_AI_API_KEY=$(cat "$TLHELPER_AI_API_KEY_FILE")
     export TLHELPER_AI_API_KEY
 fi
+: "${TLHELPER_VOICE_API_KEY_FILE:=/run/secrets/tlhelper_voice_api_key}"
+if [ -z "${TLHELPER_VOICE_API_KEY:-}" ] && [ -r "$TLHELPER_VOICE_API_KEY_FILE" ]; then
+    TLHELPER_VOICE_API_KEY=$(cat "$TLHELPER_VOICE_API_KEY_FILE")
+    export TLHELPER_VOICE_API_KEY
+fi
 
 cd /app
 # --no-access-log: tlhelper/app.py writes its own access line, which has the

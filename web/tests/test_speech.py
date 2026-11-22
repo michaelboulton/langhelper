@@ -345,6 +345,71 @@ def test_an_empty_sound(openai, monkeypatch):
         openai.synthesize("Bok", "hr")
 
 
+# ElevenLabs
+
+
+@pytest.fixture
+def eleven(monkeypatch):
+    monkeypatch.setenv("TLHELPER_VOICE_BACKEND", "elevenlabs")
+    monkeypatch.setenv("TLHELPER_VOICE_API_KEY", "secret")
+    monkeypatch.setenv("TLHELPER_VOICE_ID", "voice1")
+    monkeypatch.delenv("TLHELPER_VOICE_MODEL", raising=False)
+    return speech.current()
+
+
+def test_elevenlabs_synthesize(eleven, monkeypatch):
+    calls = fake_service(monkeypatch)
+    monkeypatch.setenv("TLHELPER_VOICE_TIMEOUT", "7")
+    assert eleven.synthesize("Dobar dan.", "hr") == MP3
+    assert calls == [
+        (
+            "post",
+            "https://api.elevenlabs.io/v1/text-to-speech/voice1",
+            {
+                "headers": {"xi-api-key": "secret"},
+                "json": {"text": "Dobar dan.", "model_id": "eleven_multilingual_v2"},
+                "timeout": 7.0,
+            },
+        )
+    ]
+    # Another model takes the language, and a named voice replaces the id.
+    monkeypatch.setenv("TLHELPER_VOICE_MODEL", "eleven_flash_v2_5")
+    eleven.synthesize("Buongiorno.", "it", voice="a/b")
+    assert calls[-1][1].endswith("/text-to-speech/a%2Fb")
+    assert calls[-1][2]["json"] == {
+        "text": "Buongiorno.",
+        "model_id": "eleven_flash_v2_5",
+        "language_code": "it",
+    }
+
+
+def test_elevenlabs_info(client, eleven):
+    assert client.get("/api/v1/speech").json() == {
+        "available": True,
+        "model": "eleven_multilingual_v2",
+        "languages": ["hr", "de", "fr", "it", "en"],
+    }
+
+
+@pytest.mark.parametrize("missing", ["TLHELPER_VOICE_API_KEY", "TLHELPER_VOICE_ID"])
+def test_elevenlabs_without_the_key_or_the_voice(eleven, monkeypatch, missing):
+    monkeypatch.delenv(missing)
+    monkeypatch.setattr(
+        backend.requests, "post", lambda *a, **kw: pytest.fail("called the service")
+    )
+    assert not eleven.available()
+    with pytest.raises(speech.SpeechError, match=missing) as failed:
+        eleven.synthesize("Bok", "hr")
+    assert failed.value.code == "voice-no-service"
+
+
+def test_elevenlabs_http_error(eleven, monkeypatch):
+    fake_service(monkeypatch, status=401)
+    with pytest.raises(speech.SpeechError, match="HTTP 401") as failed:
+        eleven.synthesize("Bok", "hr")
+    assert failed.value.code == "voice-http"
+
+
 def test_the_environment_selects_the_synthesizer(monkeypatch):
     monkeypatch.delenv("TLHELPER_VOICE_BACKEND", raising=False)
     assert speech.current().name == "openai"

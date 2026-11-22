@@ -11,7 +11,7 @@ import time
 
 import requests
 
-from .base import MODELS_TIMEOUT, SpeechError, timeout
+from .base import MODELS_TIMEOUT, SpeechError, post
 
 # How long the list of models stays, in seconds. The page asks for it on each
 # load, and the omnivoice service has a fixed list.
@@ -93,29 +93,4 @@ class OpenAISpeech:
             body["model"] = self.model()
         if voice:
             body["voice"] = voice
-        try:
-            response = requests.post(
-                f"{url()}/v1/audio/speech",
-                headers=headers(),
-                json=body,
-                timeout=timeout(),
-            )
-        except requests.Timeout as exc:
-            raise SpeechError(
-                "the voice service did not answer in time", "voice-timeout"
-            ) from exc
-        except requests.RequestException as exc:
-            raise SpeechError(
-                f"the voice service is not reachable: {exc!r}", "voice-no-service"
-            ) from exc
-        if response.status_code != 200:
-            raise SpeechError(
-                f"the voice service returned HTTP {response.status_code}",
-                "voice-http",
-                status=response.status_code,
-            )
-        if not response.content:
-            raise SpeechError(
-                "the voice service gave no sound", "voice-http", status=200
-            )
-        return response.content
+        return post(f"{url()}/v1/audio/speech", headers(), body)

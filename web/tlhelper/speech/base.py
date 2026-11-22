@@ -3,6 +3,8 @@
 import os
 from typing import Protocol
 
+import requests
+
 from ..messages import CodedError
 
 # For the list of models on a page load, in seconds: the page waits for it.
@@ -18,6 +20,30 @@ def timeout() -> float:
 class SpeechError(CodedError):
     """The message goes to the page: the English text, and for an error with
     a code, the message "error-{code}" of the catalogs."""
+
+
+def post(url: str, headers: dict[str, str], body: dict) -> bytes:
+    """One POST to a voice service: the sound of its answer. Raises
+    SpeechError on every failure."""
+    try:
+        response = requests.post(url, headers=headers, json=body, timeout=timeout())
+    except requests.Timeout as exc:
+        raise SpeechError(
+            "the voice service did not answer in time", "voice-timeout"
+        ) from exc
+    except requests.RequestException as exc:
+        raise SpeechError(
+            f"the voice service is not reachable: {exc!r}", "voice-no-service"
+        ) from exc
+    if response.status_code != 200:
+        raise SpeechError(
+            f"the voice service returned HTTP {response.status_code}",
+            "voice-http",
+            status=response.status_code,
+        )
+    if not response.content:
+        raise SpeechError("the voice service gave no sound", "voice-http", status=200)
+    return response.content
 
 
 class Synthesizer(Protocol):

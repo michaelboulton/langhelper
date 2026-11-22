@@ -43,6 +43,7 @@ services:
     secrets:
       - deepl_api_key
       # - tlhelper_ai_api_key
+      # - tlhelper_voice_api_key
     volumes:
       - ./.data:/data
     # The image runs as uid 1000. With rootless podman, this maps that uid to
@@ -218,7 +219,11 @@ networks:
 secrets:
   deepl_api_key:
     external: true
-  # A secret that does not exist stops the start, so this one is a comment:
+  # A secret that does not exist stops the start, so these are comments:
   #   printf '%s' "$KEY" | podman secret create tlhelper_ai_api_key -
   # tlhelper_ai_api_key:
+  #   external: true
+  # For a paid voice service (TLHELPER_VOICE_API_KEY):
+  #   printf '%s' "$KEY" | podman secret create tlhelper_voice_api_key -
+  # tlhelper_voice_api_key:
   #   external: true

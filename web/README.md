@@ -703,8 +703,9 @@ the page plays the mp3 in an audio element. The row names the voice model.
 The voice service is [`tts/`](../tts/) in this repo: a small
 server around omnivoice.cpp, the ggml port of OmniVoice, a text-to-speech
 model for 600 languages that runs on the CPU. `docker-compose.yml` runs it as the `voice` service next to the
-page. The Fly app has no voice service, so the page there has no such row,
-as it has no AI buttons without a key.
+page. The Fly app has no voice service by default, so the page there has no
+such row, as it has no AI buttons without a key. A paid service, ElevenLabs,
+gives it one: see "Set up ElevenLabs".
 
 The text goes to the voice service, so the page makes a request only after a
 click. The server keeps no sound. The mp3 is a `GET` with the text and the
@@ -732,6 +733,22 @@ read every language of the page.
    service. The `omnivoice` service wants none.
 4. `TLHELPER_VOICE_TIMEOUT` (default 180) is the most seconds for one
    request. A CPU reads a long text slowly.
+
+### Set up ElevenLabs
+
+ElevenLabs is a paid service with its own API. The text of the user goes to
+ElevenLabs, and each click on a new text costs characters of the account.
+The app has no limit on the clicks of one user.
+
+1. Set `TLHELPER_VOICE_BACKEND` to `elevenlabs`.
+2. Set the key as a secret: `fly secrets set TLHELPER_VOICE_API_KEY=...`
+3. Set `TLHELPER_VOICE_ID` to the id of a voice of the account. With no key
+   or no id, the page has no buttons.
+4. `TLHELPER_VOICE_MODEL` names the model. Default: `eleven_multilingual_v2`.
+   For another model, such as `eleven_flash_v2_5`, the request also carries
+   the language code.
+
+`TLHELPER_VOICE_URL` has no effect with this backend.
 
 ### Speech API
 
@@ -1231,18 +1248,22 @@ Set under `[env]` in `fly.toml`:
   buttons. Default: none, and then the page has no such buttons. The compose
   file sets it. See "Set up the voice service".
 - `TLHELPER_VOICE_MODEL`: the model of the voice service. Default: the first
-  one that the service lists.
+  one that the service lists, or `eleven_multilingual_v2` for ElevenLabs.
+- `TLHELPER_VOICE_ID`: the id of the ElevenLabs voice. Default: none. The
+  `elevenlabs` backend needs it.
 - `TLHELPER_VOICE_TIMEOUT`: the most seconds for one request to the voice
   service. Default `180`.
-- `TLHELPER_VOICE_BACKEND`: the name of the speech backend. Default `openai`,
-  which is the only one now.
+- `TLHELPER_VOICE_BACKEND`: the name of the speech backend: `openai` (the
+  default) or `elevenlabs`.
 
 Set as a secret:
 
 - `TLHELPER_AI_API_KEY`: the key for the AI service. Default: none, and then
   the page has no "explain with AI" buttons.
 - `TLHELPER_VOICE_API_KEY`: the key for a paid voice service. Default: none.
-  The `omnivoice` service wants none.
+  The `omnivoice` service wants none. In a container, `entrypoint.sh` also
+  reads it from the file `TLHELPER_VOICE_API_KEY_FILE` (default
+  `/run/secrets/tlhelper_voice_api_key`).
 - `DEEPL_API_KEY`: the key for the translation. Default: none, and then a
   request with `translate` gets an error in place of the English text.
 - `DEEPL_URL`: default `https://api-free.deepl.com/v2/translate`. A paid DeepL
